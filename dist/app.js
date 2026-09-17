@@ -1,5 +1,6 @@
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const DEFAULT_GRID_WIDTH = 70;
+const DEFAULT_COLOR_COUNT = 16;
 const MIN_ZOOM = 50;
 const MAX_ZOOM = 300;
 const ZOOM_STEP = 25;
@@ -19,6 +20,12 @@ const elements = {
   sizeValue: $("sizeValue"),
   colorCount: $("colorCount"),
   colorCountValue: $("colorCountValue"),
+  aiPromptTarget: $("aiPromptTarget"),
+  aiPromptText: $("aiPromptText"),
+  aiPromptDetails: $("aiPromptDetails"),
+  copyAiPrompt: $("copyAiPrompt"),
+  copyAiPromptLabel: $("copyAiPromptLabel"),
+  aiPromptStatus: $("aiPromptStatus"),
   rebuildButton: $("rebuildButton"),
   patternHeading: $("pattern-heading"),
   patternStatus: $("patternStatus"),
@@ -51,6 +58,7 @@ const state = {
   fileSize: 0,
   pattern: null,
   lastDownloadUrl: null,
+  copyResetTimer: null,
   settings: {
     view: "pattern",
     showSymbols: true,
@@ -138,11 +146,92 @@ function setExportStatus(message, isError) {
   elements.exportStatus.classList.toggle("is-error", Boolean(isError));
 }
 
+function buildSimplificationPrompt() {
+  const width = Number(elements.sizeSelect.value || DEFAULT_GRID_WIDTH);
+  const colorCount = Number(elements.colorCount.value || DEFAULT_COLOR_COUNT);
+
+  return [
+    "Используй прикреплённую фотографию как единственный визуальный источник.",
+    "",
+    "Преобразуй её в аккуратную упрощённую пиксельную иллюстрацию, подготовленную для последующего создания схемы вышивки крестиком.",
+    "",
+    "Требования:",
+    `- рабочее разрешение — ровно ${width} квадратных пикселей (клеток) по ширине; высоту рассчитай пропорционально исходной фотографии;`,
+    `- используй не более ${colorCount} чётко различимых сплошных цветов;`,
+    "- сохрани узнаваемый силуэт, позу, композицию и главные черты объекта; не обрезай главный объект;",
+    "- объедини мелкие детали, шум и текстуры в крупные понятные цветовые области;",
+    "- каждый пиксель должен быть строго квадратным, одинакового размера и иметь только один цвет;",
+    "- используй жёсткие границы без размытия, полупрозрачности, градиентов, сглаживания и дизеринга;",
+    "- не добавляй сетку, символы, подписи, текст, рамку, эффект ткани, крестики или вышитые нити;",
+    "- не меняй объект и не придумывай детали, которых нет на фотографии;",
+    "- фон упрости до нескольких больших цветовых областей или одного ровного цвета, если он не важен;",
+    "- выведи только готовое изображение в PNG. Для показа можешь увеличить его только целым коэффициентом методом nearest-neighbor, чтобы границы пикселей оставались резкими.",
+    "",
+    "Результат должен выглядеть как чистый pixel art / color blocking и быть пригодным для загрузки в генератор схемы Stitchloom.",
+  ].join("\n");
+}
+
+function updateAiPrompt() {
+  const width = Number(elements.sizeSelect.value || DEFAULT_GRID_WIDTH);
+  const colorCount = Number(elements.colorCount.value || DEFAULT_COLOR_COUNT);
+  elements.aiPromptTarget.textContent = `${width} клеток · до ${colorCount} цветов`;
+  elements.aiPromptText.value = buildSimplificationPrompt();
+}
+
+function resetPromptCopyState() {
+  elements.copyAiPrompt.classList.remove("is-copied");
+  elements.copyAiPromptLabel.textContent = "Скопировать промпт";
+  elements.aiPromptStatus.textContent = "";
+  elements.aiPromptStatus.classList.remove("is-error");
+  state.copyResetTimer = null;
+}
+
+async function copySimplificationPrompt() {
+  const prompt = elements.aiPromptText.value.trim() || buildSimplificationPrompt();
+  elements.aiPromptText.value = prompt;
+  let copied = false;
+
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(prompt);
+      copied = true;
+    }
+  } catch {
+    copied = false;
+  }
+
+  if (!copied) {
+    try {
+      elements.aiPromptDetails.open = true;
+      elements.aiPromptText.focus();
+      elements.aiPromptText.select();
+      elements.aiPromptText.setSelectionRange(0, prompt.length);
+      copied = document.execCommand("copy");
+    } catch {
+      copied = false;
+    }
+  }
+
+  if (state.copyResetTimer) window.clearTimeout(state.copyResetTimer);
+  elements.copyAiPrompt.classList.toggle("is-copied", copied);
+  elements.aiPromptStatus.classList.toggle("is-error", !copied);
+
+  if (copied) {
+    elements.copyAiPromptLabel.textContent = "Промпт скопирован";
+    elements.aiPromptStatus.textContent = "Теперь прикрепите фото и вставьте промпт в выбранный ИИ-сервис.";
+    state.copyResetTimer = window.setTimeout(resetPromptCopyState, 3600);
+  } else {
+    elements.copyAiPromptLabel.textContent = "Выделить промпт";
+    elements.aiPromptStatus.textContent = "Автокопирование недоступно — текст раскрыт и выделен для ручного копирования.";
+  }
+}
+
 function updateControls() {
   const width = Number(elements.sizeSelect.value || DEFAULT_GRID_WIDTH);
   const colorCount = Number(elements.colorCount.value);
   elements.sizeValue.textContent = width + " " + plural(width, "клетка", "клетки", "клеток");
   elements.colorCountValue.textContent = String(colorCount);
+  updateAiPrompt();
 }
 
 function updateZoomControls() {
@@ -1294,6 +1383,7 @@ elements.colorCount.addEventListener("input", updateControls);
 elements.colorCount.addEventListener("change", () => {
   if (state.image) buildPattern();
 });
+elements.copyAiPrompt.addEventListener("click", copySimplificationPrompt);
 elements.rebuildButton.addEventListener("click", buildPattern);
 elements.showSymbols.addEventListener("change", () => {
   state.settings.showSymbols = elements.showSymbols.checked;

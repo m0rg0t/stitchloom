@@ -13,6 +13,7 @@ Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Ea
 - keeps every embroidery cell strictly square (1:1) in the preview and PNG export;
 - zooms and scrolls the on-screen pattern from 50% to 300% without changing export quality;
 - reduces the result to a selectable 2–256 color palette (16 by default);
+- creates a ready-to-copy AI prompt, tuned to the selected grid width and color limit, for simplifying a difficult source photo in ChatGPT, Gemini or another image editor before conversion;
 - shows a color-and-symbol key with stitch counts;
 - exports a print-ready, multi-page PDF with a tiled square grid and full color key;
 - exports the current pattern as PNG or a cell-by-cell CSV;
@@ -38,6 +39,8 @@ The main branch is configured to deploy dist/ to GitHub Pages through .github/wo
 ## Privacy
 
 Image decoding, sampling and palette selection happen in the browser with Canvas APIs. No application backend is required for the core flow.
+
+The optional AI-preparation prompt is copied locally. Stitchloom does not send the image anywhere; if you attach it to an external AI service, that service's privacy terms apply.
 
 ## License
 

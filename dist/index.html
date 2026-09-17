@@ -120,6 +120,45 @@
                 <button class="icon-button" id="removeImage" type="button" aria-label="Удалить изображение">×</button>
               </div>
               <p class="field-note" id="fileStatus" role="status">Всё считается локально: файл не загружается на сервер.</p>
+
+              <section class="ai-helper" aria-labelledby="ai-helper-title">
+                <div class="ai-helper-topline">
+                  <span class="ai-helper-badge">ОПЦИОНАЛЬНО</span>
+                  <span class="ai-helper-target" id="aiPromptTarget">70 клеток · до 16 цветов</span>
+                </div>
+                <h3 id="ai-helper-title">Сначала упростить фото через ИИ</h3>
+                <p class="ai-helper-copy">
+                  Для сложного снимка можно заранее попросить ChatGPT, Gemini или другой
+                  редактор превратить его в чистый pixel art. Так силуэт и крупные цветовые
+                  области лучше переживут перенос в маленькую схему.
+                </p>
+                <ol class="ai-helper-steps">
+                  <li>Выберите ниже размер схемы и число цветов.</li>
+                  <li>Прикрепите исходное фото к диалогу с ИИ и вставьте промпт.</li>
+                  <li>Скачайте полученный PNG и загрузите его в Stitchloom.</li>
+                </ol>
+                <button class="copy-prompt-button" id="copyAiPrompt" type="button">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="8" y="8" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.7" />
+                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  </svg>
+                  <span id="copyAiPromptLabel">Скопировать промпт</span>
+                </button>
+                <details class="ai-prompt-details" id="aiPromptDetails">
+                  <summary>Посмотреть и отредактировать текст</summary>
+                  <textarea
+                    id="aiPromptText"
+                    rows="13"
+                    aria-label="Промпт для художественного упрощения фотографии"
+                    spellcheck="false"
+                  ></textarea>
+                </details>
+                <p class="ai-helper-privacy">
+                  Stitchloom ничего не отправляет сам. Если загрузить фото во внешний
+                  ИИ-сервис, к нему будут применяться правила конфиденциальности этого сервиса.
+                </p>
+                <p class="ai-prompt-status" id="aiPromptStatus" role="status" aria-live="polite"></p>
+              </section>
             </div>
 
             <div class="rule"></div>
