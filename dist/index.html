@@ -68,7 +68,11 @@
       (() => {
         const storageKey = "stitchloom:locale:v1";
         const supportedLocales = ["ru", "en", "es", "de"];
-        const requestedLocale = new URLSearchParams(window.location.search).get("lang");
+        const launchParams = new URLSearchParams(window.location.search);
+        const requestedLocale = launchParams.get("lang");
+        const isLocalHost = ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
+        const isVkMode = (isLocalHost && launchParams.get("vk_test") === "1") ||
+          ["vk_app_id", "vk_user_id", "vk_platform", "sign"].every((key) => Boolean(launchParams.get(key)));
         const routeLocale = window.location.pathname
           .split("/")
           .filter(Boolean)
@@ -87,12 +91,18 @@
 
           return "en";
         };
-        let locale = supportedLocales.includes(requestedLocale)
-          ? requestedLocale
-          : (supportedLocales.includes(routeLocale) ? routeLocale : "");
-        let localeSource = supportedLocales.includes(requestedLocale)
-          ? "query"
-          : (locale ? "route" : "browser");
+        let locale = isVkMode
+          ? "ru"
+          : (supportedLocales.includes(requestedLocale)
+            ? requestedLocale
+            : (supportedLocales.includes(routeLocale) ? routeLocale : ""));
+        let localeSource = isVkMode
+          ? "vk"
+          : (supportedLocales.includes(requestedLocale)
+            ? "query"
+            : (locale ? "route" : "browser"));
+
+        if (isVkMode) document.documentElement.dataset.vkMode = "true";
 
         if (!locale) {
           try {
@@ -227,6 +237,7 @@
           <span class="brand-word">STITCHLOOM</span>
         </a>
         <div class="topbar-meta">
+          <span class="vk-mode-pill" title="Режим VK Mini Apps">VK</span>
           <span class="privacy-pill">
             <span class="privacy-dot"></span>
             <span class="privacy-label-full" data-i18n="privacy.full">ФОТО НЕ УХОДИТ С УСТРОЙСТВА</span>

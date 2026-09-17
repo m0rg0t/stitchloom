@@ -7,6 +7,12 @@ import {
   rebuildPaletteUsage,
   selectDmcPalette,
 } from "./pattern-tools.js";
+import {
+  initVkMode,
+  showVkInterstitialAfterExport,
+  vkBridgeService,
+  vkLaunchContext,
+} from "./vk-bridge-service.js";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const MAX_PROJECT_SIZE = 40 * 1024 * 1024;
@@ -1319,6 +1325,7 @@ function detectBrowserLocale() {
 }
 
 function getInitialLocale() {
+  if (vkLaunchContext.enabled) return "ru";
   const documentLocale = document.documentElement.dataset.locale;
   if (isSupportedLocale(documentLocale)) return documentLocale;
   return "ru";
@@ -1464,7 +1471,9 @@ function persistLocale(locale) {
 }
 
 function applyLocale(locale, persist = false, refresh = true) {
-  const nextLocale = isSupportedLocale(locale) ? locale : "ru";
+  const nextLocale = vkLaunchContext.enabled
+    ? "ru"
+    : (isSupportedLocale(locale) ? locale : "ru");
   if (persist) state.localeSource = "manual";
   state.locale = nextLocale;
   document.documentElement.lang = nextLocale;
@@ -1502,6 +1511,12 @@ function applyLocale(locale, persist = false, refresh = true) {
 
 function initLocale() {
   cacheStaticLocaleValues();
+  if (vkLaunchContext.enabled) {
+    state.localeSource = "vk";
+    document.documentElement.dataset.vkMode = "true";
+    applyLocale("ru", false, false);
+    return;
+  }
   const documentSource = document.documentElement.dataset.localeSource;
   state.localeSource = ["browser", "query", "route", "stored"].includes(documentSource)
     ? documentSource
@@ -2791,6 +2806,7 @@ function downloadProjectFile() {
     );
     elements.projectStatus.textContent = t("project.saved");
     elements.projectStatus.classList.remove("is-error");
+    void showVkInterstitialAfterExport();
   } catch {
     elements.projectStatus.textContent = t("project.saveFailed");
     elements.projectStatus.classList.add("is-error");
@@ -3495,6 +3511,7 @@ async function downloadPdf() {
     const blob = new Blob([pdfBytes], { type: "application/pdf" });
     const filename = "stitchloom-" + pattern.width + "x" + pattern.height + ".pdf";
     offerPdfDownload(blob, filename);
+    void showVkInterstitialAfterExport();
   } catch (error) {
     console.error(error);
     setExportStatus(t("pdf.failed"), true);
@@ -3513,7 +3530,10 @@ function downloadPng() {
   const exportCanvas = document.createElement("canvas");
   drawPatternToCanvas(exportCanvas, exportCellSize, "pattern", 1);
   exportCanvas.toBlob((blob) => {
-    if (blob) triggerDownload(blob, "stitchloom-" + pattern.width + "x" + pattern.height + ".png");
+    if (blob) {
+      triggerDownload(blob, "stitchloom-" + pattern.width + "x" + pattern.height + ".png");
+      void showVkInterstitialAfterExport();
+    }
   }, "image/png");
 }
 
@@ -3540,6 +3560,7 @@ function downloadCsv() {
   });
   const blob = new Blob(["\ufeff" + rows.join("\n")], { type: "text/csv;charset=utf-8" });
   triggerDownload(blob, "stitchloom-" + pattern.width + "x" + pattern.height + ".csv");
+  void showVkInterstitialAfterExport();
 }
 
 function setEditorTool(tool) {
@@ -3717,7 +3738,7 @@ elements.localeChoices.forEach((button) => {
   });
 });
 window.addEventListener("languagechange", () => {
-  if (state.localeSource !== "browser") return;
+  if (vkLaunchContext.enabled || state.localeSource !== "browser") return;
   applyLocale(detectBrowserLocale());
 });
 document.addEventListener("keydown", () => {
@@ -3934,6 +3955,9 @@ window.addEventListener("resize", () => {
   });
 });
 window.addEventListener("beforeunload", clearLastDownloadUrl);
+window.addEventListener("pagehide", () => {
+  if (vkLaunchContext.enabled) void vkBridgeService.hideBannerAd();
+});
 
 if ("IntersectionObserver" in window) {
   const patternObserver = new IntersectionObserver((entries) => {
@@ -3968,6 +3992,7 @@ if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
 
 initLocale();
 initTheme();
+void initVkMode();
 updateControls();
 updateViewButtons();
 renderPattern();

@@ -10,6 +10,7 @@ Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Ea
 - keeps the image in the browser and never uploads it to a server;
 - gives first-time visitors a four-step onboarding tour and lets them reopen it from the header;
 - provides complete Russian, English, Spanish, and German interfaces, localized AI prompts and PDF labels, automatically follows the browser's first supported language, and saves a manual override on the device;
+- switches to a VK Mini Apps mode when complete VK launch parameters are present: the interface is fixed to Russian, the language picker is hidden, VK Bridge is initialized, a bottom banner uses resize layout, and the first export in a session may show an interstitial ad when inventory is available;
 - supports automatic, light and dark interface themes; the automatic mode follows system changes without a reload;
 - offers five pattern widths from 36 to 110 cells;
 - derives the height from the original image proportions;
@@ -38,6 +39,8 @@ The project is intentionally dependency-free. Serve the folder with any static f
 
 Then open http://localhost:4173.
 
+To preview the VK-specific interface and deterministic Bridge mock locally, open `http://localhost:4173/?vk_test=1`. Add `&vk_mock=ads-unavailable` to verify that unavailable advertising fails open without blocking the editor or exports. The test switch is ignored on non-local hosts.
+
 ## Publishing
 
 The main branch is configured to deploy dist/ to GitHub Pages through .github/workflows/deploy-pages.yml. The same static output can be deployed to ChatGPT Sites.
@@ -55,6 +58,8 @@ Both documents are also published alongside the application as `llms.txt` and `S
 ## Privacy
 
 Image decoding, sampling and palette selection happen in the browser with Canvas APIs. No application backend is required for the core flow.
+
+VK launch parameters are used only to select the client-side presentation mode; they are not treated as proof of identity or authorization. Production access decisions would require server-side signature verification.
 
 The optional AI-preparation prompt is copied locally. Stitchloom does not send the image anywhere; if you attach it to an external AI service, that service's privacy terms apply.
 

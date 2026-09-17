@@ -34,9 +34,15 @@
 
           return "en";
         };
-        const requestedLocale = new URLSearchParams(window.location.search).get("lang");
-        let locale = supportedLocales.includes(requestedLocale) ? requestedLocale : "";
-        let localeSource = locale ? "query" : "browser";
+        const launchParams = new URLSearchParams(window.location.search);
+        const requestedLocale = launchParams.get("lang");
+        const isLocalHost = ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
+        const isVkMode = (isLocalHost && launchParams.get("vk_test") === "1") ||
+          ["vk_app_id", "vk_user_id", "vk_platform", "sign"].every((key) => Boolean(launchParams.get(key)));
+        let locale = isVkMode ? "ru" : (supportedLocales.includes(requestedLocale) ? requestedLocale : "");
+        let localeSource = isVkMode ? "vk" : (locale ? "query" : "browser");
+
+        if (isVkMode) document.documentElement.dataset.vkMode = "true";
 
         if (!locale) {
           try {
@@ -200,6 +206,7 @@
       }
 
       .locale-picker { position: relative; z-index: 10; }
+      html[data-vk-mode="true"] .locale-picker { display: none; }
 
       .locale-picker summary {
         display: inline-flex;
@@ -649,7 +656,9 @@
         const mascot = document.getElementById("mascot");
 
         function applyLocale(nextLocale, persist = false) {
-          locale = localeSequence.includes(nextLocale) ? nextLocale : "ru";
+          locale = document.documentElement.dataset.vkMode === "true"
+            ? "ru"
+            : (localeSequence.includes(nextLocale) ? nextLocale : "ru");
           if (persist) localeSource = "manual";
           const copy = translations[locale];
           document.documentElement.lang = locale;
@@ -714,7 +723,7 @@
           if (localePicker.open && !localePicker.contains(event.target)) localePicker.open = false;
         });
         window.addEventListener("languagechange", () => {
-          if (localeSource !== "browser") return;
+          if (document.documentElement.dataset.vkMode === "true" || localeSource !== "browser") return;
           applyLocale(detectBrowserLocale());
         });
         applyLocale(locale);

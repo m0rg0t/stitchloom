@@ -7,6 +7,8 @@ const dist = resolve(root, "dist");
 const locales = ["ru", "en", "es", "de"];
 const index = await readFile(resolve(dist, "index.html"), "utf8");
 assert.match(index, /id="localePicker"/);
+assert.match(index, /class="vk-mode-pill"/);
+assert.match(index, /dataset\.vkMode/);
 for (const locale of locales) {
   assert.match(index, new RegExp(`data-locale-choice="${locale}"`));
 }
@@ -28,6 +30,8 @@ for (const filename of [
   "styles.css",
   "app.js",
   "pattern-tools.js",
+  "vk-bridge-service.js",
+  "vendor/vk-bridge.min.js",
   "sw.js",
   "icon-192.png",
   "icon-512.png",
