@@ -76,19 +76,72 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "Stitchloom",
-        "url": "https://stitchloom.antonlenev.chatgpt.site/",
-        "description": "Браузерный генератор схем вышивки крестиком из фотографий.",
-        "applicationCategory": "DesignApplication",
-        "operatingSystem": "Any",
-        "inLanguage": "ru",
-        "image": "https://stitchloom.antonlenev.chatgpt.site/og.png",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "RUB"
-        }
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://stitchloom.antonlenev.chatgpt.site/#website",
+            "url": "https://stitchloom.antonlenev.chatgpt.site/",
+            "name": "Stitchloom",
+            "alternateName": "Stitchloom — схема вышивки из фото",
+            "description": "Браузерный генератор схем вышивки крестиком из фотографий.",
+            "inLanguage": "ru"
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://stitchloom.antonlenev.chatgpt.site/#app",
+            "name": "Stitchloom",
+            "url": "https://stitchloom.antonlenev.chatgpt.site/",
+            "description": "Браузерный генератор схем вышивки крестиком из фотографий.",
+            "applicationCategory": "DesignApplication",
+            "operatingSystem": "Any",
+            "inLanguage": "ru",
+            "image": "https://stitchloom.antonlenev.chatgpt.site/og.png",
+            "isPartOf": {
+              "@id": "https://stitchloom.antonlenev.chatgpt.site/#website"
+            },
+            "featureList": [
+              "Квадратные клетки схемы",
+              "Палитра от 2 до 256 цветов",
+              "Экспорт в PDF, PNG и CSV",
+              "Локальная обработка изображения"
+            ],
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "RUB"
+            }
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://stitchloom.antonlenev.chatgpt.site/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Фото загружается на сервер?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Нет. Stitchloom обрабатывает фотографию локально в браузере и не отправляет её на сервер."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Как выбрать размер схемы?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Выберите ширину в клетках. Высота рассчитается автоматически по пропорциям фотографии, а каждая клетка останется квадратной."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Сколько цветов выбрать?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Начните с 16 цветов. Для простых изображений часто достаточно 8, а сложным фотографиям может понадобиться 24 или больше."
+                }
+              }
+            ]
+          }
+        ]
       }
     </script>
   </head>
@@ -406,6 +459,61 @@
             </div>
           </section>
         </div>
+
+        <section class="seo-guide" aria-labelledby="seo-guide-title">
+          <header class="seo-guide-heading">
+            <div>
+              <p class="eyebrow">КОРОТКО О ПРОЦЕССЕ</p>
+              <h2 id="seo-guide-title">Как сделать схему вышивки крестиком по фото</h2>
+            </div>
+            <p>
+              Stitchloom превращает фотографию в готовую клетчатую схему прямо в браузере —
+              без аккаунта, ручной разметки и загрузки исходника на сервер.
+            </p>
+          </header>
+
+          <ol class="seo-steps">
+            <li>
+              <span>01</span>
+              <div>
+                <h3>Загрузите фотографию</h3>
+                <p>Выберите снимок с понятным силуэтом. Для сложного фона можно сначала скопировать промпт и упростить изображение через ИИ.</p>
+              </div>
+            </li>
+            <li>
+              <span>02</span>
+              <div>
+                <h3>Настройте клетки и палитру</h3>
+                <p>Задайте ширину схемы и число цветов от 2 до 256. Высота подстроится сама, а клетки останутся строго квадратными.</p>
+              </div>
+            </li>
+            <li>
+              <span>03</span>
+              <div>
+                <h3>Сохраните результат</h3>
+                <p>Проверьте символы и сетку, приблизьте нужный участок и скачайте схему в PDF, PNG или CSV.</p>
+              </div>
+            </li>
+          </ol>
+
+          <section class="seo-faq" aria-labelledby="seo-faq-title">
+            <h3 id="seo-faq-title">Частые вопросы</h3>
+            <div class="seo-faq-grid">
+              <details>
+                <summary>Фото загружается на сервер?</summary>
+                <p>Нет. Stitchloom обрабатывает фотографию локально в браузере и не отправляет её на сервер.</p>
+              </details>
+              <details>
+                <summary>Как выбрать размер схемы?</summary>
+                <p>Выберите ширину в клетках. Высота рассчитается автоматически по пропорциям фотографии, а каждая клетка останется квадратной.</p>
+              </details>
+              <details>
+                <summary>Сколько цветов выбрать?</summary>
+                <p>Начните с 16 цветов. Для простых изображений часто достаточно 8, а сложным фотографиям может понадобиться 24 или больше.</p>
+              </details>
+            </div>
+          </section>
+        </section>
       </main>
 
       <footer class="footer">

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://stitchloom.antonlenev.chatgpt.site/sitemap.xml
