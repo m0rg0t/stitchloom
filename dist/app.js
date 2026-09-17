@@ -4,6 +4,7 @@ const DEFAULT_COLOR_COUNT = 16;
 const MIN_ZOOM = 50;
 const MAX_ZOOM = 300;
 const ZOOM_STEP = 25;
+const THEME_STORAGE_KEY = "stitchloom:theme:v1";
 const ONBOARDING_STORAGE_KEY = "stitchloom:onboarding:v1";
 const ONBOARDING_COOKIE_KEY = "stitchloom_onboarding_v1";
 
@@ -31,6 +32,11 @@ const elements = {
   copyAiPrompt: $("copyAiPrompt"),
   copyAiPromptLabel: $("copyAiPromptLabel"),
   aiPromptStatus: $("aiPromptStatus"),
+  themeColor: $("themeColor"),
+  themePicker: $("themePicker"),
+  themePickerSummary: $("themePickerSummary"),
+  themePickerLabel: $("themePickerLabel"),
+  themeChoices: Array.from(document.querySelectorAll("[data-theme-choice]")),
   openOnboarding: $("openOnboarding"),
   onboardingDialog: $("onboardingDialog"),
   closeOnboarding: $("closeOnboarding"),
@@ -86,6 +92,7 @@ const state = {
   drag: null,
   pinch: null,
   resizeFrame: null,
+  themePreference: "auto",
   settings: {
     view: "pattern",
     showSymbols: true,
@@ -196,7 +203,7 @@ function setExportStatus(message, isError) {
 function getSafeStorage(name) {
   try {
     const storage = window[name];
-    const testKey = ONBOARDING_STORAGE_KEY + ":test";
+    const testKey = "stitchloom:storage-test";
     storage.setItem(testKey, "1");
     storage.removeItem(testKey);
     return storage;
@@ -205,8 +212,77 @@ function getSafeStorage(name) {
   }
 }
 
-const onboardingLocalStorage = getSafeStorage("localStorage");
-const onboardingSessionStorage = getSafeStorage("sessionStorage");
+const safeLocalStorage = getSafeStorage("localStorage");
+const safeSessionStorage = getSafeStorage("sessionStorage");
+const systemThemeMedia = window.matchMedia("(prefers-color-scheme: dark)");
+
+const THEME_LABELS = {
+  auto: "Авто",
+  light: "Светлая",
+  dark: "Тёмная",
+};
+
+function isThemePreference(value) {
+  return Object.prototype.hasOwnProperty.call(THEME_LABELS, value);
+}
+
+function getInitialThemePreference() {
+  const documentPreference = document.documentElement.dataset.themePreference;
+  if (isThemePreference(documentPreference)) return documentPreference;
+
+  try {
+    const storedPreference = safeLocalStorage?.getItem(THEME_STORAGE_KEY);
+    if (isThemePreference(storedPreference)) return storedPreference;
+  } catch {
+    // Fall back to the automatic theme for this page view.
+  }
+
+  return "auto";
+}
+
+function resolveTheme(preference) {
+  if (preference === "auto") return systemThemeMedia.matches ? "dark" : "light";
+  return preference;
+}
+
+function applyTheme(preference, persist = false) {
+  const nextPreference = isThemePreference(preference) ? preference : "auto";
+  const resolvedTheme = resolveTheme(nextPreference);
+  state.themePreference = nextPreference;
+
+  document.documentElement.dataset.themePreference = nextPreference;
+  document.documentElement.dataset.theme = resolvedTheme;
+  elements.themePickerLabel.textContent = THEME_LABELS[nextPreference];
+  elements.themePickerSummary.setAttribute("aria-label", `Тема: ${THEME_LABELS[nextPreference]}`);
+  elements.themePickerSummary.title = `Тема: ${THEME_LABELS[nextPreference]}`;
+  elements.themeColor.content = resolvedTheme === "dark" ? "#131718" : "#e9e5dd";
+
+  elements.themeChoices.forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.themeChoice === nextPreference));
+  });
+
+  if (!persist) return;
+
+  try {
+    safeLocalStorage?.setItem(THEME_STORAGE_KEY, nextPreference);
+  } catch {
+    // The selected theme still applies for the current page view.
+  }
+}
+
+function initTheme() {
+  applyTheme(getInitialThemePreference());
+
+  const handleSystemThemeChange = () => {
+    if (state.themePreference === "auto") applyTheme("auto");
+  };
+
+  if (typeof systemThemeMedia.addEventListener === "function") {
+    systemThemeMedia.addEventListener("change", handleSystemThemeChange);
+  } else if (typeof systemThemeMedia.addListener === "function") {
+    systemThemeMedia.addListener(handleSystemThemeChange);
+  }
+}
 
 function hasOnboardingCookie() {
   try {
@@ -233,7 +309,7 @@ function hasSeenOnboarding() {
   if (state.onboardingSeenThisPage) return true;
 
   try {
-    if (onboardingLocalStorage?.getItem(ONBOARDING_STORAGE_KEY) === "1") return true;
+    if (safeLocalStorage?.getItem(ONBOARDING_STORAGE_KEY) === "1") return true;
   } catch {
     // Continue through the non-localStorage fallbacks.
   }
@@ -241,7 +317,7 @@ function hasSeenOnboarding() {
   if (hasOnboardingCookie()) return true;
 
   try {
-    if (onboardingSessionStorage?.getItem(ONBOARDING_STORAGE_KEY) === "1") return true;
+    if (safeSessionStorage?.getItem(ONBOARDING_STORAGE_KEY) === "1") return true;
   } catch {
     // Fall through to history state.
   }
@@ -257,8 +333,8 @@ function rememberOnboarding() {
   state.onboardingSeenThisPage = true;
 
   try {
-    if (onboardingLocalStorage) {
-      onboardingLocalStorage.setItem(ONBOARDING_STORAGE_KEY, "1");
+    if (safeLocalStorage) {
+      safeLocalStorage.setItem(ONBOARDING_STORAGE_KEY, "1");
       return;
     }
   } catch {
@@ -268,8 +344,8 @@ function rememberOnboarding() {
   if (writeOnboardingCookie()) return;
 
   try {
-    if (onboardingSessionStorage) {
-      onboardingSessionStorage.setItem(ONBOARDING_STORAGE_KEY, "1");
+    if (safeSessionStorage) {
+      safeSessionStorage.setItem(ONBOARDING_STORAGE_KEY, "1");
       return;
     }
   } catch {
@@ -1707,6 +1783,23 @@ elements.colorPresets.forEach((button) => {
   button.addEventListener("click", () => setColorCount(button.dataset.colorPreset));
 });
 elements.copyAiPrompt.addEventListener("click", copySimplificationPrompt);
+elements.themeChoices.forEach((button) => {
+  button.addEventListener("click", () => {
+    applyTheme(button.dataset.themeChoice, true);
+    elements.themePicker.open = false;
+  });
+});
+elements.themePicker.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || !elements.themePicker.open) return;
+  event.preventDefault();
+  elements.themePicker.open = false;
+  elements.themePickerSummary.focus();
+});
+document.addEventListener("click", (event) => {
+  if (elements.themePicker.open && !elements.themePicker.contains(event.target)) {
+    elements.themePicker.open = false;
+  }
+});
 elements.openOnboarding.addEventListener("click", openOnboarding);
 elements.closeOnboarding.addEventListener("click", closeOnboarding);
 elements.skipOnboarding.addEventListener("click", closeOnboarding);
@@ -1864,6 +1957,7 @@ if ("IntersectionObserver" in window) {
   patternObserver.observe(elements.patternPanel);
 }
 
+initTheme();
 updateControls();
 updateViewButtons();
 renderPattern();

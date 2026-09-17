@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="dark" data-theme-preference="auto">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#141819" />
-    <meta name="color-scheme" content="dark" />
+    <meta id="themeColor" name="theme-color" content="#131718" />
+    <meta name="color-scheme" content="dark light" />
     <meta name="application-name" content="Stitchloom" />
     <meta name="apple-mobile-web-app-title" content="Stitchloom" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -46,6 +46,31 @@
     <meta name="twitter:image:alt" content="Stitchloom: фото превращается в схему из квадратных стежков" />
 
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <script>
+      (() => {
+        const storageKey = "stitchloom:theme:v1";
+        const allowedThemes = ["auto", "light", "dark"];
+        let preference = "auto";
+
+        try {
+          const storedPreference = window.localStorage.getItem(storageKey);
+          if (allowedThemes.includes(storedPreference)) preference = storedPreference;
+        } catch {
+          // Keep the in-memory default when browser storage is unavailable.
+        }
+
+        const systemIsDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+        const resolvedTheme = preference === "auto"
+          ? (systemIsDark ? "dark" : "light")
+          : preference;
+
+        document.documentElement.dataset.themePreference = preference;
+        document.documentElement.dataset.theme = resolvedTheme;
+        document.getElementById("themeColor").content = resolvedTheme === "dark"
+          ? "#131718"
+          : "#e9e5dd";
+      })();
+    </script>
     <link rel="stylesheet" href="./styles.css" />
     <title>Stitchloom — схема вышивки из фото</title>
     <script type="application/ld+json">
@@ -82,6 +107,47 @@
             <span class="privacy-label-full">ФОТО НЕ УХОДИТ С УСТРОЙСТВА</span>
             <span class="privacy-label-short">ЛОКАЛЬНО</span>
           </span>
+          <details class="theme-picker" id="themePicker">
+            <summary
+              class="theme-picker-summary"
+              id="themePickerSummary"
+              aria-label="Тема: Авто"
+              title="Тема: Авто"
+            >
+              <span class="theme-current-icon" aria-hidden="true">
+                <svg class="theme-icon theme-icon--auto" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="7.5" stroke="currentColor" stroke-width="1.7" />
+                  <path d="M12 4.5a7.5 7.5 0 0 1 0 15Z" fill="currentColor" />
+                </svg>
+                <svg class="theme-icon theme-icon--light" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="3.6" stroke="currentColor" stroke-width="1.7" />
+                  <path d="M12 2.8v2.1M12 19.1v2.1M21.2 12h-2.1M4.9 12H2.8M18.5 5.5 17 7M7 17l-1.5 1.5M18.5 18.5 17 17M7 7 5.5 5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                </svg>
+                <svg class="theme-icon theme-icon--dark" viewBox="0 0 24 24" fill="none">
+                  <path d="M19.4 15.1A7.8 7.8 0 0 1 8.9 4.6 7.8 7.8 0 1 0 19.4 15.1Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span class="theme-picker-label" id="themePickerLabel">Авто</span>
+              <span class="theme-picker-chevron" aria-hidden="true">⌄</span>
+            </summary>
+            <div class="theme-picker-menu" role="group" aria-label="Выберите тему оформления">
+              <button type="button" data-theme-choice="auto" aria-pressed="true">
+                <span class="theme-choice-icon" aria-hidden="true">◐</span>
+                <span class="theme-choice-copy"><strong>Авто</strong><small>Как в системе</small></span>
+                <span class="theme-choice-check" aria-hidden="true">✓</span>
+              </button>
+              <button type="button" data-theme-choice="light" aria-pressed="false">
+                <span class="theme-choice-icon" aria-hidden="true">☀</span>
+                <span class="theme-choice-copy"><strong>Светлая</strong><small>Всегда светлая</small></span>
+                <span class="theme-choice-check" aria-hidden="true">✓</span>
+              </button>
+              <button type="button" data-theme-choice="dark" aria-pressed="false">
+                <span class="theme-choice-icon" aria-hidden="true">☾</span>
+                <span class="theme-choice-copy"><strong>Тёмная</strong><small>Всегда тёмная</small></span>
+                <span class="theme-choice-check" aria-hidden="true">✓</span>
+              </button>
+            </div>
+          </details>
           <button
             class="tour-trigger"
             id="openOnboarding"

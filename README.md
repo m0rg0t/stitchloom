@@ -9,6 +9,7 @@ Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Ea
 - accepts PNG, JPG, WEBP and GIF images up to 20 MB;
 - keeps the image in the browser and never uploads it to a server;
 - gives first-time visitors a four-step onboarding tour and lets them reopen it from the header;
+- supports automatic, light and dark interface themes; the automatic mode follows system changes without a reload;
 - offers five pattern widths from 36 to 110 cells;
 - derives the height from the original image proportions;
 - keeps every embroidery cell strictly square (1:1) in the preview and PNG export;
@@ -51,7 +52,7 @@ Image decoding, sampling and palette selection happen in the browser with Canvas
 
 The optional AI-preparation prompt is copied locally. Stitchloom does not send the image anywhere; if you attach it to an external AI service, that service's privacy terms apply.
 
-The onboarding dismissal is a device-local preference. Stitchloom prefers `localStorage`, then falls back to a first-party functional cookie, `sessionStorage`, and finally the current history entry when browser storage is restricted.
+The theme choice is stored locally when `localStorage` is available; otherwise it remains active for the current page view. The onboarding dismissal is also device-local: Stitchloom prefers `localStorage`, then falls back to a first-party functional cookie, `sessionStorage`, and finally the current history entry when browser storage is restricted.
 
 ## License
 
