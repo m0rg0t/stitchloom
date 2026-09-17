@@ -13,11 +13,14 @@ Create a usable pattern-making tool, not a mockup. Keep the final photo-to-grid 
 - Keep every logical and rendered cell strictly square.
 - Give every cell exactly one palette index and one symbol.
 - Support a palette limit of 2–256 colors and use 16 as the default.
+- Offer a clearly labeled adaptive palette and, when requested, a truly constrained thread-catalog palette rather than only attaching nearest-match labels afterward.
+- Preserve project portability with a versioned `.stitchloom` JSON format and keep automatic recovery device-local.
 - Keep the core workflow in the browser without uploading the source image.
 - Keep Russian, English, Spanish, and German interfaces behaviorally equivalent, including generated prompts, status text, thread names, exports, metadata, PWA installation, and error pages.
 - Use the browser's ordered language preferences only when there is no explicit URL or saved manual override, and react to `languagechange` while that automatic mode is active.
 - Make external AI preprocessing optional and clearly identify its separate privacy boundary.
 - Treat thread-catalog matches as approximate unless a calibrated conversion and authoritative catalog justify a stronger claim.
+- Keep manual cell edits, stitchability cleanup, physical estimates, and exports derived from the same pattern data.
 
 When extending an existing application, preserve its visual language, controls, publishing setup, and working exports unless the request explicitly changes them.
 
@@ -86,6 +89,8 @@ For Stitchloom itself:
 - edit product markup and metadata in `dist/index.html`;
 - edit responsive styling in `dist/styles.css`;
 - edit sampling, quantization, rendering, onboarding, prompting, and exports in `dist/app.js`;
+- keep reusable pattern operations in `dist/pattern-tools.js` and cover them with Node tests;
+- regenerate `/ru/`, `/en/`, `/es/`, and `/de/` pages with `scripts/build-localized-pages.mjs` after changing `dist/index.html`;
 - keep `.openai/hosting.json` pointed at the static `dist` directory;
 - preserve GitHub Pages deployment from `dist`.
 
@@ -99,6 +104,8 @@ Before publishing, verify observable behavior rather than only checking strings:
 - test 2, 16, and 256 colors and both extreme grid widths;
 - confirm preview, PNG, and PDF cells remain square;
 - confirm palette counts, cell indices, symbols, and legend entries agree;
+- save, reopen, and autosave a `.stitchloom` project; verify PWA file-handler metadata;
+- exercise pencil, fill, eyedropper, undo, photo preparation, stitchability modes, DMC-only mode, and Aida estimates;
 - exercise zoom limits and reset without changing exports;
 - open every export and inspect at least one tiled PDF boundary;
 - test keyboard operation and a 320 px mobile viewport without page overflow;

@@ -16,6 +16,11 @@ Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Ea
 - keeps every embroidery cell strictly square (1:1) in the preview and PNG export;
 - zooms the on-screen pattern from 50% to 300% with buttons, keyboard, modified wheel or a mobile pinch gesture, and lets users drag the enlarged canvas without changing export quality;
 - reduces the result to a selectable 2–256 color palette (16 by default), with practical presets and an exact numeric control;
+- offers adaptive photo colors or a constrained palette made only from the bundled DMC catalog, plus easy, balanced, and detailed stitchability modes that merge tiny color islands;
+- scores stitchability and estimates finished dimensions, fabric with margins, thread skeins, and stitching time for Aida 11, 14, 16, or 18;
+- includes crop, position, rotation, brightness, contrast, saturation, and softening controls before conversion;
+- lets users recolor a cell, flood-fill an area, pick a color from the pattern, and undo or redo manual edits;
+- autosaves the latest work in IndexedDB and imports or exports a self-contained `.stitchloom` JSON project file; the PWA registers that extension where file handling is supported;
 - applies setting changes automatically after a short debounce and reports the real palette size when duplicate or unused colors collapse;
 - creates a ready-to-copy AI prompt, tuned to the selected grid width and color limit, for simplifying a difficult source photo in ChatGPT, Gemini or another image editor before conversion;
 - shows a color-and-symbol key with stitch counts;
@@ -23,7 +28,7 @@ Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Ea
 - exports the current pattern as PNG or a cell-by-cell CSV;
 - keeps upload, zoom and export controls comfortable on mobile screens and surfaces a shortcut when the generated result is below the fold.
 
-The color reduction uses the average color of the image area covered by each cell and a median-cut quantizer. Lower values make the pattern more graphic; higher values preserve more of the original image. The legend also shows the nearest DMC-inspired reference shade for orientation, not as a guarantee of a physical thread match.
+The adaptive color reduction uses the average color of the image area covered by each cell and a median-cut quantizer. Lower values make the pattern more graphic; higher values preserve more of the original image. Adaptive legends show approximate DMC references; the DMC-only mode constrains the generated palette to the bundled real catalog values.
 
 ## Run locally
 
@@ -53,7 +58,7 @@ Image decoding, sampling and palette selection happen in the browser with Canvas
 
 The optional AI-preparation prompt is copied locally. Stitchloom does not send the image anywhere; if you attach it to an external AI service, that service's privacy terms apply.
 
-Without an explicit choice, Stitchloom follows the first supported language in the browser's preference order and reacts to the browser's `languagechange` event. A `?lang=ru`, `?lang=en`, `?lang=es`, or `?lang=de` link overrides detection for that visit. A manual language choice and the theme choice are stored locally when `localStorage` is available; otherwise they remain active for the current page view. The onboarding dismissal is also device-local: Stitchloom prefers `localStorage`, then falls back to a first-party functional cookie, `sessionStorage`, and finally the current history entry when browser storage is restricted.
+Without an explicit choice, Stitchloom follows the first supported language in the browser's preference order and reacts to the browser's `languagechange` event. Search-friendly language pages live at `/ru/`, `/en/`, `/es/`, and `/de/`; the root remains the automatic-language entry point. A manual language choice and the theme choice are stored locally when `localStorage` is available; otherwise they remain active for the current page view. The onboarding dismissal is also device-local: Stitchloom prefers `localStorage`, then falls back to a first-party functional cookie, `sessionStorage`, and finally the current history entry when browser storage is restricted. Project autosaves use IndexedDB and stay on the device.
 
 ## License
 

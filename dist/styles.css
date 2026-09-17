@@ -1609,6 +1609,16 @@ h1 em {
   border: 1px solid rgba(28, 32, 32, 0.11);
   border-radius: 9px;
   background: rgba(255, 250, 241, 0.54);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.legend-row:hover,
+.legend-row:focus-visible {
+  border-color: rgba(80, 88, 189, 0.62);
+  background: rgba(255, 250, 241, 0.86);
 }
 
 .legend-swatch {
@@ -2864,12 +2874,26 @@ html[data-theme="light"] .seo-faq summary {
   }
 
   .editor-toolbar {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr;
   }
 
   .editor-tools {
     grid-column: 1 / -1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .editor-color {
+    min-width: 0;
+  }
+
+  .editor-color select {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .editor-history {
+    justify-content: flex-end;
   }
 
   .pattern-insights {

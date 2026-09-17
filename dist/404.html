@@ -578,9 +578,7 @@
             element.setAttribute("aria-label", copy[element.dataset.i18nAria]);
           });
           document.querySelectorAll("[data-home]").forEach((link) => {
-            link.href = basePath + (
-              locale !== "ru" && localeSource !== "browser" ? `?lang=${locale}` : ""
-            );
+            link.href = `${basePath}${locale}/`;
           });
 
           mascot.alt = copy.mascotAlt;
@@ -604,10 +602,7 @@
           } catch {
             // The query string keeps the choice when storage is restricted.
           }
-          const url = new URL(window.location.href);
-          if (locale === "ru") url.searchParams.delete("lang");
-          else url.searchParams.set("lang", locale);
-          window.history.replaceState(window.history.state, document.title, url);
+          window.location.assign(`${basePath}${locale}/`);
         }
 
         mascot.src = basePath + "mascot-stezhok.png";
