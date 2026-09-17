@@ -13,7 +13,7 @@
 
 - The user uploads a PNG, JPEG, WEBP, or GIF image of up to 20 MB.
 - The image stays on the device. The core application has no backend and makes no image-upload request.
-- The full interface, onboarding, dynamic statuses, AI-preparation prompt, DMC shade names, and PDF labels are available in Russian, English, and Spanish. Without an explicit choice, the app follows the browser's first supported language and reacts to `languagechange`; a stored manual choice or `?lang=ru|en|es` takes priority.
+- The full interface, onboarding, dynamic statuses, AI-preparation prompt, DMC shade names, and PDF labels are available in Russian, English, Spanish, and German. Without an explicit choice, the app follows the browser's first supported language and reacts to `languagechange`; a stored manual choice or `?lang=ru|en|es|de` takes priority.
 - The interface offers auto, light, and dark themes. Auto follows `prefers-color-scheme` changes live; an explicit preference is stored only on the device when `localStorage` is available.
 - The user chooses a pattern width from 36 to 110 cells and a palette limit from 2 to 256 colors; the defaults are 70 cells and 16 colors. Practical presets and an exact numeric input are both available.
 - Setting changes rebuild the pattern automatically after a short debounce. The UI reports the actual palette size when duplicate or unused quantized colors collapse.
@@ -53,11 +53,11 @@ Stitchloom never sends the image to an AI service itself. If a user uploads an i
 - Treat external AI preprocessing as optional and disclose its privacy boundary.
 - Do not present approximate DMC matches as exact physical-thread matches.
 - Preserve keyboard, touch, narrow-screen, 200% text usability, and equivalent contrast and functionality in all three theme modes.
-- Keep Russian, English, and Spanish behavior equivalent, including generated prompts, pattern summaries, thread names, exports, metadata, the PWA manifest, and the 404 page.
+- Keep Russian, English, Spanish, and German behavior equivalent, including generated prompts, pattern summaries, thread names, exports, metadata, the PWA manifest, and the 404 page.
 
 ## Validation
 
-At minimum, check JavaScript syntax, local asset paths, duplicate HTML IDs, browser-language detection and live `languagechange`, Russian, English, and Spanish locale switching and persistence, auto/light/dark themes, live system-theme changes, persisted explicit preference, 2/16/256-color patterns, both extreme grid widths, square-cell geometry, zoom controls, all export formats, and layouts at 320 px and wider without unintended horizontal scrolling.
+At minimum, check JavaScript syntax, local asset paths, duplicate HTML IDs, browser-language detection and live `languagechange`, Russian, English, Spanish, and German locale switching and persistence, auto/light/dark themes, live system-theme changes, persisted explicit preference, 2/16/256-color patterns, both extreme grid widths, square-cell geometry, zoom controls, all export formats, and layouts at 320 px and wider without unintended horizontal scrolling.
 
 ## License
 

@@ -8,6 +8,7 @@
     <xhtml:link rel="alternate" hreflang="ru" href="https://stitchloom.antonlenev.chatgpt.site/" />
     <xhtml:link rel="alternate" hreflang="en" href="https://stitchloom.antonlenev.chatgpt.site/?lang=en" />
     <xhtml:link rel="alternate" hreflang="es" href="https://stitchloom.antonlenev.chatgpt.site/?lang=es" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://stitchloom.antonlenev.chatgpt.site/?lang=de" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://stitchloom.antonlenev.chatgpt.site/" />
     <lastmod>2026-09-17</lastmod>
     <changefreq>weekly</changefreq>
@@ -18,6 +19,7 @@
     <xhtml:link rel="alternate" hreflang="ru" href="https://stitchloom.antonlenev.chatgpt.site/" />
     <xhtml:link rel="alternate" hreflang="en" href="https://stitchloom.antonlenev.chatgpt.site/?lang=en" />
     <xhtml:link rel="alternate" hreflang="es" href="https://stitchloom.antonlenev.chatgpt.site/?lang=es" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://stitchloom.antonlenev.chatgpt.site/?lang=de" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://stitchloom.antonlenev.chatgpt.site/" />
     <lastmod>2026-09-17</lastmod>
     <changefreq>weekly</changefreq>
@@ -28,6 +30,18 @@
     <xhtml:link rel="alternate" hreflang="ru" href="https://stitchloom.antonlenev.chatgpt.site/" />
     <xhtml:link rel="alternate" hreflang="en" href="https://stitchloom.antonlenev.chatgpt.site/?lang=en" />
     <xhtml:link rel="alternate" hreflang="es" href="https://stitchloom.antonlenev.chatgpt.site/?lang=es" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://stitchloom.antonlenev.chatgpt.site/?lang=de" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://stitchloom.antonlenev.chatgpt.site/" />
+    <lastmod>2026-09-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stitchloom.antonlenev.chatgpt.site/?lang=de</loc>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://stitchloom.antonlenev.chatgpt.site/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://stitchloom.antonlenev.chatgpt.site/?lang=en" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://stitchloom.antonlenev.chatgpt.site/?lang=es" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://stitchloom.antonlenev.chatgpt.site/?lang=de" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://stitchloom.antonlenev.chatgpt.site/" />
     <lastmod>2026-09-17</lastmod>
     <changefreq>weekly</changefreq>

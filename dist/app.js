@@ -5,15 +5,16 @@ const MIN_ZOOM = 50;
 const MAX_ZOOM = 300;
 const ZOOM_STEP = 25;
 const LOCALE_STORAGE_KEY = "stitchloom:locale:v1";
-const SUPPORTED_LOCALES = ["ru", "en", "es"];
-const LOCALE_SEQUENCE = ["ru", "en", "es"];
-const LOCALE_NUMBER_FORMATS = { ru: "ru-RU", en: "en-US", es: "es-ES" };
+const SUPPORTED_LOCALES = ["ru", "en", "es", "de"];
+const LOCALE_SEQUENCE = ["ru", "en", "es", "de"];
+const LOCALE_NUMBER_FORMATS = { ru: "ru-RU", en: "en-US", es: "es-ES", de: "de-DE" };
 const LOCALE_MANIFESTS = {
   ru: "./manifest.webmanifest",
   en: "./manifest.en.webmanifest",
   es: "./manifest.es.webmanifest",
+  de: "./manifest.de.webmanifest",
 };
-const LOCALE_OG_CODES = { ru: "ru_RU", en: "en_US", es: "es_ES" };
+const LOCALE_OG_CODES = { ru: "ru_RU", en: "en_US", es: "es_ES", de: "de_DE" };
 const THEME_STORAGE_KEY = "stitchloom:theme:v1";
 const ONBOARDING_STORAGE_KEY = "stitchloom:onboarding:v1";
 const ONBOARDING_COOKIE_KEY = "stitchloom_onboarding_v1";
@@ -47,6 +48,7 @@ const elements = {
   ogLocale: $("ogLocale"),
   ogLocaleAlternate: $("ogLocaleAlternate"),
   ogLocaleAlternateSecondary: $("ogLocaleAlternateSecondary"),
+  ogLocaleAlternateTertiary: $("ogLocaleAlternateTertiary"),
   ogUrl: $("ogUrl"),
   structuredData: $("structuredData"),
   localeToggle: $("localeToggle"),
@@ -408,6 +410,148 @@ const ES_TRANSLATIONS = {
   "onboarding.back": "Atrás",
 };
 
+const DE_TRANSLATIONS = {
+  "meta.title": "Stitchloom — Kreuzstichvorlage aus einem Foto",
+  "meta.description": "Verwandle ein Foto direkt im Browser in eine Kreuzstichvorlage: quadratische Zellen, 2–256 Farben und Export als PDF, PNG oder CSV.",
+  "meta.ogTitle": "Stitchloom — vom Foto zur Kreuzstichvorlage",
+  "meta.ogDescription": "Quadratische Zellen, eine Palette mit 2–256 Farben und PDF-Export — vollständig in deinem Browser verarbeitet.",
+  "meta.twitterDescription": "Erstelle direkt im Browser eine Kreuzstichvorlage aus einem Foto.",
+  "meta.imageAlt": "Stitchloom verwandelt ein Foto in eine Vorlage aus quadratischen Stichen",
+  "brand.home": "Stitchloom, Startseite",
+  "privacy.full": "DEIN FOTO BLEIBT AUF DIESEM GERÄT",
+  "privacy.short": "LOKAL",
+  "theme.groupLabel": "Oberflächendesign auswählen",
+  "theme.auto": "Automatisch",
+  "theme.autoHint": "Systemeinstellung verwenden",
+  "theme.light": "Hell",
+  "theme.lightHint": "Immer hell",
+  "theme.dark": "Dunkel",
+  "theme.darkHint": "Immer dunkel",
+  "tour.label": "So funktioniert es",
+  "hero.eyebrow": "VORLAGENSTUDIO",
+  "hero.title": "Vom Foto zu Stichen.<br /><em>Zelle für Zelle.</em>",
+  "hero.copy": "Lade ein Bild hoch, wähle die Dichte und erhalte eine klare Vorlage mit einer Farbe und einem Symbol in jeder Zelle.",
+  "controls.label": "Vorlageneinstellungen",
+  "source.eyebrow": "QUELLE",
+  "source.title": "Foto hochladen",
+  "source.choose": "Bild auswählen",
+  "source.dropTitle": "Foto hier ablegen",
+  "source.dropHint": "oder klicken, um eine Datei auszuwählen",
+  "source.formats": "PNG, JPG, WEBP · bis zu 20 MB",
+  "source.previewAlt": "Hochgeladenes Foto",
+  "source.readyToProcess": "Bereit zur Verarbeitung",
+  "source.remove": "Bild entfernen",
+  "ai.badge": "OPTIONAL",
+  "ai.title": "Foto mit KI vorbereiten",
+  "ai.copy": "Bitte ChatGPT, Gemini oder einen anderen Bildeditor, ein komplexes Foto in klare Pixel-Art umzuwandeln. Große Formen bleiben in einer kleinen Vorlage besser erhalten.",
+  "ai.step1": "Wähle unten die Vorlagengröße und die Anzahl der Farben.",
+  "ai.step2": "Hänge das Originalfoto an einen KI-Chat an und füge den Prompt ein.",
+  "ai.step3": "Lade das Ergebnis als PNG herunter und lade es in Stitchloom hoch.",
+  "ai.copyButton": "Prompt kopieren",
+  "ai.edit": "Text anzeigen und bearbeiten",
+  "ai.promptLabel": "Prompt zur künstlerischen Vereinfachung des Fotos",
+  "ai.privacy": "Stitchloom sendet selbst keine Daten. Wenn du ein Foto bei einem externen KI-Dienst hochlädst, gilt dessen Datenschutzrichtlinie.",
+  "settings.eyebrow": "EINSTELLUNGEN",
+  "settings.title": "Vorlage einrichten",
+  "settings.width": "Breite in Zellen",
+  "settings.size36": "36 Zellen · schnelle Skizze",
+  "settings.size52": "52 Zellen · ausgewogen",
+  "settings.size70": "70 Zellen · Standard",
+  "settings.size90": "90 Zellen · detailliert",
+  "settings.size110": "110 Zellen · maximale Details",
+  "settings.colors": "Farben in der Palette",
+  "settings.presetsLabel": "Schnellauswahl der Farbanzahl",
+  "settings.exact": "Genau",
+  "settings.exactLabel": "Genaue Anzahl der Farben",
+  "settings.rangeLow": "2 · grafisch",
+  "settings.rangeHigh": "256 · näher am Foto",
+  "settings.algorithm": "Zuerst mitteln wir den Fotobereich unter jeder Zelle, dann erstellen wir die gewählte Palette — ohne Farben zwischen benachbarten Zellen zu vermischen.",
+  "result.eyebrow": "ERGEBNIS",
+  "result.viewMode": "Ansichtsmodus",
+  "result.pattern": "Vorlage",
+  "result.photo": "Foto",
+  "result.symbols": "Symbole",
+  "result.grid": "Raster",
+  "zoom.group": "Vorlagenzoom",
+  "zoom.out": "Verkleinern",
+  "zoom.outShort": "Verkleinern",
+  "zoom.fit": "Einpassen",
+  "zoom.fitShort": "Vorlage einpassen",
+  "zoom.in": "Vergrößern",
+  "zoom.inShort": "Vergrößern",
+  "result.emptyTitle": "Beginne mit einem Foto",
+  "result.emptyCopy": "Nach dem Hochladen erscheinen hier Raster, Symbole und Farbschlüssel.",
+  "result.squareBadge": "QUADRATISCH 1:1",
+  "result.canvasRegion": "Vorlagenbereich. Zoome mit den Schaltflächen, einer Zwei-Finger-Geste oder mit Strg und Mausrad. Ziehe die vergrößerte Vorlage zum Verschieben.",
+  "result.canvasAlt": "Kreuzstichvorlage",
+  "result.zoomHint": "Mit zwei Fingern oder den Schaltflächen zoomen",
+  "result.panHint": "Vergrößerte Vorlage zum Verschieben ziehen",
+  "result.downloadPdf": "PDF herunterladen",
+  "result.downloadPng": "PNG herunterladen",
+  "result.downloadCsv": "CSV herunterladen",
+  "result.sampleDimension": "70 × 70 Zellen",
+  "result.sampleDetails": "16 Farben · 4.900 Stiche",
+  "legend.eyebrow": "LEGENDE",
+  "legend.title": "Farben und Symbole",
+  "legend.region": "Scrollbare Farb- und Symbollegende",
+  "legend.zero": "0 Farben",
+  "legend.note": "Farbtöne auf dem Bildschirm sind Näherungswerte. Vergleiche sie vor dem Kauf des Garns mit einer physischen Farbkarte.",
+  "guide.eyebrow": "DER ABLAUF AUF EINEN BLICK",
+  "guide.title": "So entsteht eine Kreuzstichvorlage aus einem Foto",
+  "guide.copy": "Stitchloom verwandelt ein Foto direkt im Browser in eine gebrauchsfertige Rastervorlage — ohne Konto, manuelles Nachzeichnen oder Server-Upload.",
+  "guide.step1Title": "Foto hochladen",
+  "guide.step1Copy": "Wähle ein Bild mit klarer Silhouette. Bei einem unruhigen Hintergrund kannst du zuerst den Prompt kopieren und das Bild mit KI vereinfachen.",
+  "guide.step2Title": "Raster und Palette festlegen",
+  "guide.step2Copy": "Wähle die Breite der Vorlage und 2–256 Farben. Die Höhe passt sich automatisch an, während jede Zelle exakt quadratisch bleibt.",
+  "guide.step3Title": "Ergebnis speichern",
+  "guide.step3Copy": "Prüfe Symbole und Raster, vergrößere jeden gewünschten Bereich und lade die Vorlage als PDF, PNG oder CSV herunter.",
+  "faq.title": "Häufig gestellte Fragen",
+  "faq.uploadQuestion": "Wird mein Foto auf einen Server hochgeladen?",
+  "faq.uploadAnswer": "Nein. Stitchloom verarbeitet das Foto lokal in deinem Browser und sendet es nicht an einen Server.",
+  "faq.sizeQuestion": "Wie wähle ich die Vorlagengröße?",
+  "faq.sizeAnswer": "Wähle die Breite in Zellen. Die Höhe wird automatisch aus den Proportionen des Fotos berechnet, und jede Zelle bleibt quadratisch.",
+  "faq.colorsQuestion": "Wie viele Farben sollte ich wählen?",
+  "faq.colorsAnswer": "Beginne mit 16 Farben. Für einfache Illustrationen reichen oft acht, komplexe Fotos benötigen eventuell 24 oder mehr.",
+  "footer.privacy": "Kein Konto · kein Server-Upload",
+  "mobile.goToResult": "Zur fertigen Vorlage",
+  "mobile.ready": "VORLAGE BEREIT",
+  "mobile.openResult": "Ergebnis öffnen",
+  "mobile.open": "Öffnen",
+  "onboarding.eyebrow": "SCHNELLSTART",
+  "onboarding.title": "So funktioniert Stitchloom",
+  "onboarding.close": "Tipps schließen",
+  "onboarding.region": "Einführungsschritt",
+  "onboarding.step1Code": "01 / QUELLE",
+  "onboarding.step1Visual": "LOKAL IN DEINEM BROWSER",
+  "onboarding.step1Kicker": "Schritt 1 · Hochladen",
+  "onboarding.step1Title": "Beginne mit einem Foto",
+  "onboarding.step1Copy": "Füge eine PNG-, JPG- oder WEBP-Datei hinzu. Stitchloom liest sie direkt im Browser: Zur Erstellung der Vorlage wird die Datei nicht auf einen Server hochgeladen.",
+  "onboarding.step1Callout": "Bilder mit klarer Silhouette und ruhigem Hintergrund funktionieren am besten.",
+  "onboarding.step2Code": "02 / EINSTELLUNGEN",
+  "onboarding.step2Visual": "JEDE ZELLE IST 1:1",
+  "onboarding.step2Kicker": "Schritt 2 · Grundlage",
+  "onboarding.step2Title": "Zellen sind immer quadratisch",
+  "onboarding.step2Copy": "Wähle die Breite der Vorlage; die Höhe folgt den Proportionen des Fotos. Nutze eine Palettenvorgabe oder gib eine genaue Zahl ein. Die Vorlage aktualisiert sich automatisch, und 16 Farben sind meist ein guter Ausgangspunkt.",
+  "onboarding.ranges": "Einstellbereiche",
+  "onboarding.cellsRange": "36–110 Zellen",
+  "onboarding.colorsRange": "2–256 Farben",
+  "onboarding.squareCell": "Quadratische 1:1-Zelle",
+  "onboarding.step3Code": "03 / OPTIONAL",
+  "onboarding.step3Visual": "FOTO → KLARE PIXEL-ART",
+  "onboarding.step3Kicker": "Schritt 3 · Vorbereitung",
+  "onboarding.step3Title": "Komplexes Foto vereinfachen",
+  "onboarding.step3Copy": "Im Quellenbereich findest du einen fertigen Prompt für ChatGPT, Gemini oder ein anderes KI-Werkzeug. Er verwendet automatisch deine gewählte Vorlagenbreite und Farbanzahl.",
+  "onboarding.step3Callout": "Dieser Schritt ist optional. Wenn du ein Foto bei einem externen KI-Dienst hochlädst, gilt dessen Datenschutzrichtlinie.",
+  "onboarding.step4Code": "04 / ERGEBNIS",
+  "onboarding.step4Visual": "ZOOM · PDF · PNG · CSV",
+  "onboarding.step4Kicker": "Schritt 4 · Prüfen",
+  "onboarding.step4Title": "Vorlage prüfen und speichern",
+  "onboarding.step4Copy": "Schalte Raster und Symbole ein oder aus, zoome mit den Bedienelementen oder einer Zwei-Finger-Geste, verschiebe die vergrößerte Vorlage und lade anschließend PDF, PNG oder CSV herunter.",
+  "onboarding.step4Callout": "Du kannst diese Einführung jederzeit über die Schaltfläche „?“ in der Kopfzeile erneut öffnen.",
+  "onboarding.skip": "Überspringen",
+  "onboarding.back": "Zurück",
+};
+
 const UI_MESSAGES = {
   ru: {
     "theme.auto": "Авто",
@@ -544,7 +688,7 @@ const UI_MESSAGES = {
     "theme.light": "Claro",
     "theme.dark": "Oscuro",
     "theme.current": "Tema: {value}",
-    "locale.switch": "Cambiar a ruso",
+    "locale.switch": "Cambiar a alemán",
     "onboarding.progress": "Paso {current} de {total}",
     "onboarding.start": "Empezar a crear",
     "onboarding.next": "Siguiente",
@@ -604,6 +748,71 @@ const UI_MESSAGES = {
     "pdf.legendTitle": "Colores y símbolos",
     "pdf.legendNote": "Los tonos en pantalla son aproximados: compáralos con una carta física de hilos.",
   },
+  de: {
+    "theme.auto": "Automatisch",
+    "theme.light": "Hell",
+    "theme.dark": "Dunkel",
+    "theme.current": "Design: {value}",
+    "locale.switch": "Zu Russisch wechseln",
+    "onboarding.progress": "Schritt {current} von {total}",
+    "onboarding.start": "Jetzt erstellen",
+    "onboarding.next": "Weiter",
+    "ai.target": "{width} Zellen · bis zu {colors} Farben",
+    "ai.copy": "Prompt kopieren",
+    "ai.copied": "Prompt kopiert",
+    "ai.copiedStatus": "Hänge jetzt das Foto an und füge den Prompt in den gewünschten KI-Dienst ein.",
+    "ai.select": "Prompt auswählen",
+    "ai.manualStatus": "Automatisches Kopieren ist nicht verfügbar — der Text ist geöffnet und zum manuellen Kopieren markiert.",
+    "guidance.low": "Ein grafisches Ergebnis mit einer kurzen, einfachen Legende.",
+    "guidance.balanced": "{colors} bietet ein gutes Gleichgewicht zwischen Details und einer übersichtlichen Legende.",
+    "guidance.detailed": "Mehr Nuancen, aber die Legende für den Druck wird länger.",
+    "guidance.high": "Für Handstickerei sind bis zu 64 Farben meist praktischer. Symbole sind standardmäßig ausgeblendet, können aber eingeblendet werden.",
+    "auto.noPhoto": "Lade ein Foto hoch — die Vorlage wird automatisch erstellt.",
+    "auto.updating": "Einstellungen geändert — Vorlage wird neu berechnet…",
+    "auto.ready": "Bereit: {width} × {height} Zellen, {palette}. Änderungen werden automatisch übernommen.",
+    "pattern.updatingStatus": "Wird aktualisiert…",
+    "pattern.updatingHeading": "Vorlage wird aktualisiert",
+    "pattern.buildingHeading": "Zellen werden berechnet und Farben ausgewählt",
+    "pattern.buildingStatus": "Vorlage wird erstellt…",
+    "pattern.readyStatus": "Vorlage bereit",
+    "pattern.readyHeading": "Vorlage ist bereit zum Sticken",
+    "pattern.emptyHeading": "Deine Vorlage erscheint hier",
+    "pattern.waiting": "Wartet auf ein Foto",
+    "zoom.current": "Aktueller Zoom: {zoom} Prozent. Vorlage in den sichtbaren Bereich einpassen",
+    "file.local": "Alles wird lokal verarbeitet: Die Datei wird nicht auf einen Server hochgeladen.",
+    "file.ready": "Bild bereit. Die Vorlage wird lokal in diesem Fenster erstellt.",
+    "file.patternReady": "Bereit. Ändere die Einstellungen — das Foto bleibt lokal und die Vorlage aktualisiert sich automatisch.",
+    "file.invalid": "Wähle eine Bilddatei im Format PNG, JPG, WEBP oder GIF.",
+    "file.tooLarge": "Die Datei ist zu groß. Die maximale Größe beträgt 20 MB.",
+    "file.openFailed": "Das Bild konnte nicht geöffnet werden. Versuche es mit einer anderen Datei.",
+    "legend.stitches": "Stiche",
+    "pdf.ready": "PDF bereit. ",
+    "pdf.retry": "Erneut herunterladen",
+    "pdf.readFailed": "Die PDF-Seite konnte nicht gelesen werden",
+    "pdf.pageFailed": "Die PDF-Seite konnte nicht vorbereitet werden",
+    "pdf.preparing": "PDF wird vorbereitet…",
+    "pdf.pages": "Seiten werden erstellt: {current} / {total}",
+    "pdf.packing": "PDF wird verpackt…",
+    "pdf.failed": "Das PDF konnte nicht erstellt werden. Versuche es mit einer kleineren Vorlage.",
+    "pdf.download": "PDF herunterladen",
+    "pdf.footerLocal": "Vorlage lokal erstellt — stitchloom",
+    "pdf.page": "Seite {page} / {total}",
+    "pdf.overviewSection": "VORLAGENÜBERSICHT",
+    "pdf.coverTitle": "Kreuzstichvorlage",
+    "pdf.coverSubtitle": "Zelle für Zelle",
+    "pdf.imageDefault": "Bild",
+    "pdf.size": "GRÖSSE",
+    "pdf.colors": "FARBEN",
+    "pdf.stitches": "STICHE",
+    "pdf.nextPages": "DETAILRASTER UND FARBSCHLÜSSEL — AUF DEN FOLGENDEN SEITEN",
+    "pdf.gridSection": "RASTER {current} / {total}",
+    "pdf.gridTitle": "Quadratische Vorlage 1:1",
+    "pdf.gridRange": "Spalten {columnStart}–{columnEnd} · Reihen {rowStart}–{rowEnd}",
+    "pdf.thickLine": "Dicke Linie alle 10 Zellen",
+    "pdf.keySection": "LEGENDE {current} / {total}",
+    "pdf.legendTitle": "Farben und Symbole",
+    "pdf.legendNote": "Farbtöne auf dem Bildschirm sind Näherungswerte — vergleiche sie mit einer physischen Garnfarbkarte.",
+  },
 };
 
 const UNIT_FORMS = {
@@ -622,6 +831,11 @@ const UNIT_FORMS = {
     color: ["color", "colores"],
     stitch: ["puntada", "puntadas"],
   },
+  de: {
+    cell: ["Zelle", "Zellen"],
+    color: ["Farbe", "Farben"],
+    stitch: ["Stich", "Stiche"],
+  },
 };
 
 const staticLocaleCache = new Map();
@@ -635,36 +849,36 @@ const SYMBOLS = [
 const SYMBOL_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 const DMC_PALETTE = [
-  { code: "B5200", name: { ru: "Белый", en: "Snow White", es: "Blanco nieve" }, hex: "#ffffff", r: 255, g: 255, b: 255 },
-  { code: "3865", name: { ru: "Зимний белый", en: "Winter White", es: "Blanco invierno" }, hex: "#f4f0e6", r: 244, g: 240, b: 230 },
-  { code: "762", name: { ru: "Жемчужно-серый, светлый", en: "Pearl Gray, very light", es: "Gris perla, muy claro" }, hex: "#d7d0c4", r: 215, g: 208, b: 196 },
-  { code: "318", name: { ru: "Стальной серый, светлый", en: "Steel Gray, light", es: "Gris acero, claro" }, hex: "#a7abb0", r: 167, g: 171, b: 176 },
-  { code: "414", name: { ru: "Стальной серый, тёмный", en: "Steel Gray, dark", es: "Gris acero, oscuro" }, hex: "#73777a", r: 115, g: 119, b: 122 },
-  { code: "535", name: { ru: "Графитовый серый", en: "Graphite Gray", es: "Gris grafito" }, hex: "#55585a", r: 85, g: 88, b: 90 },
-  { code: "413", name: { ru: "Серый, тёмный", en: "Gray, dark", es: "Gris, oscuro" }, hex: "#44484a", r: 68, g: 72, b: 74 },
-  { code: "3799", name: { ru: "Серый, очень тёмный", en: "Gray, very dark", es: "Gris, muy oscuro" }, hex: "#25292b", r: 37, g: 41, b: 43 },
-  { code: "310", name: { ru: "Чёрный", en: "Black", es: "Negro" }, hex: "#171719", r: 23, g: 23, b: 25 },
-  { code: "3371", name: { ru: "Коричневый, почти чёрный", en: "Brown, very dark", es: "Marrón, muy oscuro" }, hex: "#30201d", r: 48, g: 32, b: 29 },
-  { code: "754", name: { ru: "Персиковый, светлый", en: "Peach, light", es: "Melocotón, claro" }, hex: "#f1c7ae", r: 241, g: 199, b: 174 },
-  { code: "210", name: { ru: "Розовый, тёмный", en: "Pink, dark", es: "Rosa, oscuro" }, hex: "#c87878", r: 200, g: 120, b: 120 },
-  { code: "3712", name: { ru: "Лососевый, тёмный", en: "Salmon, dark", es: "Salmón, oscuro" }, hex: "#ad5b5e", r: 173, g: 91, b: 94 },
-  { code: "962", name: { ru: "Пыльная роза, средний", en: "Dusty Rose, medium", es: "Rosa empolvado, medio" }, hex: "#d18d94", r: 209, g: 141, b: 148 },
-  { code: "3803", name: { ru: "Розово-лиловый, светлый", en: "Mauve, light", es: "Malva, claro" }, hex: "#ad6b7b", r: 173, g: 107, b: 123 },
-  { code: "321", name: { ru: "Красный", en: "Red", es: "Rojo" }, hex: "#bd2435", r: 189, g: 36, b: 53 },
-  { code: "606", name: { ru: "Красно-оранжевый", en: "Bright Orange-Red", es: "Rojo anaranjado intenso" }, hex: "#ef4c3c", r: 239, g: 76, b: 60 },
-  { code: "782", name: { ru: "Топаз, тёмный", en: "Topaz, dark", es: "Topacio, oscuro" }, hex: "#ad7b3d", r: 173, g: 123, b: 61 },
-  { code: "783", name: { ru: "Топаз, средний", en: "Topaz, medium", es: "Topacio, medio" }, hex: "#c39a59", r: 195, g: 154, b: 89 },
-  { code: "3047", name: { ru: "Жёлтый, очень светлый", en: "Yellow, very light", es: "Amarillo, muy claro" }, hex: "#e9dca4", r: 233, g: 220, b: 164 },
-  { code: "3346", name: { ru: "Охотничий зелёный", en: "Hunter Green", es: "Verde cazador" }, hex: "#64814b", r: 100, g: 129, b: 75 },
-  { code: "702", name: { ru: "Келли-зелёный", en: "Kelly Green", es: "Verde Kelly" }, hex: "#5a9a5a", r: 90, g: 154, b: 90 },
-  { code: "890", name: { ru: "Фисташковый, тёмный", en: "Pistachio Green, dark", es: "Verde pistacho, oscuro" }, hex: "#417342", r: 65, g: 115, b: 66 },
-  { code: "799", name: { ru: "Синий Delft, средний", en: "Delft Blue, medium", es: "Azul Delft, medio" }, hex: "#3c6290", r: 60, g: 98, b: 144 },
-  { code: "820", name: { ru: "Королевский синий, тёмный", en: "Royal Blue, dark", es: "Azul real, oscuro" }, hex: "#263f72", r: 38, g: 63, b: 114 },
-  { code: "3325", name: { ru: "Синий, светлый", en: "Blue, light", es: "Azul, claro" }, hex: "#8ca4c2", r: 140, g: 164, b: 194 },
-  { code: "550", name: { ru: "Фиолетовый, тёмный", en: "Violet, dark", es: "Violeta, oscuro" }, hex: "#684c79", r: 104, g: 76, b: 121 },
-  { code: "718", name: { ru: "Сливовый", en: "Plum", es: "Ciruela" }, hex: "#a44770", r: 164, g: 71, b: 112 },
-  { code: "3862", name: { ru: "Мокко, средний", en: "Mocha Brown, medium", es: "Marrón moca, medio" }, hex: "#a47756", r: 164, g: 119, b: 86 },
-  { code: "3866", name: { ru: "Мокко, очень светлый", en: "Mocha Brown, very light", es: "Marrón moca, muy claro" }, hex: "#f0ddc1", r: 240, g: 221, b: 193 },
+  { code: "B5200", name: { ru: "Белый", en: "Snow White", es: "Blanco nieve", de: "Schneeweiß" }, hex: "#ffffff", r: 255, g: 255, b: 255 },
+  { code: "3865", name: { ru: "Зимний белый", en: "Winter White", es: "Blanco invierno", de: "Winterweiß" }, hex: "#f4f0e6", r: 244, g: 240, b: 230 },
+  { code: "762", name: { ru: "Жемчужно-серый, светлый", en: "Pearl Gray, very light", es: "Gris perla, muy claro", de: "Perlgrau, sehr hell" }, hex: "#d7d0c4", r: 215, g: 208, b: 196 },
+  { code: "318", name: { ru: "Стальной серый, светлый", en: "Steel Gray, light", es: "Gris acero, claro", de: "Stahlgrau, hell" }, hex: "#a7abb0", r: 167, g: 171, b: 176 },
+  { code: "414", name: { ru: "Стальной серый, тёмный", en: "Steel Gray, dark", es: "Gris acero, oscuro", de: "Stahlgrau, dunkel" }, hex: "#73777a", r: 115, g: 119, b: 122 },
+  { code: "535", name: { ru: "Графитовый серый", en: "Graphite Gray", es: "Gris grafito", de: "Graphitgrau" }, hex: "#55585a", r: 85, g: 88, b: 90 },
+  { code: "413", name: { ru: "Серый, тёмный", en: "Gray, dark", es: "Gris, oscuro", de: "Grau, dunkel" }, hex: "#44484a", r: 68, g: 72, b: 74 },
+  { code: "3799", name: { ru: "Серый, очень тёмный", en: "Gray, very dark", es: "Gris, muy oscuro", de: "Grau, sehr dunkel" }, hex: "#25292b", r: 37, g: 41, b: 43 },
+  { code: "310", name: { ru: "Чёрный", en: "Black", es: "Negro", de: "Schwarz" }, hex: "#171719", r: 23, g: 23, b: 25 },
+  { code: "3371", name: { ru: "Коричневый, почти чёрный", en: "Brown, very dark", es: "Marrón, muy oscuro", de: "Braun, sehr dunkel" }, hex: "#30201d", r: 48, g: 32, b: 29 },
+  { code: "754", name: { ru: "Персиковый, светлый", en: "Peach, light", es: "Melocotón, claro", de: "Pfirsich, hell" }, hex: "#f1c7ae", r: 241, g: 199, b: 174 },
+  { code: "210", name: { ru: "Розовый, тёмный", en: "Pink, dark", es: "Rosa, oscuro", de: "Rosa, dunkel" }, hex: "#c87878", r: 200, g: 120, b: 120 },
+  { code: "3712", name: { ru: "Лососевый, тёмный", en: "Salmon, dark", es: "Salmón, oscuro", de: "Lachs, dunkel" }, hex: "#ad5b5e", r: 173, g: 91, b: 94 },
+  { code: "962", name: { ru: "Пыльная роза, средний", en: "Dusty Rose, medium", es: "Rosa empolvado, medio", de: "Altrosa, mittel" }, hex: "#d18d94", r: 209, g: 141, b: 148 },
+  { code: "3803", name: { ru: "Розово-лиловый, светлый", en: "Mauve, light", es: "Malva, claro", de: "Mauve, hell" }, hex: "#ad6b7b", r: 173, g: 107, b: 123 },
+  { code: "321", name: { ru: "Красный", en: "Red", es: "Rojo", de: "Rot" }, hex: "#bd2435", r: 189, g: 36, b: 53 },
+  { code: "606", name: { ru: "Красно-оранжевый", en: "Bright Orange-Red", es: "Rojo anaranjado intenso", de: "Leuchtendes Orangerot" }, hex: "#ef4c3c", r: 239, g: 76, b: 60 },
+  { code: "782", name: { ru: "Топаз, тёмный", en: "Topaz, dark", es: "Topacio, oscuro", de: "Topas, dunkel" }, hex: "#ad7b3d", r: 173, g: 123, b: 61 },
+  { code: "783", name: { ru: "Топаз, средний", en: "Topaz, medium", es: "Topacio, medio", de: "Topas, mittel" }, hex: "#c39a59", r: 195, g: 154, b: 89 },
+  { code: "3047", name: { ru: "Жёлтый, очень светлый", en: "Yellow, very light", es: "Amarillo, muy claro", de: "Gelb, sehr hell" }, hex: "#e9dca4", r: 233, g: 220, b: 164 },
+  { code: "3346", name: { ru: "Охотничий зелёный", en: "Hunter Green", es: "Verde cazador", de: "Jägergrün" }, hex: "#64814b", r: 100, g: 129, b: 75 },
+  { code: "702", name: { ru: "Келли-зелёный", en: "Kelly Green", es: "Verde Kelly", de: "Kellygrün" }, hex: "#5a9a5a", r: 90, g: 154, b: 90 },
+  { code: "890", name: { ru: "Фисташковый, тёмный", en: "Pistachio Green, dark", es: "Verde pistacho, oscuro", de: "Pistaziengrün, dunkel" }, hex: "#417342", r: 65, g: 115, b: 66 },
+  { code: "799", name: { ru: "Синий Delft, средний", en: "Delft Blue, medium", es: "Azul Delft, medio", de: "Delftblau, mittel" }, hex: "#3c6290", r: 60, g: 98, b: 144 },
+  { code: "820", name: { ru: "Королевский синий, тёмный", en: "Royal Blue, dark", es: "Azul real, oscuro", de: "Königsblau, dunkel" }, hex: "#263f72", r: 38, g: 63, b: 114 },
+  { code: "3325", name: { ru: "Синий, светлый", en: "Blue, light", es: "Azul, claro", de: "Blau, hell" }, hex: "#8ca4c2", r: 140, g: 164, b: 194 },
+  { code: "550", name: { ru: "Фиолетовый, тёмный", en: "Violet, dark", es: "Violeta, oscuro", de: "Violett, dunkel" }, hex: "#684c79", r: 104, g: 76, b: 121 },
+  { code: "718", name: { ru: "Сливовый", en: "Plum", es: "Ciruela", de: "Pflaume" }, hex: "#a44770", r: 164, g: 71, b: 112 },
+  { code: "3862", name: { ru: "Мокко, средний", en: "Mocha Brown, medium", es: "Marrón moca, medio", de: "Mokkabraun, mittel" }, hex: "#a47756", r: 164, g: 119, b: 86 },
+  { code: "3866", name: { ru: "Мокко, очень светлый", en: "Mocha Brown, very light", es: "Marrón moca, muy claro", de: "Mokkabraun, sehr hell" }, hex: "#f0ddc1", r: 240, g: 221, b: 193 },
 ];
 
 function clamp(value, min, max) {
@@ -746,11 +960,11 @@ function applyStaticTranslations(locale) {
     document.querySelectorAll(binding.selector).forEach((element) => {
       const key = element.dataset[binding.datasetKey];
       const fallback = staticLocaleCache.get(`${key}:${binding.suffix}`);
-      const translations = locale === "en"
-        ? EN_TRANSLATIONS
-        : locale === "es"
-          ? ES_TRANSLATIONS
-          : null;
+      const translations = {
+        en: EN_TRANSLATIONS,
+        es: ES_TRANSLATIONS,
+        de: DE_TRANSLATIONS,
+      }[locale] || null;
       const value = translations ? translations[key] : fallback;
       if (typeof value !== "string") return;
       if (binding.attribute) element.setAttribute(binding.attribute, value);
@@ -762,6 +976,7 @@ function applyStaticTranslations(locale) {
 function getStaticTranslation(key, locale = state.locale) {
   if (locale === "en") return EN_TRANSLATIONS[key] || key;
   if (locale === "es") return ES_TRANSLATIONS[key] || key;
+  if (locale === "de") return DE_TRANSLATIONS[key] || key;
   return staticLocaleCache.get(`${key}:text`)
     || staticLocaleCache.get(`${key}:content`)
     || key;
@@ -880,6 +1095,16 @@ function buildStructuredData(locale) {
       ],
       currency: "EUR",
     },
+    de: {
+      description: "Ein browserbasierter Generator, der Fotos in Kreuzstichvorlagen umwandelt.",
+      features: [
+        "Quadratische Rasterzellen",
+        "Palette mit 2 bis 256 Farben",
+        "Export als PDF, PNG und CSV",
+        "Lokale Bildverarbeitung",
+      ],
+      currency: "EUR",
+    },
   };
   const structuredCopy = localizedStructuredCopy[locale] || localizedStructuredCopy.ru;
 
@@ -981,6 +1206,7 @@ function applyLocale(locale, persist = false, refresh = true) {
   elements.ogLocale.content = LOCALE_OG_CODES[nextLocale];
   elements.ogLocaleAlternate.content = LOCALE_OG_CODES[alternateLocales[0]];
   elements.ogLocaleAlternateSecondary.content = LOCALE_OG_CODES[alternateLocales[1]];
+  elements.ogLocaleAlternateTertiary.content = LOCALE_OG_CODES[alternateLocales[2]];
   elements.structuredData.textContent = JSON.stringify(buildStructuredData(nextLocale));
   elements.appManifest.href = new URL(LOCALE_MANIFESTS[nextLocale], window.location.href).href;
 
@@ -1249,6 +1475,28 @@ function buildSimplificationPrompt() {
     ].join("\n");
   }
 
+  if (state.locale === "de") {
+    return [
+      "Verwende das angehängte Foto als einzige visuelle Referenz.",
+      "",
+      "Wandle es in eine klare, vereinfachte Pixel-Art-Illustration um, die für die spätere Umwandlung in eine Kreuzstichvorlage vorbereitet ist.",
+      "",
+      "Anforderungen:",
+      `- verwende eine Arbeitsauflösung von genau ${width} quadratischen Pixeln (Zellen) in der Breite; berechne die Höhe proportional zum Ausgangsfoto;`,
+      `- verwende höchstens ${colorCount} klar unterscheidbare Vollfarben;`,
+      "- bewahre die erkennbare Silhouette, Pose, Komposition und charakteristischen Merkmale; schneide das Hauptmotiv nicht ab;",
+      "- fasse feine Details, Bildrauschen und Texturen zu großen, gut lesbaren Farbflächen zusammen;",
+      "- jedes Pixel muss exakt quadratisch, gleich groß und mit genau einer Farbe gefüllt sein;",
+      "- verwende harte Kanten ohne Unschärfe, Transparenz, Verläufe, Kantenglättung oder Dithering;",
+      "- füge kein Raster, keine Symbole, Beschriftungen, Texte, Rahmen, Stofftexturen, Kreuze oder gestickten Fäden hinzu;",
+      "- verändere das Motiv nicht und erfinde keine Details, die auf dem Foto nicht vorhanden sind;",
+      "- vereinfache den Hintergrund zu wenigen großen Farbflächen oder einer einzigen Vollfarbe, wenn er nicht wichtig ist;",
+      "- gib ausschließlich das fertige PNG-Bild aus. Vergrößere es zur Anzeige nur um einen ganzzahligen Faktor mit Nearest-Neighbor-Skalierung, damit die Pixelkanten scharf bleiben.",
+      "",
+      "Das Ergebnis soll wie saubere Pixel-Art mit klaren Farbflächen aussehen und sich zum Hochladen in den Stitchloom-Vorlagengenerator eignen.",
+    ].join("\n");
+  }
+
   if (state.locale === "en") {
     return [
       "Use the attached photograph as the only visual reference.",
@@ -1395,6 +1643,7 @@ function formatPaletteSummary(paletteLength, requestedColors) {
 
   if (state.locale === "en") return `${paletteLength} of ${requestedColors} colors`;
   if (state.locale === "es") return `${paletteLength} de ${requestedColors} colores`;
+  if (state.locale === "de") return `${paletteLength} von ${requestedColors} Farben`;
   return `${paletteLength} из ${requestedColors} цветов`;
 }
 
