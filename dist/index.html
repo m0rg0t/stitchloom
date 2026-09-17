@@ -77,14 +77,17 @@
           <span class="brand-word">STITCHLOOM</span>
         </a>
         <div class="topbar-meta">
-          <span class="privacy-pill"><span class="privacy-dot"></span>ФОТО НЕ УХОДИТ С УСТРОЙСТВА</span>
+          <span class="privacy-pill">
+            <span class="privacy-dot"></span>
+            <span class="privacy-label-full">ФОТО НЕ УХОДИТ С УСТРОЙСТВА</span>
+            <span class="privacy-label-short">ЛОКАЛЬНО</span>
+          </span>
           <button
             class="tour-trigger"
             id="openOnboarding"
             type="button"
             aria-label="Как это работает"
             aria-haspopup="dialog"
-            aria-controls="onboardingDialog"
           >
             <span class="tour-trigger-icon" aria-hidden="true">?</span>
             <span class="tour-trigger-label">Как это работает</span>
@@ -138,44 +141,50 @@
               </div>
               <p class="field-note" id="fileStatus" role="status">Всё считается локально: файл не загружается на сервер.</p>
 
-              <section class="ai-helper" aria-labelledby="ai-helper-title">
-                <div class="ai-helper-topline">
-                  <span class="ai-helper-badge">ОПЦИОНАЛЬНО</span>
-                  <span class="ai-helper-target" id="aiPromptTarget">70 клеток · до 16 цветов</span>
+              <details class="ai-helper">
+                <summary class="ai-helper-summary" id="ai-helper-title">
+                  <span class="ai-helper-summary-copy">
+                    <span class="ai-helper-badge">ОПЦИОНАЛЬНО</span>
+                    <strong>Фото сложное? Подготовить через ИИ</strong>
+                  </span>
+                  <span class="ai-helper-summary-side">
+                    <span class="ai-helper-target" id="aiPromptTarget">70 клеток · до 16 цветов</span>
+                    <span class="ai-helper-chevron" aria-hidden="true">⌄</span>
+                  </span>
+                </summary>
+                <div class="ai-helper-body">
+                  <p class="ai-helper-copy">
+                    Попросите ChatGPT, Gemini или другой редактор превратить сложный снимок
+                    в чистый pixel art. Крупные формы лучше сохранятся в небольшой схеме.
+                  </p>
+                  <ol class="ai-helper-steps">
+                    <li>Выберите ниже размер схемы и число цветов.</li>
+                    <li>Прикрепите исходное фото к диалогу с ИИ и вставьте промпт.</li>
+                    <li>Скачайте полученный PNG и загрузите его в Stitchloom.</li>
+                  </ol>
+                  <button class="copy-prompt-button" id="copyAiPrompt" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <rect x="8" y="8" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.7" />
+                      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                    </svg>
+                    <span id="copyAiPromptLabel">Скопировать промпт</span>
+                  </button>
+                  <details class="ai-prompt-details" id="aiPromptDetails">
+                    <summary>Посмотреть и отредактировать текст</summary>
+                    <textarea
+                      id="aiPromptText"
+                      rows="13"
+                      aria-label="Промпт для художественного упрощения фотографии"
+                      spellcheck="false"
+                    ></textarea>
+                  </details>
+                  <p class="ai-helper-privacy">
+                    Stitchloom ничего не отправляет сам. При загрузке фото во внешний
+                    ИИ-сервис действуют правила конфиденциальности этого сервиса.
+                  </p>
+                  <p class="ai-prompt-status" id="aiPromptStatus" role="status" aria-live="polite"></p>
                 </div>
-                <h3 id="ai-helper-title">Сначала упростить фото через ИИ</h3>
-                <p class="ai-helper-copy">
-                  Для сложного снимка можно заранее попросить ChatGPT, Gemini или другой
-                  редактор превратить его в чистый pixel art. Так силуэт и крупные цветовые
-                  области лучше переживут перенос в маленькую схему.
-                </p>
-                <ol class="ai-helper-steps">
-                  <li>Выберите ниже размер схемы и число цветов.</li>
-                  <li>Прикрепите исходное фото к диалогу с ИИ и вставьте промпт.</li>
-                  <li>Скачайте полученный PNG и загрузите его в Stitchloom.</li>
-                </ol>
-                <button class="copy-prompt-button" id="copyAiPrompt" type="button">
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <rect x="8" y="8" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.7" />
-                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-                  </svg>
-                  <span id="copyAiPromptLabel">Скопировать промпт</span>
-                </button>
-                <details class="ai-prompt-details" id="aiPromptDetails">
-                  <summary>Посмотреть и отредактировать текст</summary>
-                  <textarea
-                    id="aiPromptText"
-                    rows="13"
-                    aria-label="Промпт для художественного упрощения фотографии"
-                    spellcheck="false"
-                  ></textarea>
-                </details>
-                <p class="ai-helper-privacy">
-                  Stitchloom ничего не отправляет сам. Если загрузить фото во внешний
-                  ИИ-сервис, к нему будут применяться правила конфиденциальности этого сервиса.
-                </p>
-                <p class="ai-prompt-status" id="aiPromptStatus" role="status" aria-live="polite"></p>
-              </section>
+              </details>
             </div>
 
             <div class="rule"></div>
@@ -205,22 +214,36 @@
                 <span>Цветов в палитре</span>
                 <span class="field-value" id="colorCountValue">16</span>
               </label>
+              <div class="color-choice-row">
+                <div class="color-presets" role="group" aria-label="Быстрый выбор количества цветов">
+                  <button type="button" data-color-preset="8" aria-pressed="false">8</button>
+                  <button type="button" data-color-preset="16" aria-pressed="true">16</button>
+                  <button type="button" data-color-preset="24" aria-pressed="false">24</button>
+                  <button type="button" data-color-preset="32" aria-pressed="false">32</button>
+                  <button type="button" data-color-preset="64" aria-pressed="false">64</button>
+                </div>
+                <label class="color-number-control" for="colorNumber">
+                  <span>Точно</span>
+                  <input id="colorNumber" type="number" min="2" max="256" value="16" inputmode="numeric" aria-label="Точное количество цветов" />
+                </label>
+              </div>
               <input class="range-control" id="colorCount" type="range" min="2" max="256" value="16" />
               <div class="range-scale"><span>2 · графично</span><span>256 · ближе к фото</span></div>
+              <p class="color-guidance" id="colorGuidance">16 — хороший баланс деталей и удобного ключа.</p>
 
               <div class="algorithm-note">
                 <span class="note-mark" aria-hidden="true">✳</span>
                 <span>Сначала усредняем участок фото под клеткой, затем собираем выбранное число цветов — без смешивания соседних клеток.</span>
               </div>
 
-              <button class="primary-button" id="rebuildButton" type="button" disabled>
-                <span>Собрать схему</span>
-                <span class="button-arrow" aria-hidden="true">↗</span>
-              </button>
+              <div class="auto-update-note" id="autoUpdateStatus" role="status" aria-live="polite">
+                <span class="auto-update-dot" aria-hidden="true"></span>
+                <span>Загрузите фото — схема соберётся автоматически.</span>
+              </div>
             </div>
           </aside>
 
-          <section class="pattern-panel" aria-labelledby="pattern-heading" aria-live="polite">
+          <section class="pattern-panel" id="patternPanel" aria-labelledby="pattern-heading" aria-live="polite">
             <div class="pattern-header">
               <div>
                 <p class="eyebrow">РЕЗУЛЬТАТ</p>
@@ -229,10 +252,10 @@
               <div class="status-chip" id="patternStatus"><span class="status-dot"></span><span>Ждёт фото</span></div>
             </div>
 
-            <div class="pattern-toolbar">
+            <div class="pattern-toolbar is-hidden" id="patternToolbar">
               <div class="view-switch" role="group" aria-label="Режим просмотра">
-                <button type="button" class="view-button is-active" data-view="pattern">Схема</button>
-                <button type="button" class="view-button" data-view="photo">Фото</button>
+                <button type="button" class="view-button is-active" data-view="pattern" aria-pressed="true">Схема</button>
+                <button type="button" class="view-button" data-view="photo" aria-pressed="false">Фото</button>
               </div>
               <div class="pattern-toolbar-actions">
                 <div class="display-options">
@@ -241,7 +264,8 @@
                 </div>
                 <div class="zoom-control" role="group" aria-label="Масштаб схемы">
                   <button class="zoom-button" id="zoomOut" type="button" aria-label="Уменьшить масштаб" title="Уменьшить" disabled>−</button>
-                  <button class="zoom-button zoom-value" id="zoomReset" type="button" aria-label="Сбросить масштаб до 100 процентов" title="Вернуть 100%" disabled>
+                  <button class="zoom-button zoom-value" id="zoomReset" type="button" aria-label="Вписать схему в область просмотра" title="Вписать схему" disabled>
+                    <span class="zoom-fit-label">Вписать</span>
                     <span id="zoomValue" aria-live="polite">100%</span>
                   </button>
                   <button class="zoom-button" id="zoomIn" type="button" aria-label="Увеличить масштаб" title="Увеличить" disabled>+</button>
@@ -273,10 +297,12 @@
                 class="canvas-shell"
                 id="canvasShell"
                 tabindex="0"
-                aria-label="Область схемы. Используйте кнопки масштаба или Control и колесо мыши."
+                role="region"
+                aria-label="Область схемы. Используйте кнопки масштаба, щипок или Control и колесо мыши. При увеличении схему можно перетаскивать."
               >
-                <canvas id="patternCanvas" aria-label="Схема вышивки крестиком"></canvas>
+                <canvas id="patternCanvas" role="img" aria-label="Схема вышивки крестиком">Схема вышивки крестиком</canvas>
               </div>
+              <p class="canvas-hint"><span>Щипок или кнопки — масштаб</span><span>При увеличении перетаскивайте схему</span></p>
               <div class="pattern-actions">
                 <button class="secondary-button secondary-button--pdf" id="downloadPdf" type="button" disabled aria-describedby="exportStatus">
                   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h8l4 4V20.5H6zM14 3.5v4h4M9 12.5h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -301,7 +327,7 @@
                   </div>
                   <span id="legendCount">0 цветов</span>
                 </div>
-                <div class="legend-list" id="legendList"></div>
+                <div class="legend-list" id="legendList" role="region" tabindex="0" aria-label="Прокручиваемый ключ цветов и символов"></div>
                 <p class="legend-note">Экран показывает приближённые оттенки. Перед покупкой мулине сверьтесь с физическим каталогом.</p>
               </div>
             </div>
@@ -318,6 +344,14 @@
         </span>
       </footer>
     </div>
+
+    <button class="mobile-result-bar is-hidden" id="mobileResultBar" type="button" aria-label="Перейти к готовой схеме">
+      <span class="mobile-result-copy">
+        <small>СХЕМА ГОТОВА</small>
+        <strong id="mobileResultSummary">Открыть результат</strong>
+      </span>
+      <span class="mobile-result-action">Открыть <span aria-hidden="true">↓</span></span>
+    </button>
 
     <dialog
       class="onboarding-dialog"
@@ -338,7 +372,7 @@
           >×</button>
         </header>
 
-        <div class="onboarding-stage">
+        <div class="onboarding-stage" role="region" tabindex="0" aria-label="Шаг онбординга">
           <article class="onboarding-step is-active" data-onboarding-step>
             <div class="onboarding-visual onboarding-visual--local" aria-hidden="true">
               <span class="onboarding-visual-code">01 / ИСХОДНИК</span>
@@ -379,7 +413,8 @@
             <h3>Клетки всегда квадратные</h3>
             <p class="onboarding-copy">
               Выберите ширину схемы — высота подстроится под пропорции фото.
-              Ограничьте палитру: 16 цветов обычно дают хороший первый результат.
+              Выберите палитру пресетом или точным числом. Схема обновляется сама,
+              а 16 цветов обычно дают хороший первый результат.
             </p>
             <div class="onboarding-chips" aria-label="Диапазоны настроек">
               <span>36–110 клеток</span>
@@ -424,8 +459,8 @@
             <p class="onboarding-kicker">Шаг 4 · Работа</p>
             <h3>Проверьте и сохраните схему</h3>
             <p class="onboarding-copy">
-              Переключайте сетку и символы, увеличивайте схему от 50% до 300%,
-              а затем скачайте PDF для печати, PNG или таблицу CSV.
+              Переключайте сетку и символы, масштабируйте кнопками или щипком,
+              перетаскивайте увеличенную схему, а затем скачайте PDF, PNG или CSV.
             </p>
             <p class="onboarding-callout">
               Этот обзор всегда можно открыть снова кнопкой «?» в шапке.

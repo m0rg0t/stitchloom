@@ -21,7 +21,10 @@ const elements = {
   sizeSelect: $("sizeSelect"),
   sizeValue: $("sizeValue"),
   colorCount: $("colorCount"),
+  colorNumber: $("colorNumber"),
   colorCountValue: $("colorCountValue"),
+  colorGuidance: $("colorGuidance"),
+  colorPresets: Array.from(document.querySelectorAll("[data-color-preset]")),
   aiPromptTarget: $("aiPromptTarget"),
   aiPromptText: $("aiPromptText"),
   aiPromptDetails: $("aiPromptDetails"),
@@ -37,8 +40,10 @@ const elements = {
   onboardingProgress: $("onboardingProgress"),
   onboardingSteps: Array.from(document.querySelectorAll("[data-onboarding-step]")),
   onboardingDots: Array.from(document.querySelectorAll("[data-onboarding-dot]")),
-  rebuildButton: $("rebuildButton"),
+  autoUpdateStatus: $("autoUpdateStatus"),
   patternHeading: $("pattern-heading"),
+  patternPanel: $("patternPanel"),
+  patternToolbar: $("patternToolbar"),
   patternStatus: $("patternStatus"),
   emptyState: $("emptyState"),
   patternResult: $("patternResult"),
@@ -59,6 +64,8 @@ const elements = {
   downloadPng: $("downloadPng"),
   downloadCsv: $("downloadCsv"),
   exportStatus: $("exportStatus"),
+  mobileResultBar: $("mobileResultBar"),
+  mobileResultSummary: $("mobileResultSummary"),
   viewButtons: Array.from(document.querySelectorAll("[data-view]")),
 };
 
@@ -73,9 +80,16 @@ const state = {
   onboardingStep: 0,
   onboardingSeenThisPage: false,
   onboardingOpenTimer: null,
+  rebuildTimer: null,
+  buildRevision: 0,
+  patternInView: false,
+  drag: null,
+  pinch: null,
+  resizeFrame: null,
   settings: {
     view: "pattern",
     showSymbols: true,
+    symbolPreferenceTouched: false,
     showGrid: true,
     zoom: 100,
   },
@@ -86,6 +100,8 @@ const SYMBOLS = [
   "△", "◇", "★", "∗", "⌁", "≋", "◉", "◌",
   "⊕", "▦", "⋆", "♢", "⊗", "⊙", "◊", "✧",
 ];
+
+const SYMBOL_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 const DMC_PALETTE = [
   { code: "B5200", name: "Белый", hex: "#ffffff", r: 255, g: 255, b: 255 },
@@ -143,6 +159,16 @@ function formatBytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1).replace(".", ",") + " МБ";
 }
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  })[character]);
+}
+
 function setPatternStatus(label, kind) {
   elements.patternStatus.classList.remove("is-ready", "is-busy");
   if (kind) elements.patternStatus.classList.add("is-" + kind);
@@ -153,6 +179,13 @@ function setPatternStatus(label, kind) {
 function setFileStatus(message, isError) {
   elements.fileStatus.textContent = message;
   elements.fileStatus.classList.toggle("is-error", Boolean(isError));
+}
+
+function setAutoUpdateStatus(message, kind) {
+  elements.autoUpdateStatus.classList.remove("is-busy", "is-ready");
+  if (kind) elements.autoUpdateStatus.classList.add("is-" + kind);
+  const text = elements.autoUpdateStatus.querySelector("span:last-child");
+  if (text) text.textContent = message;
 }
 
 function setExportStatus(message, isError) {
@@ -401,10 +434,65 @@ async function copySimplificationPrompt() {
 
 function updateControls() {
   const width = Number(elements.sizeSelect.value || DEFAULT_GRID_WIDTH);
-  const colorCount = Number(elements.colorCount.value);
+  const colorCount = clamp(
+    Math.round(Number(elements.colorCount.value) || DEFAULT_COLOR_COUNT),
+    2,
+    256,
+  );
+  elements.colorCount.value = String(colorCount);
+  elements.colorNumber.value = String(colorCount);
   elements.sizeValue.textContent = width + " " + plural(width, "клетка", "клетки", "клеток");
   elements.colorCountValue.textContent = String(colorCount);
+  elements.colorPresets.forEach((button) => {
+    const isActive = Number(button.dataset.colorPreset) === colorCount;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+
+  if (colorCount <= 8) {
+    elements.colorGuidance.textContent = "Графичный результат с коротким и простым ключом.";
+  } else if (colorCount <= 32) {
+    elements.colorGuidance.textContent = `${colorCount} — хороший баланс деталей и удобного ключа.`;
+  } else if (colorCount <= 64) {
+    elements.colorGuidance.textContent = "Больше нюансов; для печати ключ уже будет длиннее.";
+  } else {
+    elements.colorGuidance.textContent = "Для ручной вышивки обычно удобнее до 64 цветов. Символы скрыты по умолчанию, но их можно включить.";
+  }
   updateAiPrompt();
+}
+
+function setColorCount(value, shouldBuild = true) {
+  const nextValue = clamp(Math.round(Number(value) || DEFAULT_COLOR_COUNT), 2, 256);
+  elements.colorCount.value = String(nextValue);
+  elements.colorNumber.value = String(nextValue);
+  if (!state.settings.symbolPreferenceTouched) {
+    state.settings.showSymbols = nextValue <= 64;
+    elements.showSymbols.checked = state.settings.showSymbols;
+  }
+  updateControls();
+  if (shouldBuild && state.image) schedulePatternBuild();
+}
+
+function schedulePatternBuild(delay = 220) {
+  if (state.rebuildTimer) window.clearTimeout(state.rebuildTimer);
+  state.buildRevision += 1;
+
+  if (!state.image) {
+    setAutoUpdateStatus("Загрузите фото — схема соберётся автоматически.");
+    return;
+  }
+
+  const revision = state.buildRevision;
+  setPatternStatus("Обновляю…", "busy");
+  elements.patternHeading.textContent = state.pattern
+    ? "Обновляю схему"
+    : "Считаю клетки и подбираю цвета";
+  setAutoUpdateStatus("Настройки изменились — пересчитываю схему…", "busy");
+  state.rebuildTimer = window.setTimeout(() => {
+    state.rebuildTimer = null;
+    if (revision !== state.buildRevision) return;
+    buildPattern(revision);
+  }, delay);
 }
 
 function updateZoomControls() {
@@ -413,11 +501,12 @@ function updateZoomControls() {
   elements.zoomValue.textContent = zoom + "%";
   elements.zoomReset.setAttribute(
     "aria-label",
-    "Текущий масштаб " + zoom + " процентов. Сбросить до 100 процентов",
+    "Текущий масштаб " + zoom + " процентов. Вписать схему в область просмотра",
   );
   elements.zoomOut.disabled = !hasPattern || zoom <= MIN_ZOOM;
   elements.zoomReset.disabled = !hasPattern;
   elements.zoomIn.disabled = !hasPattern || zoom >= MAX_ZOOM;
+  elements.canvasShell.classList.toggle("is-pannable", hasPattern && zoom > 100);
 }
 
 function applyCanvasZoom() {
@@ -492,7 +581,22 @@ function colorToHex(color) {
 
 function symbolForIndex(index) {
   if (index < SYMBOLS.length) return SYMBOLS[index];
-  return String(index + 1).padStart(3, "0");
+  const base = SYMBOL_CODE_ALPHABET.length;
+  const codeIndex = index - SYMBOLS.length;
+  if (codeIndex < base) return SYMBOL_CODE_ALPHABET[codeIndex];
+  const pairIndex = codeIndex - base;
+  return SYMBOL_CODE_ALPHABET[Math.floor(pairIndex / base)] +
+    SYMBOL_CODE_ALPHABET[pairIndex % base];
+}
+
+function dedupeColors(colors) {
+  const seen = new Set();
+  return colors.filter((color) => {
+    const key = `${color.r},${color.g},${color.b}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function createSampleCanvas(image, width, height, scale) {
@@ -607,8 +711,9 @@ function medianCut(colors, requestedCount) {
   });
 }
 
-function buildPattern() {
+function buildPattern(revision = state.buildRevision) {
   if (!state.image) return;
+  if (revision !== state.buildRevision) return;
 
   setPatternStatus("Собираю схему…", "busy");
   elements.patternHeading.textContent = "Считаю клетки и подбираю цвета";
@@ -622,7 +727,7 @@ function buildPattern() {
   const sampleCanvas = createSampleCanvas(state.image, width, height, sampleScale);
   const rawColors = getCellColors(sampleCanvas, width, height, sampleScale);
   const requestedColors = Number(elements.colorCount.value);
-  const quantizedColors = medianCut(rawColors, requestedColors);
+  const quantizedColors = dedupeColors(medianCut(rawColors, requestedColors));
   const localCells = rawColors.map((color) => nearestColorIndex(color, quantizedColors));
   const localCounts = new Array(quantizedColors.length).fill(0);
 
@@ -632,6 +737,7 @@ function buildPattern() {
 
   const ordered = quantizedColors
     .map((color, index) => ({ color, index, count: localCounts[index] }))
+    .filter((item) => item.count > 0)
     .sort((a, b) => b.count - a.count);
   const remap = new Map();
 
@@ -655,14 +761,19 @@ function buildPattern() {
     height,
     cells,
     palette: legend,
+    requestedColors,
     totalStitches: width * height,
   };
 
   renderPattern();
-  elements.rebuildButton.disabled = false;
   setPatternStatus("Схема готова", "ready");
   elements.patternHeading.textContent = "Схема готова к вышивке";
-  setFileStatus("Готово. Можно менять размер и количество цветов — фото останется локальным.");
+  const paletteSummary = legend.length === requestedColors
+    ? `${legend.length} ${plural(legend.length, "цвет", "цвета", "цветов")}`
+    : `${legend.length} из ${requestedColors} цветов`;
+  setAutoUpdateStatus(`Готово: ${width} × ${height} клеток, ${paletteSummary}. Изменения применяются автоматически.`, "ready");
+  setFileStatus("Готово. Меняйте настройки — фото останется локальным, а схема обновится сама.");
+  updateMobileResultBar();
 }
 
 function prepareCanvas(canvas, width, height, pixelRatio) {
@@ -746,24 +857,40 @@ function renderLegend() {
   }
 
   const palette = state.pattern.palette;
-  elements.legendCount.textContent = palette.length + " " + plural(palette.length, "цвет", "цвета", "цветов");
+  const requestedColors = state.pattern.requestedColors || palette.length;
+  elements.legendCount.textContent = palette.length === requestedColors
+    ? palette.length + " " + plural(palette.length, "цвет", "цвета", "цветов")
+    : `${palette.length} из ${requestedColors} цветов`;
   elements.legendList.innerHTML = palette.map((color) => {
+    const colorDescription = `${color.hex.toUpperCase()} · ≈ DMC ${color.dmcCode} ${color.dmcName}`;
     return (
-      '<div class="legend-row">' +
-        '<span class="legend-swatch" style="background:' + color.hex + '" aria-label="' + color.hex.toUpperCase() + '"></span>' +
-        '<span class="legend-symbol">' + color.symbol + "</span>" +
-        '<span class="legend-code">' + color.code + "</span>" +
-        '<span class="legend-name">' + color.hex.toUpperCase() + " · ≈ DMC " + color.dmcCode + " " + color.dmcName + "</span>" +
-        '<span class="legend-count">' + formatNumber(color.count) + "</span>" +
+      '<div class="legend-row" title="' + escapeHtml(colorDescription) + '">' +
+        '<span class="legend-swatch" style="background:' + color.hex + '" aria-hidden="true"></span>' +
+        '<span class="legend-symbol">' + escapeHtml(color.symbol) + "</span>" +
+        '<span class="legend-code">' + escapeHtml(color.code) + "</span>" +
+        '<span class="legend-name">' + escapeHtml(colorDescription) + "</span>" +
+        '<span class="legend-count" title="Стежков">' + formatNumber(color.count) + "</span>" +
       "</div>"
     );
   }).join("");
+}
+
+function updateMobileResultBar() {
+  const hasPattern = Boolean(state.pattern);
+  const shouldShow = hasPattern && !state.patternInView;
+  elements.mobileResultBar.classList.toggle("is-hidden", !shouldShow);
+  if (!hasPattern) return;
+
+  const paletteLength = state.pattern.palette.length;
+  elements.mobileResultSummary.textContent =
+    `${state.pattern.width} × ${state.pattern.height} · ${paletteLength} ${plural(paletteLength, "цвет", "цвета", "цветов")}`;
 }
 
 function renderPattern() {
   const hasPattern = Boolean(state.pattern);
   elements.emptyState.classList.toggle("is-hidden", hasPattern);
   elements.patternResult.classList.toggle("is-hidden", !hasPattern);
+  elements.patternToolbar.classList.toggle("is-hidden", !hasPattern);
   elements.downloadPdf.disabled = !hasPattern || elements.downloadPdf.classList.contains("is-busy");
   elements.downloadPng.disabled = !hasPattern;
   elements.downloadCsv.disabled = !hasPattern;
@@ -771,29 +898,39 @@ function renderPattern() {
 
   if (!hasPattern) {
     elements.patternHeading.textContent = "Ваша схема появится здесь";
+    updateMobileResultBar();
     return;
   }
 
   const pattern = state.pattern;
   const cellCount = pattern.width * pattern.height;
   elements.patternDimension.textContent = pattern.width + " × " + pattern.height + " клеток";
+  const paletteText = pattern.palette.length === pattern.requestedColors
+    ? pattern.palette.length + " " + plural(pattern.palette.length, "цвет", "цвета", "цветов")
+    : `${pattern.palette.length} из ${pattern.requestedColors} цветов`;
   elements.patternDetails.textContent =
-    pattern.palette.length + " " + plural(pattern.palette.length, "цвет", "цвета", "цветов") +
+    paletteText +
     " · " + formatNumber(cellCount) + " " + plural(cellCount, "стежок", "стежка", "стежков");
 
   const displaySize = clamp(Math.floor(900 / Math.max(pattern.width, pattern.height)), 7, 20);
   drawPatternToCanvas(elements.patternCanvas, displaySize, state.settings.view);
   applyCanvasZoom();
   renderLegend();
+  updateMobileResultBar();
 }
 
 function updateViewButtons() {
   elements.viewButtons.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.view === state.settings.view);
+    const isActive = button.dataset.view === state.settings.view;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
   });
 }
 
 function clearImage() {
+  if (state.rebuildTimer) window.clearTimeout(state.rebuildTimer);
+  state.rebuildTimer = null;
+  state.buildRevision += 1;
   if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
   state.image = null;
   state.objectUrl = null;
@@ -806,7 +943,7 @@ function clearImage() {
   elements.sourcePreview.removeAttribute("src");
   elements.sourceCard.classList.add("is-hidden");
   elements.dropzone.classList.remove("is-hidden");
-  elements.rebuildButton.disabled = true;
+  setAutoUpdateStatus("Загрузите фото — схема соберётся автоматически.");
   setFileStatus("Всё считается локально: файл не загружается на сервер.");
   setPatternStatus("Ждёт фото");
   setExportStatus("");
@@ -824,6 +961,10 @@ function loadImageFile(file) {
     return;
   }
 
+  if (state.rebuildTimer) window.clearTimeout(state.rebuildTimer);
+  state.rebuildTimer = null;
+  state.buildRevision += 1;
+
   if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
   const objectUrl = URL.createObjectURL(file);
   const image = new Image();
@@ -839,9 +980,8 @@ function loadImageFile(file) {
       image.naturalWidth + " × " + image.naturalHeight + " px · " + formatBytes(file.size);
     elements.sourceCard.classList.remove("is-hidden");
     elements.dropzone.classList.add("is-hidden");
-    elements.rebuildButton.disabled = false;
     setFileStatus("Изображение готово. Схема строится локально в этом окне.");
-    buildPattern();
+    schedulePatternBuild(60);
   };
   image.onerror = () => {
     URL.revokeObjectURL(objectUrl);
@@ -1550,11 +1690,21 @@ elements.fileInput.addEventListener("change", (event) => {
 elements.removeImage.addEventListener("click", clearImage);
 elements.sizeSelect.addEventListener("change", () => {
   updateControls();
-  if (state.image) buildPattern();
+  if (state.image) schedulePatternBuild();
 });
-elements.colorCount.addEventListener("input", updateControls);
-elements.colorCount.addEventListener("change", () => {
-  if (state.image) buildPattern();
+elements.colorCount.addEventListener("input", (event) => {
+  setColorCount(event.target.value);
+});
+elements.colorNumber.addEventListener("input", (event) => {
+  if (event.target.value === "") return;
+  const value = Number(event.target.value);
+  if (Number.isFinite(value) && value >= 2 && value <= 256) setColorCount(value);
+});
+elements.colorNumber.addEventListener("change", (event) => {
+  setColorCount(event.target.value);
+});
+elements.colorPresets.forEach((button) => {
+  button.addEventListener("click", () => setColorCount(button.dataset.colorPreset));
 });
 elements.copyAiPrompt.addEventListener("click", copySimplificationPrompt);
 elements.openOnboarding.addEventListener("click", openOnboarding);
@@ -1592,9 +1742,9 @@ elements.onboardingDialog.addEventListener("keydown", (event) => {
     updateOnboardingStep(state.onboardingStep + 1);
   }
 });
-elements.rebuildButton.addEventListener("click", buildPattern);
 elements.showSymbols.addEventListener("change", () => {
   state.settings.showSymbols = elements.showSymbols.checked;
+  state.settings.symbolPreferenceTouched = true;
   renderPattern();
 });
 elements.showGrid.addEventListener("change", () => {
@@ -1623,6 +1773,63 @@ elements.canvasShell.addEventListener("wheel", (event) => {
   const direction = event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
   setZoom(state.settings.zoom + direction, event);
 }, { passive: false });
+elements.canvasShell.addEventListener("pointerdown", (event) => {
+  if (!state.pattern || state.settings.zoom <= 100 || event.pointerType === "touch") return;
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  state.drag = {
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    scrollLeft: elements.canvasShell.scrollLeft,
+    scrollTop: elements.canvasShell.scrollTop,
+  };
+  elements.canvasShell.setPointerCapture(event.pointerId);
+  elements.canvasShell.classList.add("is-dragging");
+  event.preventDefault();
+});
+elements.canvasShell.addEventListener("pointermove", (event) => {
+  if (!state.drag || state.drag.pointerId !== event.pointerId) return;
+  elements.canvasShell.scrollLeft = state.drag.scrollLeft - (event.clientX - state.drag.x);
+  elements.canvasShell.scrollTop = state.drag.scrollTop - (event.clientY - state.drag.y);
+});
+function finishCanvasDrag(event) {
+  if (!state.drag || state.drag.pointerId !== event.pointerId) return;
+  state.drag = null;
+  elements.canvasShell.classList.remove("is-dragging");
+}
+elements.canvasShell.addEventListener("pointerup", finishCanvasDrag);
+elements.canvasShell.addEventListener("pointercancel", finishCanvasDrag);
+
+function touchDistance(touches) {
+  return Math.hypot(
+    touches[0].clientX - touches[1].clientX,
+    touches[0].clientY - touches[1].clientY,
+  );
+}
+
+elements.canvasShell.addEventListener("touchstart", (event) => {
+  if (!state.pattern || event.touches.length !== 2) return;
+  state.pinch = {
+    distance: touchDistance(event.touches),
+    zoom: state.settings.zoom,
+  };
+}, { passive: true });
+elements.canvasShell.addEventListener("touchmove", (event) => {
+  if (!state.pinch || event.touches.length !== 2) return;
+  event.preventDefault();
+  const midpoint = {
+    clientX: (event.touches[0].clientX + event.touches[1].clientX) / 2,
+    clientY: (event.touches[0].clientY + event.touches[1].clientY) / 2,
+  };
+  const nextZoom = state.pinch.zoom * touchDistance(event.touches) / Math.max(state.pinch.distance, 1);
+  setZoom(nextZoom, midpoint);
+}, { passive: false });
+elements.canvasShell.addEventListener("touchend", (event) => {
+  if (event.touches.length < 2) state.pinch = null;
+});
+elements.canvasShell.addEventListener("touchcancel", () => {
+  state.pinch = null;
+});
 elements.viewButtons.forEach((button) => {
   button.addEventListener("click", () => {
     state.settings.view = button.dataset.view;
@@ -1633,10 +1840,29 @@ elements.viewButtons.forEach((button) => {
 elements.downloadPng.addEventListener("click", downloadPng);
 elements.downloadCsv.addEventListener("click", downloadCsv);
 elements.downloadPdf.addEventListener("click", downloadPdf);
+elements.mobileResultBar.addEventListener("click", () => {
+  elements.patternPanel.scrollIntoView({
+    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    block: "start",
+  });
+});
 window.addEventListener("resize", () => {
-  if (state.pattern) renderPattern();
+  if (!state.pattern || state.resizeFrame) return;
+  state.resizeFrame = window.requestAnimationFrame(() => {
+    state.resizeFrame = null;
+    renderPattern();
+  });
 });
 window.addEventListener("beforeunload", clearLastDownloadUrl);
+
+if ("IntersectionObserver" in window) {
+  const patternObserver = new IntersectionObserver((entries) => {
+    const entry = entries[0];
+    state.patternInView = Boolean(entry?.isIntersecting && entry.intersectionRatio >= 0.12);
+    updateMobileResultBar();
+  }, { threshold: [0, 0.12, 0.5] });
+  patternObserver.observe(elements.patternPanel);
+}
 
 updateControls();
 updateViewButtons();

@@ -12,13 +12,14 @@ Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Ea
 - offers five pattern widths from 36 to 110 cells;
 - derives the height from the original image proportions;
 - keeps every embroidery cell strictly square (1:1) in the preview and PNG export;
-- zooms and scrolls the on-screen pattern from 50% to 300% without changing export quality;
-- reduces the result to a selectable 2–256 color palette (16 by default);
+- zooms the on-screen pattern from 50% to 300% with buttons, keyboard, modified wheel or a mobile pinch gesture, and lets users drag the enlarged canvas without changing export quality;
+- reduces the result to a selectable 2–256 color palette (16 by default), with practical presets and an exact numeric control;
+- applies setting changes automatically after a short debounce and reports the real palette size when duplicate or unused colors collapse;
 - creates a ready-to-copy AI prompt, tuned to the selected grid width and color limit, for simplifying a difficult source photo in ChatGPT, Gemini or another image editor before conversion;
 - shows a color-and-symbol key with stitch counts;
 - exports a print-ready, multi-page PDF with a tiled square grid and full color key;
 - exports the current pattern as PNG or a cell-by-cell CSV;
-- keeps upload, zoom and export controls comfortable on mobile screens.
+- keeps upload, zoom and export controls comfortable on mobile screens and surfaces a shortcut when the generated result is below the fold.
 
 The color reduction uses the average color of the image area covered by each cell and a median-cut quantizer. Lower values make the pattern more graphic; higher values preserve more of the original image. The legend also shows the nearest DMC-inspired reference shade for orientation, not as a guarantee of a physical thread match.
 

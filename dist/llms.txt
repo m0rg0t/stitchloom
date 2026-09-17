@@ -13,10 +13,11 @@
 
 - The user uploads a PNG, JPEG, WEBP, or GIF image of up to 20 MB.
 - The image stays on the device. The core application has no backend and makes no image-upload request.
-- The user chooses a pattern width from 36 to 110 cells and a palette limit from 2 to 256 colors; the defaults are 70 cells and 16 colors.
+- The user chooses a pattern width from 36 to 110 cells and a palette limit from 2 to 256 colors; the defaults are 70 cells and 16 colors. Practical presets and an exact numeric input are both available.
+- Setting changes rebuild the pattern automatically after a short debounce. The UI reports the actual palette size when duplicate or unused quantized colors collapse.
 - Pattern height follows the source aspect ratio.
 - Every output cell is strictly square and contains exactly one palette color and one symbol.
-- The result can be inspected at 50%–300% zoom and exported as PDF, PNG, or CSV.
+- The result can be inspected at 50%–300% zoom with buttons, keyboard, modified wheel, touch pinch, and drag-to-pan, then exported as PDF, PNG, or CSV.
 - DMC labels are approximate nearest-color references and must be checked against a physical thread chart.
 
 ## Conversion model
