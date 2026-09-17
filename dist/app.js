@@ -1783,6 +1783,12 @@ elements.colorPresets.forEach((button) => {
   button.addEventListener("click", () => setColorCount(button.dataset.colorPreset));
 });
 elements.copyAiPrompt.addEventListener("click", copySimplificationPrompt);
+document.addEventListener("keydown", () => {
+  document.documentElement.dataset.inputModality = "keyboard";
+}, true);
+document.addEventListener("pointerdown", () => {
+  document.documentElement.dataset.inputModality = "pointer";
+}, true);
 elements.themeChoices.forEach((button) => {
   button.addEventListener("click", () => {
     applyTheme(button.dataset.themeChoice, true);

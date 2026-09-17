@@ -208,6 +208,16 @@ summary:focus-visible,
   transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease;
 }
 
+.theme-picker-summary:focus,
+.theme-picker-summary:focus-visible {
+  outline: none;
+}
+
+html[data-input-modality="keyboard"] .theme-picker-summary:focus {
+  outline: 2px solid var(--cobalt);
+  outline-offset: 2px;
+}
+
 .theme-picker-summary::-webkit-details-marker {
   display: none;
 }
