@@ -29,6 +29,9 @@ Then open http://localhost:4173.
 
 The main branch is configured to deploy dist/ to GitHub Pages through .github/workflows/deploy-pages.yml. The same static output can be deployed to ChatGPT Sites.
 
+- Live demo on GitHub Pages: https://m0rg0t.github.io/stitchloom/
+- Public ChatGPT Site: https://stitchloom.antonlenev.chatgpt.site
+
 ## Privacy
 
 Image decoding, sampling and palette selection happen in the browser with Canvas APIs. No application backend is required for the core flow.
