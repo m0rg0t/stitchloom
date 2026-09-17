@@ -4,12 +4,19 @@
   "short_name": "Stitchloom",
   "description": "Превращает фотографию в схему вышивки крестиком прямо в браузере.",
   "lang": "ru",
-  "start_url": "./",
+  "start_url": "./ru/",
   "scope": "./",
   "display": "standalone",
   "background_color": "#131718",
   "theme_color": "#131718",
   "categories": ["lifestyle", "utilities"],
+  "launch_handler": { "client_mode": "focus-existing" },
+  "file_handlers": [
+    {
+      "action": "./ru/",
+      "accept": { "application/x-stitchloom+json": [".stitchloom"] }
+    }
+  ],
   "icons": [
     {
       "src": "./icon-192.png",

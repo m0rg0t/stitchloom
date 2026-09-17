@@ -4,12 +4,19 @@
   "short_name": "Stitchloom",
   "description": "Verwandelt ein Foto direkt im Browser in eine Kreuzstichvorlage.",
   "lang": "de",
-  "start_url": "./?lang=de",
+  "start_url": "./de/",
   "scope": "./",
   "display": "standalone",
   "background_color": "#131718",
   "theme_color": "#131718",
   "categories": ["lifestyle", "utilities"],
+  "launch_handler": { "client_mode": "focus-existing" },
+  "file_handlers": [
+    {
+      "action": "./de/",
+      "accept": { "application/x-stitchloom+json": [".stitchloom"] }
+    }
+  ],
   "icons": [
     {
       "src": "./icon-192.png",

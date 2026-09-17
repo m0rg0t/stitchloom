@@ -4,12 +4,19 @@
   "short_name": "Stitchloom",
   "description": "Convierte una foto en un patrón de punto de cruz directamente en tu navegador.",
   "lang": "es",
-  "start_url": "./?lang=es",
+  "start_url": "./es/",
   "scope": "./",
   "display": "standalone",
   "background_color": "#131718",
   "theme_color": "#131718",
   "categories": ["lifestyle", "utilities"],
+  "launch_handler": { "client_mode": "focus-existing" },
+  "file_handlers": [
+    {
+      "action": "./es/",
+      "accept": { "application/x-stitchloom+json": [".stitchloom"] }
+    }
+  ],
   "icons": [
     {
       "src": "./icon-192.png",

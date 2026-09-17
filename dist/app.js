@@ -1,4 +1,15 @@
+import {
+  analyzePattern,
+  cleanupConfetti,
+  estimatePhysicalPattern,
+  floodFillCells,
+  nearestPaletteIndex,
+  rebuildPaletteUsage,
+  selectDmcPalette,
+} from "./pattern-tools.js";
+
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
+const MAX_PROJECT_SIZE = 40 * 1024 * 1024;
 const DEFAULT_GRID_WIDTH = 70;
 const DEFAULT_COLOR_COUNT = 16;
 const MIN_ZOOM = 50;
@@ -18,6 +29,10 @@ const LOCALE_OG_CODES = { ru: "ru_RU", en: "en_US", es: "es_ES", de: "de_DE" };
 const THEME_STORAGE_KEY = "stitchloom:theme:v1";
 const ONBOARDING_STORAGE_KEY = "stitchloom:onboarding:v1";
 const ONBOARDING_COOKIE_KEY = "stitchloom_onboarding_v1";
+const PROJECT_DB_NAME = "stitchloom-projects";
+const PROJECT_STORE_NAME = "autosave";
+const PROJECT_AUTOSAVE_KEY = "latest";
+const PROJECT_FORMAT_VERSION = 1;
 
 const $ = (id) => document.getElementById(id);
 
@@ -37,12 +52,36 @@ const elements = {
   colorCountValue: $("colorCountValue"),
   colorGuidance: $("colorGuidance"),
   colorPresets: Array.from(document.querySelectorAll("[data-color-preset]")),
+  detailLevelButtons: Array.from(document.querySelectorAll("[data-detail-level]")),
+  paletteMode: $("paletteMode"),
+  fabricCount: $("fabricCount"),
   aiPromptTarget: $("aiPromptTarget"),
   aiPromptText: $("aiPromptText"),
   aiPromptDetails: $("aiPromptDetails"),
   copyAiPrompt: $("copyAiPrompt"),
   copyAiPromptLabel: $("copyAiPromptLabel"),
   aiPromptStatus: $("aiPromptStatus"),
+  photoPrep: $("photoPrep"),
+  cropZoom: $("cropZoom"),
+  cropZoomValue: $("cropZoomValue"),
+  cropX: $("cropX"),
+  cropXValue: $("cropXValue"),
+  cropY: $("cropY"),
+  cropYValue: $("cropYValue"),
+  brightness: $("brightness"),
+  brightnessValue: $("brightnessValue"),
+  contrast: $("contrast"),
+  contrastValue: $("contrastValue"),
+  saturation: $("saturation"),
+  saturationValue: $("saturationValue"),
+  soften: $("soften"),
+  softenValue: $("softenValue"),
+  rotatePhoto: $("rotatePhoto"),
+  resetPhotoPrep: $("resetPhotoPrep"),
+  projectInput: $("projectInput"),
+  openProject: $("openProject"),
+  saveProject: $("saveProject"),
+  projectStatus: $("projectStatus"),
   appManifest: $("appManifest"),
   canonicalUrl: $("canonicalUrl"),
   ogLocale: $("ogLocale"),
@@ -85,12 +124,24 @@ const elements = {
   zoomReset: $("zoomReset"),
   zoomIn: $("zoomIn"),
   zoomValue: $("zoomValue"),
+  editorToolButtons: Array.from(document.querySelectorAll("[data-editor-tool]")),
+  editorColor: $("editorColor"),
+  undoEdit: $("undoEdit"),
+  redoEdit: $("redoEdit"),
+  editorStatus: $("editorStatus"),
+  stitchabilityScore: $("stitchabilityScore"),
+  stitchabilityDetails: $("stitchabilityDetails"),
+  finishedSize: $("finishedSize"),
+  fabricSize: $("fabricSize"),
+  materialsEstimate: $("materialsEstimate"),
+  timeEstimate: $("timeEstimate"),
   legendCount: $("legendCount"),
   legendList: $("legendList"),
   downloadPdf: $("downloadPdf"),
   downloadPdfLabel: $("downloadPdfLabel"),
   downloadPng: $("downloadPng"),
   downloadCsv: $("downloadCsv"),
+  downloadProject: $("downloadProject"),
   exportStatus: $("exportStatus"),
   mobileResultBar: $("mobileResultBar"),
   mobileResultSummary: $("mobileResultSummary"),
@@ -102,6 +153,7 @@ const state = {
   objectUrl: null,
   fileName: "",
   fileSize: 0,
+  sourceDataUrl: "",
   pattern: null,
   lastDownloadUrl: null,
   copyResetTimer: null,
@@ -114,6 +166,12 @@ const state = {
   drag: null,
   pinch: null,
   resizeFrame: null,
+  autosaveTimer: null,
+  autosaveRestored: false,
+  editorTool: "none",
+  activePaletteIndex: 0,
+  undoStack: [],
+  redoStack: [],
   locale: "ru",
   localeSource: "browser",
   themePreference: "auto",
@@ -123,6 +181,19 @@ const state = {
     symbolPreferenceTouched: false,
     showGrid: true,
     zoom: 100,
+    detailLevel: "balanced",
+    paletteMode: "adaptive",
+    fabricCount: 14,
+    photo: {
+      cropZoom: 100,
+      cropX: 0,
+      cropY: 0,
+      brightness: 100,
+      contrast: 100,
+      saturation: 100,
+      soften: 0,
+      rotation: 0,
+    },
   },
 };
 
@@ -266,6 +337,43 @@ const EN_TRANSLATIONS = {
   "onboarding.step4Callout": "You can reopen this tour at any time with the “?” button in the header.",
   "onboarding.skip": "Skip",
   "onboarding.back": "Back",
+  "prep.title": "Prepare the photo",
+  "prep.summary": "crop · light · color",
+  "prep.cropZoom": "Crop",
+  "prep.cropX": "Horizontal position",
+  "prep.cropY": "Vertical position",
+  "prep.brightness": "Brightness",
+  "prep.contrast": "Contrast",
+  "prep.saturation": "Saturation",
+  "prep.soften": "Soften details",
+  "prep.rotate": "Rotate 90°",
+  "prep.reset": "Reset",
+  "project.group": "Project file",
+  "project.open": "Open .stitchloom",
+  "project.save": "Save project",
+  "settings.stitchability": "Pattern character",
+  "settings.stitchabilityLabel": "Confetti cleanup level",
+  "settings.easy": "Easier to stitch",
+  "settings.balanced": "Balanced",
+  "settings.detail": "More detail",
+  "settings.paletteMode": "Palette",
+  "settings.paletteAdaptive": "Image colors",
+  "settings.paletteDmc": "Real DMC colors only",
+  "settings.fabric": "Fabric",
+  "editor.group": "Pattern editing",
+  "editor.tools": "Tool",
+  "editor.pan": "View",
+  "editor.pencil": "Pencil",
+  "editor.fill": "Fill",
+  "editor.eyedropper": "Eyedropper",
+  "editor.color": "Color",
+  "editor.colorLabel": "Editing color",
+  "editor.undo": "Undo change",
+  "editor.redo": "Redo change",
+  "insights.score": "Stitchability",
+  "insights.finishedSize": "Finished size",
+  "insights.materials": "Materials and time",
+  "result.downloadProject": "Download .stitchloom",
 };
 
 const ES_TRANSLATIONS = {
@@ -408,6 +516,43 @@ const ES_TRANSLATIONS = {
   "onboarding.step4Callout": "Puedes volver a abrir esta guía en cualquier momento con el botón “?” de la cabecera.",
   "onboarding.skip": "Saltar",
   "onboarding.back": "Atrás",
+  "prep.title": "Preparar la foto",
+  "prep.summary": "recorte · luz · color",
+  "prep.cropZoom": "Recorte",
+  "prep.cropX": "Posición horizontal",
+  "prep.cropY": "Posición vertical",
+  "prep.brightness": "Brillo",
+  "prep.contrast": "Contraste",
+  "prep.saturation": "Saturación",
+  "prep.soften": "Suavizar detalles",
+  "prep.rotate": "Girar 90°",
+  "prep.reset": "Restablecer",
+  "project.group": "Archivo de proyecto",
+  "project.open": "Abrir .stitchloom",
+  "project.save": "Guardar proyecto",
+  "settings.stitchability": "Carácter del patrón",
+  "settings.stitchabilityLabel": "Nivel de limpieza de puntadas aisladas",
+  "settings.easy": "Más fácil de bordar",
+  "settings.balanced": "Equilibrado",
+  "settings.detail": "Más detalle",
+  "settings.paletteMode": "Paleta",
+  "settings.paletteAdaptive": "Colores de la imagen",
+  "settings.paletteDmc": "Solo colores DMC reales",
+  "settings.fabric": "Tela",
+  "editor.group": "Edición del patrón",
+  "editor.tools": "Herramienta",
+  "editor.pan": "Vista",
+  "editor.pencil": "Lápiz",
+  "editor.fill": "Relleno",
+  "editor.eyedropper": "Cuentagotas",
+  "editor.color": "Color",
+  "editor.colorLabel": "Color de edición",
+  "editor.undo": "Deshacer cambio",
+  "editor.redo": "Rehacer cambio",
+  "insights.score": "Facilidad de bordado",
+  "insights.finishedSize": "Tamaño final",
+  "insights.materials": "Materiales y tiempo",
+  "result.downloadProject": "Descargar .stitchloom",
 };
 
 const DE_TRANSLATIONS = {
@@ -550,6 +695,43 @@ const DE_TRANSLATIONS = {
   "onboarding.step4Callout": "Du kannst diese Einführung jederzeit über die Schaltfläche „?“ in der Kopfzeile erneut öffnen.",
   "onboarding.skip": "Überspringen",
   "onboarding.back": "Zurück",
+  "prep.title": "Foto vorbereiten",
+  "prep.summary": "Zuschnitt · Licht · Farbe",
+  "prep.cropZoom": "Zuschnitt",
+  "prep.cropX": "Horizontale Position",
+  "prep.cropY": "Vertikale Position",
+  "prep.brightness": "Helligkeit",
+  "prep.contrast": "Kontrast",
+  "prep.saturation": "Sättigung",
+  "prep.soften": "Details glätten",
+  "prep.rotate": "Um 90° drehen",
+  "prep.reset": "Zurücksetzen",
+  "project.group": "Projektdatei",
+  "project.open": ".stitchloom öffnen",
+  "project.save": "Projekt speichern",
+  "settings.stitchability": "Charakter der Vorlage",
+  "settings.stitchabilityLabel": "Bereinigung einzelner Stiche",
+  "settings.easy": "Einfacher zu sticken",
+  "settings.balanced": "Ausgewogen",
+  "settings.detail": "Mehr Details",
+  "settings.paletteMode": "Palette",
+  "settings.paletteAdaptive": "Bildfarben",
+  "settings.paletteDmc": "Nur echte DMC-Farben",
+  "settings.fabric": "Stoff",
+  "editor.group": "Vorlage bearbeiten",
+  "editor.tools": "Werkzeug",
+  "editor.pan": "Ansicht",
+  "editor.pencil": "Stift",
+  "editor.fill": "Füllen",
+  "editor.eyedropper": "Pipette",
+  "editor.color": "Farbe",
+  "editor.colorLabel": "Bearbeitungsfarbe",
+  "editor.undo": "Änderung rückgängig machen",
+  "editor.redo": "Änderung wiederholen",
+  "insights.score": "Stickfreundlichkeit",
+  "insights.finishedSize": "Fertige Größe",
+  "insights.materials": "Material und Zeit",
+  "result.downloadProject": ".stitchloom herunterladen",
 };
 
 const UI_MESSAGES = {
@@ -591,6 +773,25 @@ const UI_MESSAGES = {
     "file.tooLarge": "Файл слишком большой. Максимальный размер — 20 МБ.",
     "file.openFailed": "Не получилось открыть изображение. Попробуйте другой файл.",
     "legend.stitches": "Стежков",
+    "project.saved": "Проект .stitchloom сохранён.",
+    "project.opened": "Проект открыт. Можно продолжать редактирование.",
+    "project.invalid": "Это не поддерживаемый файл Stitchloom.",
+    "project.tooLarge": "Файл проекта слишком большой. Максимум — 40 МБ.",
+    "project.autosaved": "Автосохранено на этом устройстве.",
+    "project.restored": "Последний проект восстановлен с этого устройства.",
+    "project.saveFailed": "Не удалось сохранить проект.",
+    "project.openFailed": "Не удалось открыть проект.",
+    "prep.updated": "Подготовка фото применена — схема обновляется.",
+    "prep.resetDone": "Подготовка фото сброшена.",
+    "editor.selected": "Выбран цвет {color}.",
+    "editor.pencilDone": "Клетка перекрашена.",
+    "editor.fillDone": "Область залита.",
+    "editor.undoDone": "Изменение отменено.",
+    "editor.redoDone": "Изменение повторено.",
+    "insights.scoreDetails": "{isolated} одиночных · {regions} малых областей",
+    "insights.fabric": "Aida {count} · ткань {width} × {height} см",
+    "insights.materialsValue": "≈ {skeins} мотков",
+    "insights.time": "примерно {low}–{high} ч",
     "pdf.ready": "PDF готов. ",
     "pdf.retry": "Скачать ещё раз",
     "pdf.readFailed": "Не удалось прочитать страницу PDF",
@@ -656,6 +857,25 @@ const UI_MESSAGES = {
     "file.tooLarge": "The file is too large. The maximum size is 20 MB.",
     "file.openFailed": "The image could not be opened. Try another file.",
     "legend.stitches": "Stitches",
+    "project.saved": ".stitchloom project saved.",
+    "project.opened": "Project opened. You can continue editing.",
+    "project.invalid": "This is not a supported Stitchloom file.",
+    "project.tooLarge": "The project file is too large. Maximum: 40 MB.",
+    "project.autosaved": "Autosaved on this device.",
+    "project.restored": "The latest project was restored from this device.",
+    "project.saveFailed": "The project could not be saved.",
+    "project.openFailed": "The project could not be opened.",
+    "prep.updated": "Photo preparation applied — rebuilding the pattern.",
+    "prep.resetDone": "Photo preparation reset.",
+    "editor.selected": "Selected color {color}.",
+    "editor.pencilDone": "Cell recolored.",
+    "editor.fillDone": "Area filled.",
+    "editor.undoDone": "Change undone.",
+    "editor.redoDone": "Change redone.",
+    "insights.scoreDetails": "{isolated} isolated · {regions} small regions",
+    "insights.fabric": "Aida {count} · fabric {width} × {height} cm",
+    "insights.materialsValue": "≈ {skeins} skeins",
+    "insights.time": "about {low}–{high} h",
     "pdf.ready": "PDF ready. ",
     "pdf.retry": "Download again",
     "pdf.readFailed": "Could not read the PDF page",
@@ -721,6 +941,25 @@ const UI_MESSAGES = {
     "file.tooLarge": "El archivo es demasiado grande. El tamaño máximo es de 20 MB.",
     "file.openFailed": "No se pudo abrir la imagen. Prueba con otro archivo.",
     "legend.stitches": "Puntadas",
+    "project.saved": "Proyecto .stitchloom guardado.",
+    "project.opened": "Proyecto abierto. Puedes seguir editando.",
+    "project.invalid": "Este archivo de Stitchloom no es compatible.",
+    "project.tooLarge": "El archivo del proyecto es demasiado grande. Máximo: 40 MB.",
+    "project.autosaved": "Guardado automáticamente en este dispositivo.",
+    "project.restored": "Se restauró el último proyecto de este dispositivo.",
+    "project.saveFailed": "No se pudo guardar el proyecto.",
+    "project.openFailed": "No se pudo abrir el proyecto.",
+    "prep.updated": "Preparación aplicada: actualizando el patrón.",
+    "prep.resetDone": "Preparación de la foto restablecida.",
+    "editor.selected": "Color {color} seleccionado.",
+    "editor.pencilDone": "Celda recoloreada.",
+    "editor.fillDone": "Área rellenada.",
+    "editor.undoDone": "Cambio deshecho.",
+    "editor.redoDone": "Cambio rehecho.",
+    "insights.scoreDetails": "{isolated} aisladas · {regions} áreas pequeñas",
+    "insights.fabric": "Aida {count} · tela {width} × {height} cm",
+    "insights.materialsValue": "≈ {skeins} madejas",
+    "insights.time": "aprox. {low}–{high} h",
     "pdf.ready": "PDF listo. ",
     "pdf.retry": "Descargar de nuevo",
     "pdf.readFailed": "No se pudo leer la página del PDF",
@@ -786,6 +1025,25 @@ const UI_MESSAGES = {
     "file.tooLarge": "Die Datei ist zu groß. Die maximale Größe beträgt 20 MB.",
     "file.openFailed": "Das Bild konnte nicht geöffnet werden. Versuche es mit einer anderen Datei.",
     "legend.stitches": "Stiche",
+    "project.saved": ".stitchloom-Projekt gespeichert.",
+    "project.opened": "Projekt geöffnet. Du kannst weiterarbeiten.",
+    "project.invalid": "Diese Stitchloom-Datei wird nicht unterstützt.",
+    "project.tooLarge": "Die Projektdatei ist zu groß. Maximum: 40 MB.",
+    "project.autosaved": "Auf diesem Gerät automatisch gespeichert.",
+    "project.restored": "Das letzte Projekt wurde von diesem Gerät wiederhergestellt.",
+    "project.saveFailed": "Das Projekt konnte nicht gespeichert werden.",
+    "project.openFailed": "Das Projekt konnte nicht geöffnet werden.",
+    "prep.updated": "Fotovorbereitung angewendet — Vorlage wird aktualisiert.",
+    "prep.resetDone": "Fotovorbereitung zurückgesetzt.",
+    "editor.selected": "Farbe {color} ausgewählt.",
+    "editor.pencilDone": "Zelle neu eingefärbt.",
+    "editor.fillDone": "Bereich gefüllt.",
+    "editor.undoDone": "Änderung rückgängig gemacht.",
+    "editor.redoDone": "Änderung wiederholt.",
+    "insights.scoreDetails": "{isolated} einzeln · {regions} kleine Bereiche",
+    "insights.fabric": "Aida {count} · Stoff {width} × {height} cm",
+    "insights.materialsValue": "≈ {skeins} Stränge",
+    "insights.time": "etwa {low}–{high} Std.",
     "pdf.ready": "PDF bereit. ",
     "pdf.retry": "Erneut herunterladen",
     "pdf.readFailed": "Die PDF-Seite konnte nicht gelesen werden",
@@ -1057,9 +1315,14 @@ function getInitialLocale() {
 }
 
 function getLocalizedCanonicalUrl(locale) {
-  const url = new URL("https://stitchloom.antonlenev.chatgpt.site/");
-  if (locale !== "ru") url.searchParams.set("lang", locale);
-  return url.href;
+  return `https://stitchloom.antonlenev.chatgpt.site/${locale}/`;
+}
+
+function getLocalizedAppPath(locale) {
+  const segments = window.location.pathname.split("/").filter(Boolean);
+  if (isSupportedLocale(segments.at(-1))) segments.pop();
+  const rootSegments = segments.filter((segment) => segment !== "index.html");
+  return `/${rootSegments.length ? rootSegments.join("/") + "/" : ""}${locale}/`;
 }
 
 function buildStructuredData(locale) {
@@ -1182,9 +1445,9 @@ function persistLocale(locale) {
 
   try {
     const url = new URL(window.location.href);
-    if (locale === "ru") url.searchParams.delete("lang");
-    else url.searchParams.set("lang", locale);
-    history.replaceState(history.state, document.title, url);
+    url.pathname = getLocalizedAppPath(locale);
+    url.searchParams.delete("lang");
+    window.location.assign(url);
   } catch {
     // The selected language still applies for the current page view.
   }
@@ -1208,7 +1471,7 @@ function applyLocale(locale, persist = false, refresh = true) {
   elements.ogLocaleAlternateSecondary.content = LOCALE_OG_CODES[alternateLocales[1]];
   elements.ogLocaleAlternateTertiary.content = LOCALE_OG_CODES[alternateLocales[2]];
   elements.structuredData.textContent = JSON.stringify(buildStructuredData(nextLocale));
-  elements.appManifest.href = new URL(LOCALE_MANIFESTS[nextLocale], window.location.href).href;
+  elements.appManifest.href = new URL(LOCALE_MANIFESTS[nextLocale], document.baseURI).href;
 
   const nextLocaleIndex = (LOCALE_SEQUENCE.indexOf(nextLocale) + 1) % LOCALE_SEQUENCE.length;
   const switchToLocale = LOCALE_SEQUENCE[nextLocaleIndex];
@@ -1216,9 +1479,7 @@ function applyLocale(locale, persist = false, refresh = true) {
   elements.localeToggleLabel.lang = switchToLocale;
   elements.localeToggle.setAttribute("aria-label", t("locale.switch"));
   elements.localeToggle.title = t("locale.switch");
-  elements.brandHome.href = nextLocale !== "ru" && state.localeSource !== "browser"
-    ? `./?lang=${nextLocale}`
-    : "./";
+  elements.brandHome.href = getLocalizedAppPath(nextLocale);
 
   if (persist) persistLocale(nextLocale);
   if (refresh) refreshLocalizedUi();
@@ -1227,7 +1488,7 @@ function applyLocale(locale, persist = false, refresh = true) {
 function initLocale() {
   cacheStaticLocaleValues();
   const documentSource = document.documentElement.dataset.localeSource;
-  state.localeSource = ["browser", "query", "stored"].includes(documentSource)
+  state.localeSource = ["browser", "query", "route", "stored"].includes(documentSource)
     ? documentSource
     : "browser";
   applyLocale(getInitialLocale(), false, false);
@@ -1611,6 +1872,11 @@ function updateControls() {
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
   });
+  elements.detailLevelButtons.forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.detailLevel === state.settings.detailLevel));
+  });
+  elements.paletteMode.value = state.settings.paletteMode;
+  elements.fabricCount.value = String(state.settings.fabricCount);
 
   if (colorCount <= 8) {
     elements.colorGuidance.textContent = t("guidance.low");
@@ -1621,7 +1887,30 @@ function updateControls() {
   } else {
     elements.colorGuidance.textContent = t("guidance.high");
   }
+  updatePhotoPrepControls();
   updateAiPrompt();
+}
+
+function updatePhotoPrepControls() {
+  const photo = state.settings.photo;
+  const controls = [
+    [elements.cropZoom, elements.cropZoomValue, photo.cropZoom, "%"],
+    [elements.cropX, elements.cropXValue, photo.cropX, ""],
+    [elements.cropY, elements.cropYValue, photo.cropY, ""],
+    [elements.brightness, elements.brightnessValue, photo.brightness, "%"],
+    [elements.contrast, elements.contrastValue, photo.contrast, "%"],
+    [elements.saturation, elements.saturationValue, photo.saturation, "%"],
+    [elements.soften, elements.softenValue, photo.soften, ""],
+  ];
+  controls.forEach(([control, output, value, suffix]) => {
+    control.value = String(value);
+    output.value = String(value) + suffix;
+    output.textContent = String(value) + suffix;
+  });
+  elements.sourcePreview.style.filter =
+    `brightness(${photo.brightness}%) contrast(${photo.contrast}%) saturate(${photo.saturation}%) blur(${photo.soften}px)`;
+  elements.sourcePreview.style.objectPosition = `${50 + photo.cropX}% ${50 + photo.cropY}%`;
+  elements.sourcePreview.style.transform = `rotate(${photo.rotation}deg) scale(${photo.cropZoom / 100})`;
 }
 
 function setColorCount(value, shouldBuild = true) {
@@ -1773,16 +2062,45 @@ function dedupeColors(colors) {
   });
 }
 
+function getProcessedImageDimensions(image = state.image) {
+  const width = image?.naturalWidth || image?.width || 1;
+  const height = image?.naturalHeight || image?.height || 1;
+  const quarterTurn = state.settings.photo.rotation % 180 !== 0;
+  return quarterTurn ? { width: height, height: width } : { width, height };
+}
+
+function drawProcessedImage(context, image, targetWidth, targetHeight) {
+  const sourceWidth = image.naturalWidth || image.width;
+  const sourceHeight = image.naturalHeight || image.height;
+  const photo = state.settings.photo;
+  const { width: orientedWidth, height: orientedHeight } = getProcessedImageDimensions(image);
+  const coverScale = Math.max(targetWidth / orientedWidth, targetHeight / orientedHeight);
+  const scale = coverScale * photo.cropZoom / 100;
+
+  context.save();
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, targetWidth, targetHeight);
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.filter =
+    `brightness(${photo.brightness}%) contrast(${photo.contrast}%) ` +
+    `saturate(${photo.saturation}%) blur(${photo.soften}px)`;
+  context.translate(
+    targetWidth / 2 + targetWidth * photo.cropX / 100,
+    targetHeight / 2 + targetHeight * photo.cropY / 100,
+  );
+  context.rotate(photo.rotation * Math.PI / 180);
+  context.scale(scale, scale);
+  context.drawImage(image, -sourceWidth / 2, -sourceHeight / 2);
+  context.restore();
+}
+
 function createSampleCanvas(image, width, height, scale) {
   const sampleCanvas = document.createElement("canvas");
   sampleCanvas.width = width * scale;
   sampleCanvas.height = height * scale;
   const context = sampleCanvas.getContext("2d", { willReadFrequently: true });
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, sampleCanvas.width, sampleCanvas.height);
-  context.imageSmoothingEnabled = true;
-  context.imageSmoothingQuality = "high";
-  context.drawImage(image, 0, 0, sampleCanvas.width, sampleCanvas.height);
+  drawProcessedImage(context, image, sampleCanvas.width, sampleCanvas.height);
   return sampleCanvas;
 }
 
@@ -1893,45 +2211,53 @@ function buildPattern(revision = state.buildRevision) {
   elements.patternHeading.textContent = t("pattern.buildingHeading");
 
   const width = Number(elements.sizeSelect.value);
-  const sourceWidth = state.image.naturalWidth || state.image.width;
-  const sourceHeight = state.image.naturalHeight || state.image.height;
+  const { width: sourceWidth, height: sourceHeight } = getProcessedImageDimensions();
   const aspectRatio = sourceWidth / sourceHeight;
   const height = clamp(Math.round(width / aspectRatio), 16, 220);
   const sampleScale = 4;
   const sampleCanvas = createSampleCanvas(state.image, width, height, sampleScale);
   const rawColors = getCellColors(sampleCanvas, width, height, sampleScale);
   const requestedColors = Number(elements.colorCount.value);
-  const quantizedColors = dedupeColors(medianCut(rawColors, requestedColors));
-  const localCells = rawColors.map((color) => nearestColorIndex(color, quantizedColors));
-  const localCounts = new Array(quantizedColors.length).fill(0);
+  let paletteColors;
+  let localCells;
+  if (state.settings.paletteMode === "dmc") {
+    const dmcResult = selectDmcPalette(rawColors, DMC_PALETTE, requestedColors);
+    paletteColors = dmcResult.colors;
+    localCells = dmcResult.cells;
+  } else {
+    paletteColors = dedupeColors(medianCut(rawColors, requestedColors));
+    localCells = rawColors.map((color) => nearestPaletteIndex(color, paletteColors));
+  }
 
-  localCells.forEach((index) => {
-    localCounts[index] += 1;
-  });
-
-  const ordered = quantizedColors
-    .map((color, index) => ({ color, index, count: localCounts[index] }))
-    .filter((item) => item.count > 0)
-    .sort((a, b) => b.count - a.count);
-  const remap = new Map();
-
-  ordered.forEach((item, index) => {
-    remap.set(item.index, index);
-  });
-
-  const cells = localCells.map((index) => remap.get(index));
-  const legend = ordered.map((item, index) => {
-    const dmc = DMC_PALETTE[nearestColorIndex(item.color, DMC_PALETTE)];
+  const minimumRegionSize = { easy: 4, balanced: 2, detail: 1 }[state.settings.detailLevel] || 2;
+  const cleanedCells = cleanupConfetti(
+    localCells,
+    width,
+    height,
+    paletteColors,
+    minimumRegionSize,
+  );
+  const rebuilt = rebuildPaletteUsage(cleanedCells, paletteColors);
+  const cells = rebuilt.cells;
+  const legend = rebuilt.palette.map((item, index) => {
+    const dmc = state.settings.paletteMode === "dmc"
+      ? item
+      : DMC_PALETTE[nearestPaletteIndex(item, DMC_PALETTE)];
     return {
-      ...item.color,
-      hex: colorToHex(item.color),
+      r: item.r,
+      g: item.g,
+      b: item.b,
+      hex: state.settings.paletteMode === "dmc" ? dmc.hex : colorToHex(item),
       code: "C" + String(index + 1).padStart(3, "0"),
       dmcCode: dmc.code,
       dmcName: dmc.name,
       count: item.count,
       symbol: symbolForIndex(index),
+      isExactDmc: state.settings.paletteMode === "dmc",
     };
   });
+  const metrics = analyzePattern(cells, width, height);
+  const physical = estimatePhysicalPattern(width, height, state.settings.fabricCount, legend);
 
   state.pattern = {
     width,
@@ -1940,7 +2266,15 @@ function buildPattern(revision = state.buildRevision) {
     palette: legend,
     requestedColors,
     totalStitches: width * height,
+    detailLevel: state.settings.detailLevel,
+    paletteMode: state.settings.paletteMode,
+    fabricCount: state.settings.fabricCount,
+    metrics,
+    physical,
   };
+  state.undoStack = [];
+  state.redoStack = [];
+  state.activePaletteIndex = 0;
 
   renderPattern();
   setPatternStatus(t("pattern.readyStatus"), "ready");
@@ -1949,6 +2283,7 @@ function buildPattern(revision = state.buildRevision) {
   setAutoUpdateStatus(t("auto.ready", { width, height, palette: paletteSummary }), "ready");
   setFileStatus(t("file.patternReady"));
   updateMobileResultBar();
+  scheduleAutosave();
 }
 
 function prepareCanvas(canvas, width, height, pixelRatio) {
@@ -1970,9 +2305,7 @@ function drawPatternToCanvas(canvas, cellSize, mode, pixelRatio) {
   const context = prepareCanvas(canvas, canvasWidth, canvasHeight, pixelRatio);
 
   if (mode === "photo") {
-    context.imageSmoothingEnabled = true;
-    context.imageSmoothingQuality = "high";
-    context.drawImage(state.image, 0, 0, canvasWidth, canvasHeight);
+    drawProcessedImage(context, state.image, canvasWidth, canvasHeight);
     context.fillStyle = "rgba(20, 24, 25, 0.08)";
     context.fillRect(0, 0, canvasWidth, canvasHeight);
     context.strokeStyle = "rgba(255, 250, 241, 0.82)";
@@ -2031,6 +2364,85 @@ function getLocalizedDmcName(color) {
   return color.dmcName || "";
 }
 
+function formatDecimal(value) {
+  return new Intl.NumberFormat(LOCALE_NUMBER_FORMATS[state.locale] || "ru-RU", {
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function refreshPatternAnalysis() {
+  if (!state.pattern) return;
+  const counts = new Array(state.pattern.palette.length).fill(0);
+  state.pattern.cells.forEach((index) => { if (counts[index] !== undefined) counts[index] += 1; });
+  state.pattern.palette.forEach((color, index) => { color.count = counts[index]; });
+  state.pattern.metrics = analyzePattern(
+    state.pattern.cells,
+    state.pattern.width,
+    state.pattern.height,
+  );
+  state.pattern.physical = estimatePhysicalPattern(
+    state.pattern.width,
+    state.pattern.height,
+    state.settings.fabricCount,
+    state.pattern.palette,
+  );
+}
+
+function renderInsights() {
+  if (!state.pattern) {
+    elements.stitchabilityScore.textContent = "—";
+    elements.stitchabilityDetails.textContent = "";
+    elements.finishedSize.textContent = "—";
+    elements.fabricSize.textContent = "";
+    elements.materialsEstimate.textContent = "—";
+    elements.timeEstimate.textContent = "";
+    return;
+  }
+  const { metrics, physical } = state.pattern;
+  elements.stitchabilityScore.textContent = metrics.score + "/100";
+  elements.stitchabilityDetails.textContent = t("insights.scoreDetails", {
+    isolated: formatNumber(metrics.isolatedStitches),
+    regions: formatNumber(metrics.smallRegions),
+  });
+  elements.finishedSize.textContent =
+    `${formatDecimal(physical.stitchedWidthCm)} × ${formatDecimal(physical.stitchedHeightCm)} cm`;
+  elements.fabricSize.textContent = t("insights.fabric", {
+    count: state.settings.fabricCount,
+    width: formatDecimal(physical.fabricWidthCm),
+    height: formatDecimal(physical.fabricHeightCm),
+  });
+  elements.materialsEstimate.textContent = t("insights.materialsValue", {
+    skeins: formatNumber(physical.totalSkeins),
+  });
+  elements.timeEstimate.textContent = t("insights.time", {
+    low: formatNumber(physical.hoursLow),
+    high: formatNumber(physical.hoursHigh),
+  });
+}
+
+function updateEditorControls() {
+  const hasPattern = Boolean(state.pattern);
+  elements.editorToolButtons.forEach((button) => {
+    const isActive = button.dataset.editorTool === state.editorTool;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+    button.disabled = !hasPattern;
+  });
+  elements.editorColor.disabled = !hasPattern || state.editorTool === "none";
+  elements.undoEdit.disabled = !state.undoStack.length;
+  elements.redoEdit.disabled = !state.redoStack.length;
+  elements.patternCanvas.classList.toggle("is-editing", hasPattern && state.editorTool !== "none");
+  if (!hasPattern) {
+    elements.editorColor.innerHTML = "";
+    return;
+  }
+  if (state.activePaletteIndex >= state.pattern.palette.length) state.activePaletteIndex = 0;
+  elements.editorColor.innerHTML = state.pattern.palette.map((color, index) => (
+    `<option value="${index}">${escapeHtml(color.symbol)} · ${escapeHtml(color.hex.toUpperCase())} · DMC ${escapeHtml(color.dmcCode)}</option>`
+  )).join("");
+  elements.editorColor.value = String(state.activePaletteIndex);
+}
+
 function renderLegend() {
   if (!state.pattern) {
     elements.legendList.innerHTML = "";
@@ -2041,16 +2453,17 @@ function renderLegend() {
   const palette = state.pattern.palette;
   const requestedColors = state.pattern.requestedColors || palette.length;
   elements.legendCount.textContent = formatPaletteSummary(palette.length, requestedColors);
-  elements.legendList.innerHTML = palette.map((color) => {
-    const colorDescription = `${color.hex.toUpperCase()} · ≈ DMC ${color.dmcCode} ${getLocalizedDmcName(color)}`;
+  elements.legendList.innerHTML = palette.map((color, index) => {
+    const dmcPrefix = color.isExactDmc ? "DMC" : "≈ DMC";
+    const colorDescription = `${color.hex.toUpperCase()} · ${dmcPrefix} ${color.dmcCode} ${getLocalizedDmcName(color)}`;
     return (
-      '<div class="legend-row" title="' + escapeHtml(colorDescription) + '">' +
+      '<button type="button" class="legend-row" data-palette-index="' + index + '" title="' + escapeHtml(colorDescription) + '">' +
         '<span class="legend-swatch" style="background:' + color.hex + '" aria-hidden="true"></span>' +
         '<span class="legend-symbol">' + escapeHtml(color.symbol) + "</span>" +
         '<span class="legend-code">' + escapeHtml(color.code) + "</span>" +
         '<span class="legend-name">' + escapeHtml(colorDescription) + "</span>" +
         '<span class="legend-count" title="' + escapeHtml(t("legend.stitches")) + '">' + formatNumber(color.count) + "</span>" +
-      "</div>"
+      "</button>"
     );
   }).join("");
 }
@@ -2074,17 +2487,21 @@ function renderPattern() {
   elements.downloadPdf.disabled = !hasPattern || elements.downloadPdf.classList.contains("is-busy");
   elements.downloadPng.disabled = !hasPattern;
   elements.downloadCsv.disabled = !hasPattern;
+  elements.downloadProject.disabled = !hasPattern;
+  elements.saveProject.disabled = !hasPattern;
   updateZoomControls();
 
   if (!hasPattern) {
     elements.patternHeading.textContent = t("pattern.emptyHeading");
+    renderInsights();
+    updateEditorControls();
     updateMobileResultBar();
     return;
   }
 
   const pattern = state.pattern;
   const cellCount = pattern.width * pattern.height;
-  elements.patternDimension.textContent = pattern.width + " × " + pattern.height + " " + formatUnit(pattern.height, "cell");
+  elements.patternDimension.textContent = pattern.width + " × " + pattern.height + " " + formatUnit(5, "cell");
   const paletteText = formatPaletteSummary(pattern.palette.length, pattern.requestedColors);
   elements.patternDetails.textContent =
     paletteText +
@@ -2094,6 +2511,8 @@ function renderPattern() {
   drawPatternToCanvas(elements.patternCanvas, displaySize, state.settings.view);
   applyCanvasZoom();
   renderLegend();
+  renderInsights();
+  updateEditorControls();
   updateMobileResultBar();
 }
 
@@ -2173,6 +2592,215 @@ function refreshLocalizedUi() {
   resetPromptCopyState();
 }
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error || new Error("read failed"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImageData(dataUrl, metadata = {}, shouldBuild = true) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => {
+      if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
+      state.image = image;
+      state.objectUrl = null;
+      state.sourceDataUrl = dataUrl;
+      state.fileName = metadata.name || "image";
+      state.fileSize = Number(metadata.size) || 0;
+      elements.sourcePreview.src = dataUrl;
+      elements.fileName.textContent = state.fileName;
+      elements.fileMeta.textContent =
+        image.naturalWidth + " × " + image.naturalHeight + " px · " + formatBytes(state.fileSize);
+      elements.sourceCard.classList.remove("is-hidden");
+      elements.dropzone.classList.add("is-hidden");
+      elements.photoPrep.classList.remove("is-hidden");
+      updatePhotoPrepControls();
+      setFileStatus(t("file.ready"));
+      if (shouldBuild) schedulePatternBuild(60);
+      resolve(image);
+    };
+    image.onerror = () => reject(new Error("image decode failed"));
+    image.src = dataUrl;
+  });
+}
+
+function getProjectPayload() {
+  return {
+    format: "stitchloom",
+    version: PROJECT_FORMAT_VERSION,
+    savedAt: new Date().toISOString(),
+    source: state.sourceDataUrl ? {
+      name: state.fileName,
+      size: state.fileSize,
+      dataUrl: state.sourceDataUrl,
+    } : null,
+    settings: {
+      width: Number(elements.sizeSelect.value),
+      colorCount: Number(elements.colorCount.value),
+      view: state.settings.view,
+      showSymbols: state.settings.showSymbols,
+      showGrid: state.settings.showGrid,
+      detailLevel: state.settings.detailLevel,
+      paletteMode: state.settings.paletteMode,
+      fabricCount: state.settings.fabricCount,
+      photo: { ...state.settings.photo },
+    },
+    pattern: state.pattern ? {
+      ...state.pattern,
+      cells: Array.from(state.pattern.cells),
+      palette: state.pattern.palette.map((color) => ({ ...color })),
+    } : null,
+  };
+}
+
+function isValidProject(project) {
+  if (!project || project.format !== "stitchloom" || project.version !== PROJECT_FORMAT_VERSION) return false;
+  if (!project.pattern) return Boolean(project.source?.dataUrl);
+  const { width, height, cells, palette } = project.pattern;
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) return false;
+  if (width * height > 50000 || !Array.isArray(cells) || cells.length !== width * height) return false;
+  if (!Array.isArray(palette) || !palette.length || palette.length > 256) return false;
+  return cells.every((index) => Number.isInteger(index) && index >= 0 && index < palette.length);
+}
+
+function applyProjectSettings(settings = {}) {
+  if (settings.width) elements.sizeSelect.value = String(settings.width);
+  if (settings.colorCount) setColorCount(settings.colorCount, false);
+  state.settings.view = ["pattern", "photo"].includes(settings.view) ? settings.view : "pattern";
+  state.settings.showSymbols = settings.showSymbols !== false;
+  state.settings.showGrid = settings.showGrid !== false;
+  state.settings.detailLevel = ["easy", "balanced", "detail"].includes(settings.detailLevel)
+    ? settings.detailLevel : "balanced";
+  state.settings.paletteMode = settings.paletteMode === "dmc" ? "dmc" : "adaptive";
+  state.settings.fabricCount = [11, 14, 16, 18].includes(Number(settings.fabricCount))
+    ? Number(settings.fabricCount) : 14;
+  state.settings.photo = { ...state.settings.photo, ...(settings.photo || {}) };
+  elements.showSymbols.checked = state.settings.showSymbols;
+  elements.showGrid.checked = state.settings.showGrid;
+  updateControls();
+  updateViewButtons();
+}
+
+async function restoreProject(project, fromAutosave = false) {
+  if (!isValidProject(project)) throw new Error("invalid project");
+  if (state.rebuildTimer) window.clearTimeout(state.rebuildTimer);
+  state.rebuildTimer = null;
+  state.buildRevision += 1;
+  applyProjectSettings(project.settings);
+  if (project.source?.dataUrl) {
+    await loadImageData(project.source.dataUrl, project.source, false);
+  }
+  state.pattern = project.pattern ? {
+    ...project.pattern,
+    cells: Array.from(project.pattern.cells),
+    palette: project.pattern.palette.map((color) => ({ ...color })),
+  } : null;
+  if (state.pattern) refreshPatternAnalysis();
+  state.undoStack = [];
+  state.redoStack = [];
+  state.activePaletteIndex = 0;
+  renderPattern();
+  setPatternStatus(state.pattern ? t("pattern.readyStatus") : t("pattern.waiting"), state.pattern ? "ready" : "");
+  elements.patternHeading.textContent = state.pattern ? t("pattern.readyHeading") : t("pattern.emptyHeading");
+  elements.projectStatus.textContent = fromAutosave ? t("project.restored") : t("project.opened");
+  elements.projectStatus.classList.remove("is-error");
+  state.autosaveRestored = fromAutosave;
+}
+
+function openProjectDatabase() {
+  return new Promise((resolve, reject) => {
+    if (!("indexedDB" in window)) {
+      reject(new Error("IndexedDB unavailable"));
+      return;
+    }
+    const request = indexedDB.open(PROJECT_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(PROJECT_STORE_NAME)) {
+        request.result.createObjectStore(PROJECT_STORE_NAME);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function storeAutosave(project) {
+  const database = await openProjectDatabase();
+  await new Promise((resolve, reject) => {
+    const transaction = database.transaction(PROJECT_STORE_NAME, "readwrite");
+    transaction.objectStore(PROJECT_STORE_NAME).put(project, PROJECT_AUTOSAVE_KEY);
+    transaction.oncomplete = resolve;
+    transaction.onerror = () => reject(transaction.error);
+  });
+  database.close();
+}
+
+async function readAutosave() {
+  const database = await openProjectDatabase();
+  const project = await new Promise((resolve, reject) => {
+    const request = database.transaction(PROJECT_STORE_NAME).objectStore(PROJECT_STORE_NAME).get(PROJECT_AUTOSAVE_KEY);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  database.close();
+  return project;
+}
+
+function scheduleAutosave() {
+  if (!state.pattern) return;
+  if (state.autosaveTimer) window.clearTimeout(state.autosaveTimer);
+  state.autosaveTimer = window.setTimeout(async () => {
+    state.autosaveTimer = null;
+    try {
+      await storeAutosave(getProjectPayload());
+      elements.projectStatus.textContent = t("project.autosaved");
+      elements.projectStatus.classList.remove("is-error");
+    } catch {
+      // Downloadable project files remain available when browser storage is blocked.
+    }
+  }, 700);
+}
+
+function downloadProjectFile() {
+  if (!state.pattern) return;
+  try {
+    const payload = JSON.stringify(getProjectPayload());
+    triggerDownload(
+      new Blob([payload], { type: "application/x-stitchloom+json" }),
+      `stitchloom-${state.pattern.width}x${state.pattern.height}.stitchloom`,
+    );
+    elements.projectStatus.textContent = t("project.saved");
+    elements.projectStatus.classList.remove("is-error");
+  } catch {
+    elements.projectStatus.textContent = t("project.saveFailed");
+    elements.projectStatus.classList.add("is-error");
+  }
+}
+
+async function openProjectFile(file) {
+  if (!file) return;
+  if (file.size > MAX_PROJECT_SIZE) {
+    elements.projectStatus.textContent = t("project.tooLarge");
+    elements.projectStatus.classList.add("is-error");
+    return;
+  }
+  try {
+    const project = JSON.parse(await file.text());
+    await restoreProject(project);
+    scheduleAutosave();
+  } catch {
+    elements.projectStatus.textContent = t("project.invalid");
+    elements.projectStatus.classList.add("is-error");
+  } finally {
+    elements.projectInput.value = "";
+  }
+}
+
 function clearImage() {
   if (state.rebuildTimer) window.clearTimeout(state.rebuildTimer);
   state.rebuildTimer = null;
@@ -2182,12 +2810,14 @@ function clearImage() {
   state.objectUrl = null;
   state.fileName = "";
   state.fileSize = 0;
+  state.sourceDataUrl = "";
   state.pattern = null;
   state.settings.zoom = 100;
   clearLastDownloadUrl();
   elements.fileInput.value = "";
   elements.sourcePreview.removeAttribute("src");
   elements.sourceCard.classList.add("is-hidden");
+  elements.photoPrep.classList.add("is-hidden");
   elements.dropzone.classList.remove("is-hidden");
   setAutoUpdateStatus(t("auto.noPhoto"));
   setFileStatus(t("file.local"));
@@ -2196,7 +2826,7 @@ function clearImage() {
   renderPattern();
 }
 
-function loadImageFile(file) {
+async function loadImageFile(file) {
   if (!file) return;
   if (!file.type || !file.type.startsWith("image/")) {
     setFileStatus(t("file.invalid"), true);
@@ -2211,29 +2841,12 @@ function loadImageFile(file) {
   state.rebuildTimer = null;
   state.buildRevision += 1;
 
-  if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
-  const objectUrl = URL.createObjectURL(file);
-  const image = new Image();
-  image.decoding = "async";
-  image.onload = () => {
-    state.image = image;
-    state.objectUrl = objectUrl;
-    state.fileName = file.name;
-    state.fileSize = file.size;
-    elements.sourcePreview.src = objectUrl;
-    elements.fileName.textContent = file.name;
-    elements.fileMeta.textContent =
-      image.naturalWidth + " × " + image.naturalHeight + " px · " + formatBytes(file.size);
-    elements.sourceCard.classList.remove("is-hidden");
-    elements.dropzone.classList.add("is-hidden");
-    setFileStatus(t("file.ready"));
-    schedulePatternBuild(60);
-  };
-  image.onerror = () => {
-    URL.revokeObjectURL(objectUrl);
+  try {
+    const dataUrl = await readFileAsDataUrl(file);
+    await loadImageData(dataUrl, { name: file.name, size: file.size }, true);
+  } catch {
     setFileStatus(t("file.openFailed"), true);
-  };
-  image.src = objectUrl;
+  }
 }
 
 function triggerDownload(blob, filename) {
@@ -2914,6 +3527,89 @@ function downloadCsv() {
   triggerDownload(blob, "stitchloom-" + pattern.width + "x" + pattern.height + ".csv");
 }
 
+function setEditorTool(tool) {
+  state.editorTool = ["none", "pencil", "fill", "eyedropper"].includes(tool) ? tool : "none";
+  updateEditorControls();
+}
+
+function rememberEdit() {
+  if (!state.pattern) return;
+  state.undoStack.push(state.pattern.cells.slice());
+  if (state.undoStack.length > 50) state.undoStack.shift();
+  state.redoStack = [];
+}
+
+function commitEditedCells(cells, messageKey) {
+  state.pattern.cells = cells;
+  refreshPatternAnalysis();
+  renderPattern();
+  elements.editorStatus.textContent = t(messageKey);
+  scheduleAutosave();
+}
+
+function editPatternCell(event) {
+  if (!state.pattern || state.editorTool === "none" || state.settings.view !== "pattern") return;
+  const bounds = elements.patternCanvas.getBoundingClientRect();
+  const column = clamp(Math.floor((event.clientX - bounds.left) / bounds.width * state.pattern.width), 0, state.pattern.width - 1);
+  const row = clamp(Math.floor((event.clientY - bounds.top) / bounds.height * state.pattern.height), 0, state.pattern.height - 1);
+  const cellIndex = row * state.pattern.width + column;
+  if (state.editorTool === "eyedropper") {
+    state.activePaletteIndex = state.pattern.cells[cellIndex];
+    elements.editorStatus.textContent = t("editor.selected", {
+      color: state.pattern.palette[state.activePaletteIndex].code,
+    });
+    updateEditorControls();
+    return;
+  }
+  if (state.pattern.cells[cellIndex] === state.activePaletteIndex) return;
+  rememberEdit();
+  const nextCells = state.editorTool === "fill"
+    ? floodFillCells(
+      state.pattern.cells,
+      state.pattern.width,
+      state.pattern.height,
+      cellIndex,
+      state.activePaletteIndex,
+    )
+    : state.pattern.cells.map((value, index) => index === cellIndex ? state.activePaletteIndex : value);
+  commitEditedCells(nextCells, state.editorTool === "fill" ? "editor.fillDone" : "editor.pencilDone");
+}
+
+function undoEdit() {
+  if (!state.pattern || !state.undoStack.length) return;
+  state.redoStack.push(state.pattern.cells.slice());
+  commitEditedCells(state.undoStack.pop(), "editor.undoDone");
+}
+
+function redoEdit() {
+  if (!state.pattern || !state.redoStack.length) return;
+  state.undoStack.push(state.pattern.cells.slice());
+  commitEditedCells(state.redoStack.pop(), "editor.redoDone");
+}
+
+function updatePhotoSetting(control) {
+  const key = control.id;
+  state.settings.photo[key] = Number(control.value);
+  updatePhotoPrepControls();
+  if (state.image) schedulePatternBuild(140);
+}
+
+function resetPhotoPreparation() {
+  state.settings.photo = {
+    cropZoom: 100,
+    cropX: 0,
+    cropY: 0,
+    brightness: 100,
+    contrast: 100,
+    saturation: 100,
+    soften: 0,
+    rotation: 0,
+  };
+  updatePhotoPrepControls();
+  elements.projectStatus.textContent = t("prep.resetDone");
+  if (state.image) schedulePatternBuild(60);
+}
+
 elements.dropzone.addEventListener("click", () => elements.fileInput.click());
 elements.dropzone.addEventListener("keydown", (event) => {
   if (event.key === "Enter" || event.key === " ") {
@@ -2960,6 +3656,44 @@ elements.colorNumber.addEventListener("change", (event) => {
 elements.colorPresets.forEach((button) => {
   button.addEventListener("click", () => setColorCount(button.dataset.colorPreset));
 });
+elements.detailLevelButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    state.settings.detailLevel = button.dataset.detailLevel;
+    updateControls();
+    if (state.image) schedulePatternBuild();
+  });
+});
+elements.paletteMode.addEventListener("change", () => {
+  state.settings.paletteMode = elements.paletteMode.value === "dmc" ? "dmc" : "adaptive";
+  if (state.image) schedulePatternBuild();
+});
+elements.fabricCount.addEventListener("change", () => {
+  state.settings.fabricCount = Number(elements.fabricCount.value) || 14;
+  if (state.pattern) {
+    refreshPatternAnalysis();
+    renderInsights();
+    scheduleAutosave();
+  }
+});
+[
+  elements.cropZoom,
+  elements.cropX,
+  elements.cropY,
+  elements.brightness,
+  elements.contrast,
+  elements.saturation,
+  elements.soften,
+].forEach((control) => control.addEventListener("input", () => updatePhotoSetting(control)));
+elements.rotatePhoto.addEventListener("click", () => {
+  state.settings.photo.rotation = (state.settings.photo.rotation + 90) % 360;
+  updatePhotoPrepControls();
+  if (state.image) schedulePatternBuild(60);
+});
+elements.resetPhotoPrep.addEventListener("click", resetPhotoPreparation);
+elements.openProject.addEventListener("click", () => elements.projectInput.click());
+elements.projectInput.addEventListener("change", (event) => openProjectFile(event.target.files[0]));
+elements.saveProject.addEventListener("click", downloadProjectFile);
+elements.downloadProject.addEventListener("click", downloadProjectFile);
 elements.copyAiPrompt.addEventListener("click", copySimplificationPrompt);
 elements.localeToggle.addEventListener("click", () => {
   const currentIndex = LOCALE_SEQUENCE.indexOf(state.locale);
@@ -3031,10 +3765,39 @@ elements.showSymbols.addEventListener("change", () => {
   state.settings.showSymbols = elements.showSymbols.checked;
   state.settings.symbolPreferenceTouched = true;
   renderPattern();
+  scheduleAutosave();
 });
 elements.showGrid.addEventListener("change", () => {
   state.settings.showGrid = elements.showGrid.checked;
   renderPattern();
+  scheduleAutosave();
+});
+elements.editorToolButtons.forEach((button) => {
+  button.addEventListener("click", () => setEditorTool(button.dataset.editorTool));
+});
+elements.editorColor.addEventListener("change", () => {
+  state.activePaletteIndex = Number(elements.editorColor.value) || 0;
+  elements.editorStatus.textContent = t("editor.selected", {
+    color: state.pattern?.palette[state.activePaletteIndex]?.code || "",
+  });
+});
+elements.undoEdit.addEventListener("click", undoEdit);
+elements.redoEdit.addEventListener("click", redoEdit);
+elements.legendList.addEventListener("click", (event) => {
+  const row = event.target.closest("[data-palette-index]");
+  if (!row || !state.pattern) return;
+  state.activePaletteIndex = Number(row.dataset.paletteIndex) || 0;
+  if (state.editorTool === "none") setEditorTool("pencil");
+  updateEditorControls();
+  elements.editorStatus.textContent = t("editor.selected", {
+    color: state.pattern.palette[state.activePaletteIndex].code,
+  });
+});
+elements.patternCanvas.addEventListener("pointerdown", (event) => {
+  if (state.editorTool === "none") return;
+  event.preventDefault();
+  event.stopPropagation();
+  editPatternCell(event);
 });
 elements.zoomOut.addEventListener("click", () => setZoom(state.settings.zoom - ZOOM_STEP));
 elements.zoomReset.addEventListener("click", () => setZoom(100));
@@ -3149,6 +3912,28 @@ if ("IntersectionObserver" in window) {
   patternObserver.observe(elements.patternPanel);
 }
 
+async function restoreAutosaveOnStart() {
+  try {
+    const project = await readAutosave();
+    if (project && isValidProject(project)) await restoreProject(project, true);
+  } catch {
+    // Private browsing and restricted storage simply start with an empty project.
+  }
+}
+
+if ("launchQueue" in window && "LaunchParams" in window) {
+  window.launchQueue.setConsumer(async (launchParams) => {
+    const handle = launchParams.files?.[0];
+    if (handle) await openProjectFile(await handle.getFile());
+  });
+}
+
+if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register(new URL("./sw.js", import.meta.url), { scope: "./" }).catch(() => {});
+  });
+}
+
 initLocale();
 initTheme();
 updateControls();
@@ -3158,3 +3943,4 @@ setPatternStatus(t("pattern.waiting"));
 setAutoUpdateStatus(t("auto.noPhoto"));
 setFileStatus(t("file.local"));
 initOnboarding();
+restoreAutosaveOnStart();
