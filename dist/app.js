@@ -17,7 +17,6 @@ const MAX_ZOOM = 300;
 const ZOOM_STEP = 25;
 const LOCALE_STORAGE_KEY = "stitchloom:locale:v1";
 const SUPPORTED_LOCALES = ["ru", "en", "es", "de"];
-const LOCALE_SEQUENCE = ["ru", "en", "es", "de"];
 const LOCALE_NUMBER_FORMATS = { ru: "ru-RU", en: "en-US", es: "es-ES", de: "de-DE" };
 const LOCALE_MANIFESTS = {
   ru: "./manifest.webmanifest",
@@ -26,6 +25,7 @@ const LOCALE_MANIFESTS = {
   de: "./manifest.de.webmanifest",
 };
 const LOCALE_OG_CODES = { ru: "ru_RU", en: "en_US", es: "es_ES", de: "de_DE" };
+const LOCALE_NAMES = { ru: "Русский", en: "English", es: "Español", de: "Deutsch" };
 const THEME_STORAGE_KEY = "stitchloom:theme:v1";
 const ONBOARDING_STORAGE_KEY = "stitchloom:onboarding:v1";
 const ONBOARDING_COOKIE_KEY = "stitchloom_onboarding_v1";
@@ -90,8 +90,11 @@ const elements = {
   ogLocaleAlternateTertiary: $("ogLocaleAlternateTertiary"),
   ogUrl: $("ogUrl"),
   structuredData: $("structuredData"),
-  localeToggle: $("localeToggle"),
-  localeToggleLabel: $("localeToggleLabel"),
+  localePicker: $("localePicker"),
+  localePickerSummary: $("localePickerSummary"),
+  localePickerLabel: $("localePickerLabel"),
+  localeCurrentCode: $("localeCurrentCode"),
+  localeChoices: Array.from(document.querySelectorAll("[data-locale-choice]")),
   brandHome: $("brandHome"),
   themeColor: $("themeColor"),
   themePicker: $("themePicker"),
@@ -207,6 +210,7 @@ const EN_TRANSLATIONS = {
   "brand.home": "Stitchloom, home",
   "privacy.full": "YOUR PHOTO STAYS ON THIS DEVICE",
   "privacy.short": "LOCAL",
+  "locale.groupLabel": "Choose a language",
   "theme.groupLabel": "Choose an interface theme",
   "theme.auto": "Auto",
   "theme.autoHint": "Match the system",
@@ -386,6 +390,7 @@ const ES_TRANSLATIONS = {
   "brand.home": "Stitchloom, inicio",
   "privacy.full": "TU FOTO PERMANECE EN ESTE DISPOSITIVO",
   "privacy.short": "LOCAL",
+  "locale.groupLabel": "Elegir idioma",
   "theme.groupLabel": "Elegir el tema de la interfaz",
   "theme.auto": "Automático",
   "theme.autoHint": "Usar el tema del sistema",
@@ -565,6 +570,7 @@ const DE_TRANSLATIONS = {
   "brand.home": "Stitchloom, Startseite",
   "privacy.full": "DEIN FOTO BLEIBT AUF DIESEM GERÄT",
   "privacy.short": "LOKAL",
+  "locale.groupLabel": "Sprache auswählen",
   "theme.groupLabel": "Oberflächendesign auswählen",
   "theme.auto": "Automatisch",
   "theme.autoHint": "Systemeinstellung verwenden",
@@ -740,7 +746,8 @@ const UI_MESSAGES = {
     "theme.light": "Светлая",
     "theme.dark": "Тёмная",
     "theme.current": "Тема: {value}",
-    "locale.switch": "Переключить на английский",
+    "locale.switch": "Выбрать язык",
+    "locale.current": "Язык: {language}",
     "onboarding.progress": "Шаг {current} из {total}",
     "onboarding.start": "Начать работу",
     "onboarding.next": "Дальше",
@@ -824,7 +831,8 @@ const UI_MESSAGES = {
     "theme.light": "Light",
     "theme.dark": "Dark",
     "theme.current": "Theme: {value}",
-    "locale.switch": "Switch to Spanish",
+    "locale.switch": "Choose language",
+    "locale.current": "Language: {language}",
     "onboarding.progress": "Step {current} of {total}",
     "onboarding.start": "Start creating",
     "onboarding.next": "Next",
@@ -908,7 +916,8 @@ const UI_MESSAGES = {
     "theme.light": "Claro",
     "theme.dark": "Oscuro",
     "theme.current": "Tema: {value}",
-    "locale.switch": "Cambiar a alemán",
+    "locale.switch": "Elegir idioma",
+    "locale.current": "Idioma: {language}",
     "onboarding.progress": "Paso {current} de {total}",
     "onboarding.start": "Empezar a crear",
     "onboarding.next": "Siguiente",
@@ -992,7 +1001,8 @@ const UI_MESSAGES = {
     "theme.light": "Hell",
     "theme.dark": "Dunkel",
     "theme.current": "Design: {value}",
-    "locale.switch": "Zu Russisch wechseln",
+    "locale.switch": "Sprache auswählen",
+    "locale.current": "Sprache: {language}",
     "onboarding.progress": "Schritt {current} von {total}",
     "onboarding.start": "Jetzt erstellen",
     "onboarding.next": "Weiter",
@@ -1473,12 +1483,17 @@ function applyLocale(locale, persist = false, refresh = true) {
   elements.structuredData.textContent = JSON.stringify(buildStructuredData(nextLocale));
   elements.appManifest.href = new URL(LOCALE_MANIFESTS[nextLocale], document.baseURI).href;
 
-  const nextLocaleIndex = (LOCALE_SEQUENCE.indexOf(nextLocale) + 1) % LOCALE_SEQUENCE.length;
-  const switchToLocale = LOCALE_SEQUENCE[nextLocaleIndex];
-  elements.localeToggleLabel.textContent = switchToLocale.toUpperCase();
-  elements.localeToggleLabel.lang = switchToLocale;
-  elements.localeToggle.setAttribute("aria-label", t("locale.switch"));
-  elements.localeToggle.title = t("locale.switch");
+  const localeName = LOCALE_NAMES[nextLocale];
+  const localeDescription = t("locale.current", { language: localeName });
+  elements.localePickerLabel.textContent = localeName;
+  elements.localePickerLabel.lang = nextLocale;
+  elements.localeCurrentCode.textContent = nextLocale.toUpperCase();
+  elements.localePickerSummary.setAttribute("aria-label", localeDescription);
+  elements.localePickerSummary.title = localeDescription;
+  elements.localeChoices.forEach((button) => {
+    const isActive = button.dataset.localeChoice === nextLocale;
+    button.setAttribute("aria-pressed", String(isActive));
+  });
   elements.brandHome.href = getLocalizedAppPath(nextLocale);
 
   if (persist) persistLocale(nextLocale);
@@ -3695,9 +3710,11 @@ elements.projectInput.addEventListener("change", (event) => openProjectFile(even
 elements.saveProject.addEventListener("click", downloadProjectFile);
 elements.downloadProject.addEventListener("click", downloadProjectFile);
 elements.copyAiPrompt.addEventListener("click", copySimplificationPrompt);
-elements.localeToggle.addEventListener("click", () => {
-  const currentIndex = LOCALE_SEQUENCE.indexOf(state.locale);
-  applyLocale(LOCALE_SEQUENCE[(currentIndex + 1) % LOCALE_SEQUENCE.length], true);
+elements.localeChoices.forEach((button) => {
+  button.addEventListener("click", () => {
+    elements.localePicker.open = false;
+    applyLocale(button.dataset.localeChoice, true);
+  });
 });
 window.addEventListener("languagechange", () => {
   if (state.localeSource !== "browser") return;
@@ -3715,6 +3732,12 @@ elements.themeChoices.forEach((button) => {
     elements.themePicker.open = false;
   });
 });
+elements.localePicker.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || !elements.localePicker.open) return;
+  event.preventDefault();
+  elements.localePicker.open = false;
+  elements.localePickerSummary.focus();
+});
 elements.themePicker.addEventListener("keydown", (event) => {
   if (event.key !== "Escape" || !elements.themePicker.open) return;
   event.preventDefault();
@@ -3722,9 +3745,18 @@ elements.themePicker.addEventListener("keydown", (event) => {
   elements.themePickerSummary.focus();
 });
 document.addEventListener("click", (event) => {
+  if (elements.localePicker.open && !elements.localePicker.contains(event.target)) {
+    elements.localePicker.open = false;
+  }
   if (elements.themePicker.open && !elements.themePicker.contains(event.target)) {
     elements.themePicker.open = false;
   }
+});
+elements.localePicker.addEventListener("toggle", () => {
+  if (elements.localePicker.open) elements.themePicker.open = false;
+});
+elements.themePicker.addEventListener("toggle", () => {
+  if (elements.themePicker.open) elements.localePicker.open = false;
 });
 elements.openOnboarding.addEventListener("click", openOnboarding);
 elements.closeOnboarding.addEventListener("click", closeOnboarding);

@@ -6,6 +6,10 @@ const root = resolve(import.meta.dirname, "..");
 const dist = resolve(root, "dist");
 const locales = ["ru", "en", "es", "de"];
 const index = await readFile(resolve(dist, "index.html"), "utf8");
+assert.match(index, /id="localePicker"/);
+for (const locale of locales) {
+  assert.match(index, new RegExp(`data-locale-choice="${locale}"`));
+}
 
 const ids = [...index.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
 assert.equal(ids.length, new Set(ids).size, "HTML ids must be unique");
@@ -16,6 +20,9 @@ for (const locale of locales) {
   assert.match(html, new RegExp(`canonical[^>]+/${locale}/`));
   assert.match(html, /<base href="\.\.\/" \/>/);
 }
+
+const notFound = await readFile(resolve(dist, "404.html"), "utf8");
+assert.match(notFound, /id="localePicker"/);
 
 for (const filename of [
   "styles.css",

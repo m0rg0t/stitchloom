@@ -199,30 +199,85 @@
         gap: 12px;
       }
 
-      .locale-toggle {
+      .locale-picker { position: relative; z-index: 10; }
+
+      .locale-picker summary {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        min-width: 42px;
+        gap: 7px;
         min-height: 34px;
-        padding: 0 9px;
+        padding: 0 8px 0 7px;
         border: 1px solid rgba(244, 238, 228, 0.2);
         border-radius: 999px;
         color: var(--paper-muted);
         background: rgba(255, 255, 255, 0.035);
-        font: inherit;
-        font-size: 10px;
-        font-weight: 850;
-        letter-spacing: 0.1em;
+        font-size: 11px;
+        font-weight: 750;
+        list-style: none;
         cursor: pointer;
         transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease;
       }
 
-      .locale-toggle:hover {
+      .locale-picker summary::-webkit-details-marker { display: none; }
+      .locale-picker summary:hover,
+      .locale-picker[open] summary {
         border-color: rgba(244, 238, 228, 0.42);
         color: var(--paper);
         background: rgba(255, 255, 255, 0.07);
       }
+
+      .locale-code {
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        border: 1px solid rgba(244, 238, 228, 0.16);
+        border-radius: 50%;
+        color: var(--paper);
+        font-size: 9px;
+        font-weight: 850;
+        letter-spacing: 0.06em;
+      }
+
+      .locale-chevron { width: 14px; height: 14px; transition: transform 160ms ease; }
+      .locale-picker[open] .locale-chevron { transform: rotate(180deg); }
+
+      .locale-menu {
+        position: absolute;
+        top: calc(100% + 9px);
+        right: 0;
+        width: 220px;
+        padding: 7px;
+        border: 1px solid rgba(244, 238, 228, 0.16);
+        border-radius: 15px;
+        color: var(--paper);
+        background: rgba(27, 33, 34, 0.98);
+        box-shadow: 0 18px 55px rgba(0, 0, 0, 0.38);
+      }
+
+      .locale-menu button {
+        display: grid;
+        grid-template-columns: 32px minmax(0, 1fr) 20px;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        min-height: 48px;
+        padding: 7px 9px;
+        border: 0;
+        border-radius: 10px;
+        color: inherit;
+        background: transparent;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 750;
+        text-align: left;
+      }
+
+      .locale-menu button:hover,
+      .locale-menu button[aria-pressed="true"] { background: rgba(255, 107, 74, 0.12); }
+      .locale-menu .locale-code { width: 32px; height: 32px; border-radius: 9px; }
+      .locale-check { color: var(--coral); opacity: 0; }
+      .locale-menu button[aria-pressed="true"] .locale-check { opacity: 1; }
 
       .not-found {
         display: grid;
@@ -395,16 +450,21 @@
         box-shadow: 0 26px 80px rgba(42, 38, 32, 0.14);
       }
       html[data-theme="light"] .mascot-stage-label { color: #616965; }
-      html[data-theme="light"] .locale-toggle {
+      html[data-theme="light"] .locale-picker summary {
         border-color: rgba(28, 32, 32, 0.18);
         color: #515956;
         background: rgba(255, 255, 255, 0.46);
       }
-      html[data-theme="light"] .locale-toggle:hover {
+      html[data-theme="light"] .locale-picker summary:hover,
+      html[data-theme="light"] .locale-picker[open] summary {
         border-color: rgba(28, 32, 32, 0.36);
         color: #202526;
         background: rgba(255, 255, 255, 0.8);
       }
+      html[data-theme="light"] .locale-menu { color: #202526; background: rgba(255, 250, 241, 0.98); }
+      html[data-theme="light"] .locale-code { border-color: rgba(28, 32, 32, 0.14); color: #515956; }
+      html[data-theme="light"] .locale-menu button:hover,
+      html[data-theme="light"] .locale-menu button[aria-pressed="true"] { background: rgba(184, 60, 40, 0.1); }
       html[data-theme="light"] .footer,
       html[data-theme="light"] .hint { color: #616965; }
 
@@ -429,7 +489,10 @@
         .mascot-stage { border-radius: 20px; }
         .mascot-stage-label { right: 14px; bottom: 13px; font-size: 8px; }
         .topbar-actions { gap: 8px; }
-        .locale-toggle { min-width: 38px; min-height: 38px; padding: 0; }
+        .locale-picker summary { width: 38px; min-height: 38px; padding: 0; justify-content: center; }
+        .locale-picker-label,
+        .locale-chevron { display: none; }
+        .locale-menu { width: min(220px, calc(100vw - 28px)); }
         .lead { font-size: 16px; }
         .home-button { width: 100%; min-height: 52px; }
         .hint { width: 100%; }
@@ -439,7 +502,9 @@
         .mascot,
         .mascot-stage::before,
         .home-button,
-        .locale-toggle { animation: none; transition: none; }
+        .locale-picker summary,
+        .locale-chevron,
+        .locale-menu button { animation: none; transition: none; }
       }
     </style>
   </head>
@@ -452,7 +517,19 @@
         </a>
         <div class="topbar-actions">
           <span class="topbar-code" data-i18n="errorCode">ОШИБКА / 404</span>
-          <button class="locale-toggle" id="localeToggle" type="button" aria-label="Переключить на английский" title="Переключить на английский">EN</button>
+          <details class="locale-picker" id="localePicker">
+            <summary id="localePickerSummary" aria-label="Язык: Русский" title="Язык: Русский">
+              <span class="locale-code" id="localeCurrentCode" aria-hidden="true">RU</span>
+              <span class="locale-picker-label" id="localePickerLabel">Русский</span>
+              <svg class="locale-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 9.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </summary>
+            <div class="locale-menu" role="group" aria-label="Выберите язык" id="localeMenu">
+              <button type="button" data-locale-choice="ru" aria-pressed="true"><span class="locale-code" aria-hidden="true">RU</span><span>Русский</span><span class="locale-check" aria-hidden="true">✓</span></button>
+              <button type="button" data-locale-choice="en" aria-pressed="false"><span class="locale-code" aria-hidden="true">EN</span><span>English</span><span class="locale-check" aria-hidden="true">✓</span></button>
+              <button type="button" data-locale-choice="es" aria-pressed="false"><span class="locale-code" aria-hidden="true">ES</span><span>Español</span><span class="locale-check" aria-hidden="true">✓</span></button>
+              <button type="button" data-locale-choice="de" aria-pressed="false"><span class="locale-code" aria-hidden="true">DE</span><span>Deutsch</span><span class="locale-check" aria-hidden="true">✓</span></button>
+            </div>
+          </details>
         </div>
       </header>
 
@@ -512,7 +589,8 @@
             homeButton: "Вернуться в студию",
             hint: "Фото по-прежнему обрабатывается только на вашем устройстве.",
             mascotAlt: "Стежок — маскот Stitchloom в виде катушки ниток",
-            switchLanguage: "Переключить на английский"
+            chooseLanguage: "Выберите язык",
+            currentLanguage: "Язык: {language}"
           },
           en: {
             pageTitle: "Page not found — Stitchloom",
@@ -526,7 +604,8 @@
             homeButton: "Return to the studio",
             hint: "Your photo is still processed only on your device.",
             mascotAlt: "Stitch, the Stitchloom thread-spool mascot",
-            switchLanguage: "Switch to Spanish"
+            chooseLanguage: "Choose a language",
+            currentLanguage: "Language: {language}"
           },
           es: {
             pageTitle: "Página no encontrada — Stitchloom",
@@ -540,7 +619,8 @@
             homeButton: "Volver al estudio",
             hint: "Tu foto sigue procesándose únicamente en tu dispositivo.",
             mascotAlt: "Puntada, la mascota de Stitchloom con forma de carrete de hilo",
-            switchLanguage: "Cambiar a alemán"
+            chooseLanguage: "Elegir idioma",
+            currentLanguage: "Idioma: {language}"
           },
           de: {
             pageTitle: "Seite nicht gefunden — Stitchloom",
@@ -554,10 +634,17 @@
             homeButton: "Zurück ins Studio",
             hint: "Dein Foto wird weiterhin nur auf deinem Gerät verarbeitet.",
             mascotAlt: "Stich, das Stitchloom-Maskottchen in Form einer Garnrolle",
-            switchLanguage: "Zu Russisch wechseln"
+            chooseLanguage: "Sprache auswählen",
+            currentLanguage: "Sprache: {language}"
           }
         };
-        const localeToggle = document.getElementById("localeToggle");
+        const localeNames = { ru: "Русский", en: "English", es: "Español", de: "Deutsch" };
+        const localePicker = document.getElementById("localePicker");
+        const localePickerSummary = document.getElementById("localePickerSummary");
+        const localePickerLabel = document.getElementById("localePickerLabel");
+        const localeCurrentCode = document.getElementById("localeCurrentCode");
+        const localeMenu = document.getElementById("localeMenu");
+        const localeChoices = Array.from(document.querySelectorAll("[data-locale-choice]"));
         const pageDescription = document.getElementById("pageDescription");
         const mascot = document.getElementById("mascot");
 
@@ -582,12 +669,17 @@
           });
 
           mascot.alt = copy.mascotAlt;
-          const nextLocaleIndex = (localeSequence.indexOf(locale) + 1) % localeSequence.length;
-          const switchToLocale = localeSequence[nextLocaleIndex];
-          localeToggle.textContent = switchToLocale.toUpperCase();
-          localeToggle.lang = switchToLocale;
-          localeToggle.setAttribute("aria-label", copy.switchLanguage);
-          localeToggle.title = copy.switchLanguage;
+          const localeName = localeNames[locale];
+          const localeDescription = copy.currentLanguage.replace("{language}", localeName);
+          localePickerLabel.textContent = localeName;
+          localePickerLabel.lang = locale;
+          localeCurrentCode.textContent = locale.toUpperCase();
+          localePickerSummary.setAttribute("aria-label", localeDescription);
+          localePickerSummary.title = localeDescription;
+          localeMenu.setAttribute("aria-label", copy.chooseLanguage);
+          localeChoices.forEach((button) => {
+            button.setAttribute("aria-pressed", String(button.dataset.localeChoice === locale));
+          });
 
           const manifest = document.querySelector('link[rel="manifest"]');
           if (manifest) {
@@ -606,9 +698,20 @@
         }
 
         mascot.src = basePath + "mascot-stezhok.png";
-        localeToggle.addEventListener("click", () => {
-          const currentIndex = localeSequence.indexOf(locale);
-          applyLocale(localeSequence[(currentIndex + 1) % localeSequence.length], true);
+        localeChoices.forEach((button) => {
+          button.addEventListener("click", () => {
+            localePicker.open = false;
+            applyLocale(button.dataset.localeChoice, true);
+          });
+        });
+        localePicker.addEventListener("keydown", (event) => {
+          if (event.key !== "Escape" || !localePicker.open) return;
+          event.preventDefault();
+          localePicker.open = false;
+          localePickerSummary.focus();
+        });
+        document.addEventListener("click", (event) => {
+          if (localePicker.open && !localePicker.contains(event.target)) localePicker.open = false;
         });
         window.addEventListener("languagechange", () => {
           if (localeSource !== "browser") return;

@@ -232,9 +232,42 @@
             <span class="privacy-label-full" data-i18n="privacy.full">ФОТО НЕ УХОДИТ С УСТРОЙСТВА</span>
             <span class="privacy-label-short" data-i18n="privacy.short">ЛОКАЛЬНО</span>
           </span>
-          <button class="locale-toggle" id="localeToggle" type="button" aria-label="Switch to English" title="Switch to English">
-            <span id="localeToggleLabel">EN</span>
-          </button>
+          <details class="locale-picker" id="localePicker">
+            <summary
+              class="locale-picker-summary"
+              id="localePickerSummary"
+              aria-label="Язык: Русский"
+              title="Язык: Русский"
+            >
+              <span class="locale-current-code" id="localeCurrentCode" aria-hidden="true">RU</span>
+              <span class="locale-picker-label" id="localePickerLabel">Русский</span>
+              <svg class="locale-picker-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m7 9.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </summary>
+            <div class="locale-picker-menu" role="group" aria-label="Выберите язык" data-i18n-aria-label="locale.groupLabel">
+              <button type="button" data-locale-choice="ru" aria-pressed="true">
+                <span class="locale-choice-code" aria-hidden="true">RU</span>
+                <span class="theme-choice-copy"><strong>Русский</strong></span>
+                <span class="theme-choice-check" aria-hidden="true">✓</span>
+              </button>
+              <button type="button" data-locale-choice="en" aria-pressed="false">
+                <span class="locale-choice-code" aria-hidden="true">EN</span>
+                <span class="theme-choice-copy"><strong>English</strong></span>
+                <span class="theme-choice-check" aria-hidden="true">✓</span>
+              </button>
+              <button type="button" data-locale-choice="es" aria-pressed="false">
+                <span class="locale-choice-code" aria-hidden="true">ES</span>
+                <span class="theme-choice-copy"><strong>Español</strong></span>
+                <span class="theme-choice-check" aria-hidden="true">✓</span>
+              </button>
+              <button type="button" data-locale-choice="de" aria-pressed="false">
+                <span class="locale-choice-code" aria-hidden="true">DE</span>
+                <span class="theme-choice-copy"><strong>Deutsch</strong></span>
+                <span class="theme-choice-check" aria-hidden="true">✓</span>
+              </button>
+            </div>
+          </details>
           <details class="theme-picker" id="themePicker">
             <summary
               class="theme-picker-summary"
