@@ -1,0 +1,7 @@
+Use case: logo-brand
+Asset type: VK Mini App catalog icon, full-bleed square raster master
+Primary request: redesign the Stitchloom app icon around the mascot “Стежок”; preserve the mascot’s recognizable coral thread spool body, friendly large eyes, wooden spool rims, tiny cross-stitch decorations, and needle/thread idea, but simplify it into a bold premium app-icon composition.
+Scene/backdrop: clean deep charcoal-to-teal full-bleed background with a subtle soft violet glow, no circles or corner ornaments.
+Composition/framing: large centered mascot filling about 76% of the square; face and coral spool body are dominant; needle and a short curved thread stay inside the safe field; readable at 64 px.
+Style: polished friendly 3D character render, tactile thread and warm wood, crisp silhouette, modern craft-app branding.
+Constraints: square opaque canvas; outer corners remain square and unmasked; no rounded-square container; no words, labels, borders, UI, watermark, extra characters, or tiny decorative clutter.

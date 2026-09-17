@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "appId": 54777468,
+  "requirements": {
+    "checkedAt": "2026-09-18",
+    "source": "evidence/ADMIN-REQUIREMENTS-NEEDED.md",
+    "icon": {
+      "width": 576,
+      "height": 576
+    },
+    "snippet": {
+      "width": 1120,
+      "height": 630,
+      "minBytes": 1024,
+      "maxBytes": 5242880
+    },
+    "screenshots": {
+      "width": 600,
+      "height": 1200,
+      "minCount": 3
+    },
+    "lottie": {
+      "width": 96,
+      "height": 96,
+      "maxBytes": 24576
+    }
+  },
+  "assets": {
+    "icon": {
+      "path": "icon-576.png",
+      "source": "sources/icon-master-v2.svg",
+      "unroundedReviewed": true
+    },
+    "snippet": {
+      "path": "catalog-snippet-1120x630.png",
+      "compositionSource": "sources/catalog-snippet-1120x630.source.svg",
+      "iconSource": "icon-576.png",
+      "interfaceSource": "sources/snippet-result-crop.png",
+      "contentSources": [
+        "sources/content/01-icon-master-v2.png",
+        "sources/content/02-snippet-result-source.png"
+      ],
+      "unroundedReviewed": true,
+      "realUiReviewed": true,
+      "privacyReviewed": true
+    },
+    "screenshots": [
+      "screenshots/01-01-ready-pattern.png",
+      "screenshots/02-02-photo-settings.png",
+      "screenshots/03-03-exports-and-story.png",
+      "screenshots/04-04-color-key.png"
+    ],
+    "screenshotCapture": {
+      "source": "local static preview on port 4173 with the allow-listed VK success mock",
+      "capturedAt": "2026-09-18",
+      "engine": "agent-browser",
+      "cssViewport": {
+        "width": 300,
+        "height": 600
+      },
+      "deviceScaleFactor": 2,
+      "physicalOutput": {
+        "width": 600,
+        "height": 1200
+      },
+      "syntheticData": true,
+      "realUiReviewed": true,
+      "privacyReviewed": true
+    },
+    "lottie": {
+      "required": false
+    }
+  },
+  "copy": {
+    "path": "catalog-copy.json"
+  },
+  "links": {
+    "privacyPolicy": "https://stitchloom.antonlenev.chatgpt.site/privacy.html"
+  },
+  "contacts": {
+    "support": "https://github.com/m0rg0t/stitchloom/issues"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "stitchloom",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Client-side photo-to-cross-stitch pattern maker and VK Mini App.",
+  "scripts": {
+    "dev": "python3 -m http.server 4173 -d dist",
+    "build": "node scripts/build-localized-pages.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "predeploy": "npm run build",
+    "deploy": "vk-miniapps-deploy"
+  },
+  "devDependencies": {
+    "@vkontakte/vk-miniapps-deploy": "1.0.2"
+  }
+}

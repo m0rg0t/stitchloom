@@ -58,7 +58,9 @@ Both documents are also published alongside the application as `llms.txt` and `S
 
 ## VK catalog release pack
 
-Editable catalog artwork, exact-size screenshots, validated Russian listing copy, moderation notes, splash screens, and the catalog manifest live in `release/catalog/`. The source preflight is expected to remain blocked until the real VK App ID and a screenshot of the current app-specific catalog form are added; do not substitute a placeholder ID.
+Editable catalog artwork, exact-size screenshots, validated Russian listing copy, moderation notes, splash screens, and the catalog manifest live in `release/catalog/`. The package targets [VK App 54777468](https://vk.com/app54777468). `release/catalog-package/` and `release/stitchloom-vk-catalog-54777468.zip` are preflighted portable catalog packages; the current app-specific catalog form still needs to be captured and compared before submission.
+
+The official `@vkontakte/vk-miniapps-deploy` package is pinned to version 1.0.2. `vk-hosting-config.json` targets app `54777468` and the static `dist/` output. `release/stitchloom-vk-build.zip` is the current manual hosting artifact with `index.html` at its root. Tokens and production confirmation codes must never be committed.
 
 ## Privacy
 

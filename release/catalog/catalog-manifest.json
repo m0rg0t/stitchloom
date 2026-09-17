@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "appId": 0,
+  "appId": 54777468,
   "requirements": {
     "checkedAt": "2026-09-18",
     "source": "ADMIN-REQUIREMENTS-NEEDED.md",
@@ -12,14 +12,15 @@
   "assets": {
     "icon": {
       "path": "icon-576.png",
-      "source": "icon.svg",
+      "source": "sources/icon-master-v2.svg",
       "unroundedReviewed": true
     },
     "snippet": {
       "path": "catalog-snippet-1120x630.png",
       "compositionSource": "catalog-snippet-1120x630.source.svg",
       "iconSource": "icon-576.png",
-      "interfaceSource": "screenshots/01-ready-pattern.png",
+      "interfaceSource": "sources/snippet-result-crop.png",
+      "contentSources": ["icon-master-v2.png", "sources/snippet-result-source.png"],
       "unroundedReviewed": true,
       "realUiReviewed": true,
       "privacyReviewed": true
