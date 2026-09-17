@@ -5,9 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta id="themeColor" name="theme-color" content="#131718" />
     <meta name="color-scheme" content="dark light" />
+    <meta name="application-name" content="Stitchloom" />
+    <meta name="apple-mobile-web-app-title" content="Stitchloom" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="robots" content="noindex, follow" />
     <meta name="description" content="Эта страница Stitchloom не найдена. Вернитесь в студию и создайте схему вышивки крестиком из фотографии." />
     <title>Страница не найдена — Stitchloom</title>
+    <script>
+      (() => {
+        const basePath = window.location.hostname.endsWith("github.io")
+          ? "/stitchloom/"
+          : "/";
+        window.__stitchloomBasePath = basePath;
+
+        [
+          { rel: "icon", href: "favicon.ico", sizes: "any" },
+          { rel: "icon", href: "favicon-48.png", sizes: "48x48", type: "image/png" },
+          { rel: "icon", href: "favicon-32.png", sizes: "32x32", type: "image/png" },
+          { rel: "icon", href: "favicon-16.png", sizes: "16x16", type: "image/png" },
+          { rel: "apple-touch-icon", href: "apple-touch-icon.png", sizes: "180x180" },
+          { rel: "manifest", href: "manifest.webmanifest" }
+        ].forEach((attributes) => {
+          const link = document.createElement("link");
+          Object.assign(link, attributes, { href: basePath + attributes.href });
+          document.head.append(link);
+        });
+      })();
+    </script>
     <script>
       (() => {
         const storageKey = "stitchloom:theme:v1";
@@ -366,8 +391,7 @@
 
     <script>
       (() => {
-        const isGitHubPages = window.location.hostname.endsWith("github.io");
-        const basePath = isGitHubPages ? "/stitchloom/" : "/";
+        const basePath = window.__stitchloomBasePath || "/";
 
         document.querySelectorAll("[data-home]").forEach((link) => {
           link.href = basePath;
