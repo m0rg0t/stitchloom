@@ -797,15 +797,36 @@ h1 em {
   margin-top: 4px;
 }
 
+.select-shell {
+  position: relative;
+  color: var(--paper);
+}
+
 .select-control {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   min-height: 46px;
-  padding: 0 13px;
+  padding: 0 48px 0 15px;
   border: 1px solid rgba(244, 238, 228, 0.19);
   border-radius: 11px;
-  color: var(--paper);
+  color: inherit;
   background: #171c1d;
   font-size: 14px;
+}
+
+.select-control::-ms-expand {
+  display: none;
+}
+
+.select-chevron {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  transform: translateY(-50%);
 }
 
 .select-control:hover {
@@ -2014,8 +2035,11 @@ html[data-theme="light"] .rule {
 
 html[data-theme="light"] .select-control {
   border-color: rgba(28, 32, 32, 0.2);
-  color: var(--paper-ink);
   background: rgba(255, 255, 255, 0.74);
+}
+
+html[data-theme="light"] .select-shell {
+  color: var(--paper-ink);
 }
 
 html[data-theme="light"] .select-control:hover {

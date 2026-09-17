@@ -268,13 +268,18 @@
                 <span>Размер по ширине</span>
                 <span class="field-value" id="sizeValue">70 клеток</span>
               </label>
-              <select class="select-control" id="sizeSelect">
-                <option value="36">36 клеток · быстрый эскиз</option>
-                <option value="52">52 клетки · сбалансированно</option>
-                <option value="70" selected>70 клеток · по умолчанию</option>
-                <option value="90">90 клеток · детально</option>
-                <option value="110">110 клеток · максимум деталей</option>
-              </select>
+              <div class="select-shell">
+                <select class="select-control" id="sizeSelect">
+                  <option value="36">36 клеток · быстрый эскиз</option>
+                  <option value="52">52 клетки · сбалансированно</option>
+                  <option value="70" selected>70 клеток · по умолчанию</option>
+                  <option value="90">90 клеток · детально</option>
+                  <option value="110">110 клеток · максимум деталей</option>
+                </select>
+                <svg class="select-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="m7 9.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </div>
 
               <label class="field-label range-label" for="colorCount">
                 <span>Цветов в палитре</span>
