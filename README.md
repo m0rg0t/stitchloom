@@ -37,6 +37,13 @@ The main branch is configured to deploy dist/ to GitHub Pages through .github/wo
 - Live demo on GitHub Pages: https://m0rg0t.github.io/stitchloom/
 - Public ChatGPT Site: https://stitchloom.antonlenev.chatgpt.site
 
+## AI-readable documentation
+
+- `llms.txt` gives language models a compact map of the product, source files, algorithms, privacy boundary and non-negotiable constraints.
+- `SKILL.md` is a reusable Codex-compatible implementation guide for building or extending a Stitchloom-like browser tool. It explains where neural image simplification helps and why the final stitch grid should remain deterministic.
+
+Both documents are also published alongside the application as `llms.txt` and `SKILL.md`.
+
 ## Privacy
 
 Image decoding, sampling and palette selection happen in the browser with Canvas APIs. No application backend is required for the core flow.

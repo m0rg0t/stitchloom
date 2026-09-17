@@ -1115,6 +1115,7 @@ h1 em {
 
 .footer {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 18px;
   padding-top: 19px;
@@ -1123,6 +1124,23 @@ h1 em {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.11em;
+}
+
+.footer-links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.footer a {
+  color: inherit;
+  text-underline-offset: 3px;
+  transition: color 160ms ease;
+}
+
+.footer a:hover,
+.footer a:focus-visible {
+  color: var(--coral);
 }
 
 body.onboarding-open {
