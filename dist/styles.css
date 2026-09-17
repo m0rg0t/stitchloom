@@ -252,8 +252,11 @@ html[data-theme-preference="dark"] .theme-icon--dark {
 }
 
 .theme-picker-chevron {
-  font-size: 15px;
-  line-height: 1;
+  display: block;
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  transform-origin: center;
   transition: transform 160ms ease;
 }
 
