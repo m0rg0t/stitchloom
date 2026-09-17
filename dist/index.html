@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#141819" />
+    <meta name="description" content="Stitchloom превращает фотографию в схему вышивки крестиком прямо в браузере." />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Stitchloom — схема вышивки из фото</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="Stitchloom, начало">
+          <span class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </span>
+          <span class="brand-word">STITCHLOOM</span>
+        </a>
+        <div class="topbar-meta">
+          <span class="privacy-pill"><span class="privacy-dot"></span>ФОТО НЕ УХОДИТ С УСТРОЙСТВА</span>
+          <span class="version-label">LOCAL STUDIO / 01</span>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="workspace-intro" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow">СТУДИЯ СХЕМ</p>
+            <h1 id="page-title">Фото в вышивку.<br /><em>Клетка за клеткой.</em></h1>
+          </div>
+          <p class="intro-copy">
+            Загрузите изображение, выберите плотность и получите плоскую схему
+            с отдельным цветом и символом для каждой клетки.
+          </p>
+        </section>
+
+        <div class="studio-grid">
+          <aside class="controls-panel" aria-label="Настройки схемы">
+            <div class="step-block">
+              <div class="step-heading">
+                <span class="step-number">01</span>
+                <div>
+                  <p class="eyebrow">ИСХОДНИК</p>
+                  <h2>Загрузите фото</h2>
+                </div>
+              </div>
+
+              <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Выбрать изображение">
+                <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+                <span class="dropzone-icon" aria-hidden="true">
+                  <svg viewBox="0 0 32 32" fill="none">
+                    <path d="M16 21V6m0 0-5 5m5-5 5 5M7 19v6.5A2.5 2.5 0 0 0 9.5 28h13a2.5 2.5 0 0 0 2.5-2.5V19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <strong>Перетащите фото сюда</strong>
+                <span>или нажмите, чтобы выбрать файл</span>
+                <small>PNG, JPG, WEBP · до 20 МБ</small>
+              </div>
+
+              <div class="source-card is-hidden" id="sourceCard">
+                <img id="sourcePreview" alt="Загруженное фото" />
+                <div class="source-info">
+                  <strong id="fileName">photo.jpg</strong>
+                  <span id="fileMeta">Готово к обработке</span>
+                </div>
+                <button class="icon-button" id="removeImage" type="button" aria-label="Удалить изображение">×</button>
+              </div>
+              <p class="field-note" id="fileStatus" role="status">Всё считается локально: файл не загружается на сервер.</p>
+            </div>
+
+            <div class="rule"></div>
+
+            <div class="step-block">
+              <div class="step-heading">
+                <span class="step-number">02</span>
+                <div>
+                  <p class="eyebrow">ПАРАМЕТРЫ</p>
+                  <h2>Настройте основу</h2>
+                </div>
+              </div>
+
+              <label class="field-label" for="sizeSelect">
+                <span>Размер по ширине</span>
+                <span class="field-value" id="sizeValue">70 клеток</span>
+              </label>
+              <select class="select-control" id="sizeSelect">
+                <option value="36">36 клеток · быстрый эскиз</option>
+                <option value="52">52 клетки · сбалансированно</option>
+                <option value="70" selected>70 клеток · по умолчанию</option>
+                <option value="90">90 клеток · детально</option>
+                <option value="110">110 клеток · максимум деталей</option>
+              </select>
+
+              <label class="field-label range-label" for="colorCount">
+                <span>Цветов в палитре</span>
+                <span class="field-value" id="colorCountValue">18</span>
+              </label>
+              <input class="range-control" id="colorCount" type="range" min="6" max="24" value="18" />
+              <div class="range-scale"><span>6 · графично</span><span>24 · мягче</span></div>
+
+              <div class="algorithm-note">
+                <span class="note-mark" aria-hidden="true">✳</span>
+                <span>Каждая клетка получает один ближайший цвет палитры DMC — соседние оттенки не смешиваются.</span>
+              </div>
+
+              <button class="primary-button" id="rebuildButton" type="button" disabled>
+                <span>Собрать схему</span>
+                <span class="button-arrow" aria-hidden="true">↗</span>
+              </button>
+            </div>
+          </aside>
+
+          <section class="pattern-panel" aria-labelledby="pattern-heading" aria-live="polite">
+            <div class="pattern-header">
+              <div>
+                <p class="eyebrow">РЕЗУЛЬТАТ</p>
+                <h2 id="pattern-heading">Ваша схема появится здесь</h2>
+              </div>
+              <div class="status-chip" id="patternStatus"><span class="status-dot"></span><span>Ждёт фото</span></div>
+            </div>
+
+            <div class="pattern-toolbar">
+              <div class="view-switch" role="group" aria-label="Режим просмотра">
+                <button type="button" class="view-button is-active" data-view="pattern">Схема</button>
+                <button type="button" class="view-button" data-view="photo">Фото</button>
+              </div>
+              <div class="display-options">
+                <label class="check-control"><input id="showSymbols" type="checkbox" checked /><span>Символы</span></label>
+                <label class="check-control"><input id="showGrid" type="checkbox" checked /><span>Сетка</span></label>
+              </div>
+            </div>
+
+            <div class="empty-state" id="emptyState">
+              <div class="empty-grid" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span class="accent"></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span class="accent"></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span class="accent"></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span class="accent"></span><span></span><span></span>
+              </div>
+              <strong>Начните с фотографии</strong>
+              <span>После загрузки здесь появятся клетчатое поле, символы и ключ цветов.</span>
+            </div>
+
+            <div class="pattern-result is-hidden" id="patternResult">
+              <div class="pattern-meta">
+                <span id="patternDimension">70 × 70 клеток</span>
+                <span class="meta-divider">/</span>
+                <span id="patternDetails">18 цветов · 4 900 стежков</span>
+              </div>
+              <div class="canvas-shell">
+                <canvas id="patternCanvas" aria-label="Схема вышивки крестиком"></canvas>
+              </div>
+              <div class="pattern-actions">
+                <button class="secondary-button" id="downloadPng" type="button" disabled>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19.5h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Скачать PNG
+                </button>
+                <button class="secondary-button" id="downloadCsv" type="button" disabled>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h8l4 4V20.5H6zM14 3.5v4h4M9 12h6m-6 3.5h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Скачать CSV
+                </button>
+              </div>
+
+              <div class="legend-section">
+                <div class="legend-heading">
+                  <div>
+                    <p class="eyebrow">КЛЮЧ</p>
+                    <h3>Цвета и символы</h3>
+                  </div>
+                  <span id="legendCount">0 цветов</span>
+                </div>
+                <div class="legend-list" id="legendList"></div>
+                <p class="legend-note">Экран показывает приближённые оттенки. Перед покупкой мулине сверьтесь с физическим каталогом.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <footer class="footer">
+        <span>STITCHLOOM / PHOTO TO CROSS-STITCH</span>
+        <span>Работает без аккаунта · без загрузки на сервер</span>
+      </footer>
+    </div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
