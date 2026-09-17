@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru" data-theme="dark" data-theme-preference="auto">
+<html lang="ru" data-locale="ru" data-theme="dark" data-theme-preference="auto">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="robots" content="noindex, follow" />
-    <meta name="description" content="Эта страница Stitchloom не найдена. Вернитесь в студию и создайте схему вышивки крестиком из фотографии." />
+    <meta id="pageDescription" name="description" content="Эта страница Stitchloom не найдена. Вернитесь в студию и создайте схему вышивки крестиком из фотографии." />
     <title>Страница не найдена — Stitchloom</title>
     <script>
       (() => {
@@ -19,13 +19,42 @@
           : "/";
         window.__stitchloomBasePath = basePath;
 
+        const storageKey = "stitchloom:locale:v1";
+        const requestedLocale = new URLSearchParams(window.location.search).get("lang");
+        let locale = requestedLocale === "ru" || requestedLocale === "en"
+          ? requestedLocale
+          : "";
+
+        if (!locale) {
+          try {
+            const storedLocale = window.localStorage.getItem(storageKey);
+            if (storedLocale === "ru" || storedLocale === "en") locale = storedLocale;
+          } catch {
+            // Browser-language detection remains available when storage is restricted.
+          }
+        }
+
+        if (!locale) {
+          locale = (window.navigator.languages || [window.navigator.language || ""])
+            .some((language) => String(language).toLowerCase().startsWith("ru"))
+            ? "ru"
+            : "en";
+        }
+
+        document.documentElement.lang = locale;
+        document.documentElement.dataset.locale = locale;
+        window.__stitchloomLocale = locale;
+
         [
           { rel: "icon", href: "favicon.ico", sizes: "any" },
           { rel: "icon", href: "favicon-48.png", sizes: "48x48", type: "image/png" },
           { rel: "icon", href: "favicon-32.png", sizes: "32x32", type: "image/png" },
           { rel: "icon", href: "favicon-16.png", sizes: "16x16", type: "image/png" },
           { rel: "apple-touch-icon", href: "apple-touch-icon.png", sizes: "180x180" },
-          { rel: "manifest", href: "manifest.webmanifest" }
+          {
+            rel: "manifest",
+            href: locale === "en" ? "manifest.en.webmanifest" : "manifest.webmanifest"
+          }
         ].forEach((attributes) => {
           const link = document.createElement("link");
           Object.assign(link, attributes, { href: basePath + attributes.href });
@@ -93,7 +122,8 @@
           var(--ink);
       }
 
-      a:focus-visible {
+      a:focus-visible,
+      button:focus-visible {
         outline: 3px solid var(--cobalt);
         outline-offset: 4px;
       }
@@ -150,6 +180,37 @@
         letter-spacing: 0.14em;
       }
 
+      .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .locale-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 42px;
+        min-height: 34px;
+        padding: 0 9px;
+        border: 1px solid rgba(244, 238, 228, 0.2);
+        border-radius: 999px;
+        color: var(--paper-muted);
+        background: rgba(255, 255, 255, 0.035);
+        font: inherit;
+        font-size: 10px;
+        font-weight: 850;
+        letter-spacing: 0.1em;
+        cursor: pointer;
+        transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease;
+      }
+
+      .locale-toggle:hover {
+        border-color: rgba(244, 238, 228, 0.42);
+        color: var(--paper);
+        background: rgba(255, 255, 255, 0.07);
+      }
+
       .not-found {
         display: grid;
         grid-template-columns: minmax(300px, 0.9fr) minmax(340px, 1.1fr);
@@ -187,8 +248,7 @@
         animation: glow-pulse 3.8s ease-in-out infinite;
       }
 
-      .mascot-stage::after {
-        content: "КЛЕТКА НЕ НАЙДЕНА";
+      .mascot-stage-label {
         position: absolute;
         right: 20px;
         bottom: 18px;
@@ -321,7 +381,17 @@
         background-size: 28px 28px;
         box-shadow: 0 26px 80px rgba(42, 38, 32, 0.14);
       }
-      html[data-theme="light"] .mascot-stage::after { color: #616965; }
+      html[data-theme="light"] .mascot-stage-label { color: #616965; }
+      html[data-theme="light"] .locale-toggle {
+        border-color: rgba(28, 32, 32, 0.18);
+        color: #515956;
+        background: rgba(255, 255, 255, 0.46);
+      }
+      html[data-theme="light"] .locale-toggle:hover {
+        border-color: rgba(28, 32, 32, 0.36);
+        color: #202526;
+        background: rgba(255, 255, 255, 0.8);
+      }
       html[data-theme="light"] .footer,
       html[data-theme="light"] .hint { color: #616965; }
 
@@ -344,7 +414,9 @@
         .topbar-code { font-size: 9px; letter-spacing: 0.1em; }
         .brand-word { font-size: 12px; }
         .mascot-stage { border-radius: 20px; }
-        .mascot-stage::after { right: 14px; bottom: 13px; font-size: 8px; }
+        .mascot-stage-label { right: 14px; bottom: 13px; font-size: 8px; }
+        .topbar-actions { gap: 8px; }
+        .locale-toggle { min-width: 38px; min-height: 38px; padding: 0; }
         .lead { font-size: 16px; }
         .home-button { width: 100%; min-height: 52px; }
         .hint { width: 100%; }
@@ -353,35 +425,40 @@
       @media (prefers-reduced-motion: reduce) {
         .mascot,
         .mascot-stage::before,
-        .home-button { animation: none; transition: none; }
+        .home-button,
+        .locale-toggle { animation: none; transition: none; }
       }
     </style>
   </head>
   <body>
     <div class="page">
       <header class="topbar">
-        <a class="brand" data-home href="./" aria-label="Stitchloom, вернуться на главную">
+        <a class="brand" data-home href="./" aria-label="Stitchloom, вернуться на главную" data-i18n-aria="brandHome">
           <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
           <span class="brand-word">STITCHLOOM</span>
         </a>
-        <span class="topbar-code">ОШИБКА / 404</span>
+        <div class="topbar-actions">
+          <span class="topbar-code" data-i18n="errorCode">ОШИБКА / 404</span>
+          <button class="locale-toggle" id="localeToggle" type="button" aria-label="Переключить на английский" title="Переключить на английский">EN</button>
+        </div>
       </header>
 
       <main class="not-found">
         <div class="mascot-stage" aria-hidden="true">
           <img class="mascot" id="mascot" alt="" width="800" height="800" />
+          <span class="mascot-stage-label" data-i18n="stageLabel">КЛЕТКА НЕ НАЙДЕНА</span>
         </div>
 
         <section class="copy" aria-labelledby="not-found-title">
-          <p class="eyebrow">СТЕЖОК СБИЛСЯ СО СХЕМЫ</p>
-          <h1 id="not-found-title">404<span>Этой клетки здесь нет.</span></h1>
-          <p class="lead">
+          <p class="eyebrow" data-i18n="eyebrow">СТЕЖОК СБИЛСЯ СО СХЕМЫ</p>
+          <h1 id="not-found-title">404<span data-i18n="title">Этой клетки здесь нет.</span></h1>
+          <p class="lead" data-i18n="lead">
             Кажется, наш маскот Стежок потянул не за ту ниточку. Вернитесь в студию —
             фотография, настройки и готовая схема ждут там.
           </p>
           <div class="actions">
-            <a class="home-button" data-home href="./">Вернуться в студию</a>
-            <span class="hint">Фото по-прежнему обрабатывается только на вашем устройстве.</span>
+            <a class="home-button" data-home href="./" data-i18n="homeButton">Вернуться в студию</a>
+            <span class="hint" data-i18n="hint">Фото по-прежнему обрабатывается только на вашем устройстве.</span>
           </div>
         </section>
       </main>
@@ -392,14 +469,90 @@
     <script>
       (() => {
         const basePath = window.__stitchloomBasePath || "/";
-
-        document.querySelectorAll("[data-home]").forEach((link) => {
-          link.href = basePath;
-        });
-
+        const storageKey = "stitchloom:locale:v1";
+        let locale = window.__stitchloomLocale || "ru";
+        const translations = {
+          ru: {
+            pageTitle: "Страница не найдена — Stitchloom",
+            description: "Эта страница Stitchloom не найдена. Вернитесь в студию и создайте схему вышивки крестиком из фотографии.",
+            brandHome: "Stitchloom, вернуться на главную",
+            errorCode: "ОШИБКА / 404",
+            stageLabel: "КЛЕТКА НЕ НАЙДЕНА",
+            eyebrow: "СТЕЖОК СБИЛСЯ СО СХЕМЫ",
+            title: "Этой клетки здесь нет.",
+            lead: "Кажется, наш маскот Стежок потянул не за ту ниточку. Вернитесь в студию — фотография, настройки и готовая схема ждут там.",
+            homeButton: "Вернуться в студию",
+            hint: "Фото по-прежнему обрабатывается только на вашем устройстве.",
+            mascotAlt: "Стежок — маскот Stitchloom в виде катушки ниток",
+            switchLanguage: "Переключить на английский"
+          },
+          en: {
+            pageTitle: "Page not found — Stitchloom",
+            description: "This Stitchloom page could not be found. Return to the studio and create a cross-stitch pattern from a photo.",
+            brandHome: "Stitchloom, return home",
+            errorCode: "ERROR / 404",
+            stageLabel: "CELL NOT FOUND",
+            eyebrow: "A STITCH WANDERED OFF THE PATTERN",
+            title: "This cell is not here.",
+            lead: "It looks like our mascot Stitch pulled the wrong thread. Return to the studio — your photo, settings, and finished pattern are waiting there.",
+            homeButton: "Return to the studio",
+            hint: "Your photo is still processed only on your device.",
+            mascotAlt: "Stitch, the Stitchloom thread-spool mascot",
+            switchLanguage: "Switch to Russian"
+          }
+        };
+        const localeToggle = document.getElementById("localeToggle");
+        const pageDescription = document.getElementById("pageDescription");
         const mascot = document.getElementById("mascot");
+
+        function applyLocale(nextLocale, persist = false) {
+          locale = nextLocale === "en" ? "en" : "ru";
+          const copy = translations[locale];
+          document.documentElement.lang = locale;
+          document.documentElement.dataset.locale = locale;
+          document.title = copy.pageTitle;
+          pageDescription.content = copy.description;
+
+          document.querySelectorAll("[data-i18n]").forEach((element) => {
+            element.textContent = copy[element.dataset.i18n];
+          });
+          document.querySelectorAll("[data-i18n-aria]").forEach((element) => {
+            element.setAttribute("aria-label", copy[element.dataset.i18nAria]);
+          });
+          document.querySelectorAll("[data-home]").forEach((link) => {
+            link.href = basePath + (locale === "en" ? "?lang=en" : "");
+          });
+
+          mascot.alt = copy.mascotAlt;
+          localeToggle.textContent = locale === "en" ? "RU" : "EN";
+          localeToggle.lang = locale === "en" ? "ru" : "en";
+          localeToggle.setAttribute("aria-label", copy.switchLanguage);
+          localeToggle.title = copy.switchLanguage;
+
+          const manifest = document.querySelector('link[rel="manifest"]');
+          if (manifest) {
+            manifest.href = basePath + (locale === "en"
+              ? "manifest.en.webmanifest"
+              : "manifest.webmanifest");
+          }
+
+          if (!persist) return;
+          try {
+            window.localStorage.setItem(storageKey, locale);
+          } catch {
+            // The query string keeps the choice when storage is restricted.
+          }
+          const url = new URL(window.location.href);
+          if (locale === "en") url.searchParams.set("lang", "en");
+          else url.searchParams.delete("lang");
+          window.history.replaceState(window.history.state, document.title, url);
+        }
+
         mascot.src = basePath + "mascot-stezhok.png";
-        mascot.alt = "Стежок — маскот Stitchloom в виде катушки ниток";
+        localeToggle.addEventListener("click", () => {
+          applyLocale(locale === "ru" ? "en" : "ru", true);
+        });
+        applyLocale(locale);
       })();
     </script>
   </body>

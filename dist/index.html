@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru" data-theme="dark" data-theme-preference="auto">
+<html lang="ru" data-locale="ru" data-theme="dark" data-theme-preference="auto">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -11,10 +11,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta
+      data-i18n-content="meta.description"
       name="description"
       content="Превратите фотографию в схему вышивки крестиком прямо в браузере: квадратные клетки, 2–256 цветов, экспорт PDF, PNG и CSV."
     />
-    <link rel="canonical" href="https://stitchloom.antonlenev.chatgpt.site/" />
+    <link id="canonicalUrl" rel="canonical" href="https://stitchloom.antonlenev.chatgpt.site/" />
+    <link rel="alternate" hreflang="ru" href="https://stitchloom.antonlenev.chatgpt.site/" />
+    <link rel="alternate" hreflang="en" href="https://stitchloom.antonlenev.chatgpt.site/?lang=en" />
+    <link rel="alternate" hreflang="x-default" href="https://stitchloom.antonlenev.chatgpt.site/" />
     <link
       rel="alternate"
       type="text/plain"
@@ -23,36 +27,69 @@
     />
 
     <meta property="og:type" content="website" />
-    <meta property="og:locale" content="ru_RU" />
+    <meta id="ogLocale" property="og:locale" content="ru_RU" />
+    <meta id="ogLocaleAlternate" property="og:locale:alternate" content="en_US" />
     <meta property="og:site_name" content="Stitchloom" />
-    <meta property="og:title" content="Stitchloom — фото в схему вышивки" />
+    <meta data-i18n-content="meta.ogTitle" property="og:title" content="Stitchloom — фото в схему вышивки" />
     <meta
+      data-i18n-content="meta.ogDescription"
       property="og:description"
       content="Квадратные клетки, палитра от 2 до 256 цветов и экспорт готовой схемы в PDF — полностью в вашем браузере."
     />
-    <meta property="og:url" content="https://stitchloom.antonlenev.chatgpt.site/" />
+    <meta id="ogUrl" property="og:url" content="https://stitchloom.antonlenev.chatgpt.site/" />
     <meta property="og:image" content="https://stitchloom.antonlenev.chatgpt.site/og.png" />
     <meta property="og:image:secure_url" content="https://stitchloom.antonlenev.chatgpt.site/og.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Stitchloom: фото превращается в схему из квадратных стежков" />
+    <meta data-i18n-content="meta.imageAlt" property="og:image:alt" content="Stitchloom: фото превращается в схему из квадратных стежков" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Stitchloom — фото в схему вышивки" />
+    <meta data-i18n-content="meta.ogTitle" name="twitter:title" content="Stitchloom — фото в схему вышивки" />
     <meta
+      data-i18n-content="meta.twitterDescription"
       name="twitter:description"
       content="Создайте схему вышивки крестиком из фотографии прямо в браузере."
     />
     <meta name="twitter:image" content="https://stitchloom.antonlenev.chatgpt.site/og.png" />
-    <meta name="twitter:image:alt" content="Stitchloom: фото превращается в схему из квадратных стежков" />
+    <meta data-i18n-content="meta.imageAlt" name="twitter:image:alt" content="Stitchloom: фото превращается в схему из квадратных стежков" />
 
     <link rel="icon" href="./favicon.ico" sizes="any" />
     <link rel="icon" href="./favicon-48.png" type="image/png" sizes="48x48" />
     <link rel="icon" href="./favicon-32.png" type="image/png" sizes="32x32" />
     <link rel="icon" href="./favicon-16.png" type="image/png" sizes="16x16" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" sizes="180x180" />
-    <link rel="manifest" href="./manifest.webmanifest" />
+    <link id="appManifest" rel="manifest" href="./manifest.webmanifest" />
+    <script>
+      (() => {
+        const storageKey = "stitchloom:locale:v1";
+        const supportedLocales = ["ru", "en"];
+        const requestedLocale = new URLSearchParams(window.location.search).get("lang");
+        let locale = supportedLocales.includes(requestedLocale) ? requestedLocale : "";
+
+        if (!locale) {
+          try {
+            const storedLocale = window.localStorage.getItem(storageKey);
+            if (supportedLocales.includes(storedLocale)) locale = storedLocale;
+          } catch {
+            // Browser-language detection remains available when storage is restricted.
+          }
+        }
+
+        if (!locale) {
+          locale = (window.navigator.languages || [window.navigator.language || ""])
+            .some((language) => String(language).toLowerCase().startsWith("ru"))
+            ? "ru"
+            : "en";
+        }
+
+        document.documentElement.lang = locale;
+        document.documentElement.dataset.locale = locale;
+
+        const manifest = document.getElementById("appManifest");
+        manifest.href = locale === "en" ? "./manifest.en.webmanifest" : "./manifest.webmanifest";
+      })();
+    </script>
     <script>
       (() => {
         const storageKey = "stitchloom:theme:v1";
@@ -79,8 +116,8 @@
       })();
     </script>
     <link rel="stylesheet" href="./styles.css" />
-    <title>Stitchloom — схема вышивки из фото</title>
-    <script type="application/ld+json">
+    <title data-i18n="meta.title">Stitchloom — схема вышивки из фото</title>
+    <script id="structuredData" type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@graph": [
@@ -155,7 +192,7 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <a class="brand" href="./" aria-label="Stitchloom, начало">
+        <a class="brand" id="brandHome" href="./" aria-label="Stitchloom, начало" data-i18n-aria-label="brand.home">
           <span class="brand-mark" aria-hidden="true">
             <span></span><span></span><span></span><span></span>
           </span>
@@ -164,9 +201,12 @@
         <div class="topbar-meta">
           <span class="privacy-pill">
             <span class="privacy-dot"></span>
-            <span class="privacy-label-full">ФОТО НЕ УХОДИТ С УСТРОЙСТВА</span>
-            <span class="privacy-label-short">ЛОКАЛЬНО</span>
+            <span class="privacy-label-full" data-i18n="privacy.full">ФОТО НЕ УХОДИТ С УСТРОЙСТВА</span>
+            <span class="privacy-label-short" data-i18n="privacy.short">ЛОКАЛЬНО</span>
           </span>
+          <button class="locale-toggle" id="localeToggle" type="button" aria-label="Switch to English" title="Switch to English">
+            <span id="localeToggleLabel">EN</span>
+          </button>
           <details class="theme-picker" id="themePicker">
             <summary
               class="theme-picker-summary"
@@ -192,20 +232,20 @@
                 <path d="m7 9.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </summary>
-            <div class="theme-picker-menu" role="group" aria-label="Выберите тему оформления">
+            <div class="theme-picker-menu" role="group" aria-label="Выберите тему оформления" data-i18n-aria-label="theme.groupLabel">
               <button type="button" data-theme-choice="auto" aria-pressed="true">
                 <span class="theme-choice-icon" aria-hidden="true">◐</span>
-                <span class="theme-choice-copy"><strong>Авто</strong><small>Как в системе</small></span>
+                <span class="theme-choice-copy"><strong data-i18n="theme.auto">Авто</strong><small data-i18n="theme.autoHint">Как в системе</small></span>
                 <span class="theme-choice-check" aria-hidden="true">✓</span>
               </button>
               <button type="button" data-theme-choice="light" aria-pressed="false">
                 <span class="theme-choice-icon" aria-hidden="true">☀</span>
-                <span class="theme-choice-copy"><strong>Светлая</strong><small>Всегда светлая</small></span>
+                <span class="theme-choice-copy"><strong data-i18n="theme.light">Светлая</strong><small data-i18n="theme.lightHint">Всегда светлая</small></span>
                 <span class="theme-choice-check" aria-hidden="true">✓</span>
               </button>
               <button type="button" data-theme-choice="dark" aria-pressed="false">
                 <span class="theme-choice-icon" aria-hidden="true">☾</span>
-                <span class="theme-choice-copy"><strong>Тёмная</strong><small>Всегда тёмная</small></span>
+                <span class="theme-choice-copy"><strong data-i18n="theme.dark">Тёмная</strong><small data-i18n="theme.darkHint">Всегда тёмная</small></span>
                 <span class="theme-choice-check" aria-hidden="true">✓</span>
               </button>
             </div>
@@ -215,10 +255,11 @@
             id="openOnboarding"
             type="button"
             aria-label="Как это работает"
+            data-i18n-aria-label="tour.label"
             aria-haspopup="dialog"
           >
             <span class="tour-trigger-icon" aria-hidden="true">?</span>
-            <span class="tour-trigger-label">Как это работает</span>
+            <span class="tour-trigger-label" data-i18n="tour.label">Как это работает</span>
           </button>
           <span class="version-label">LOCAL STUDIO / 01</span>
         </div>
@@ -227,53 +268,53 @@
       <main class="workspace">
         <section class="workspace-intro" aria-labelledby="page-title">
           <div>
-            <p class="eyebrow">СТУДИЯ СХЕМ</p>
-            <h1 id="page-title">Фото в вышивку.<br /><em>Клетка за клеткой.</em></h1>
+            <p class="eyebrow" data-i18n="hero.eyebrow">СТУДИЯ СХЕМ</p>
+            <h1 id="page-title" data-i18n-html="hero.title">Фото в вышивку.<br /><em>Клетка за клеткой.</em></h1>
           </div>
-          <p class="intro-copy">
+          <p class="intro-copy" data-i18n="hero.copy">
             Загрузите изображение, выберите плотность и получите плоскую схему
             с отдельным цветом и символом для каждой клетки.
           </p>
         </section>
 
         <div class="studio-grid">
-          <aside class="controls-panel" aria-label="Настройки схемы">
+          <aside class="controls-panel" aria-label="Настройки схемы" data-i18n-aria-label="controls.label">
             <div class="step-block">
               <div class="step-heading">
                 <span class="step-number">01</span>
                 <div>
-                  <p class="eyebrow">ИСХОДНИК</p>
-                  <h2>Загрузите фото</h2>
+                  <p class="eyebrow" data-i18n="source.eyebrow">ИСХОДНИК</p>
+                  <h2 data-i18n="source.title">Загрузите фото</h2>
                 </div>
               </div>
 
-              <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Выбрать изображение">
+              <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Выбрать изображение" data-i18n-aria-label="source.choose">
                 <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
                 <span class="dropzone-icon" aria-hidden="true">
                   <svg viewBox="0 0 32 32" fill="none">
                     <path d="M16 21V6m0 0-5 5m5-5 5 5M7 19v6.5A2.5 2.5 0 0 0 9.5 28h13a2.5 2.5 0 0 0 2.5-2.5V19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </span>
-                <strong>Перетащите фото сюда</strong>
-                <span>или нажмите, чтобы выбрать файл</span>
-                <small>PNG, JPG, WEBP · до 20 МБ</small>
+                <strong data-i18n="source.dropTitle">Перетащите фото сюда</strong>
+                <span data-i18n="source.dropHint">или нажмите, чтобы выбрать файл</span>
+                <small data-i18n="source.formats">PNG, JPG, WEBP · до 20 МБ</small>
               </div>
 
               <div class="source-card is-hidden" id="sourceCard">
-                <img id="sourcePreview" alt="Загруженное фото" />
+                <img id="sourcePreview" alt="Загруженное фото" data-i18n-alt="source.previewAlt" />
                 <div class="source-info">
                   <strong id="fileName">photo.jpg</strong>
-                  <span id="fileMeta">Готово к обработке</span>
+                  <span id="fileMeta" data-i18n="source.readyToProcess">Готово к обработке</span>
                 </div>
-                <button class="icon-button" id="removeImage" type="button" aria-label="Удалить изображение">×</button>
+                <button class="icon-button" id="removeImage" type="button" aria-label="Удалить изображение" data-i18n-aria-label="source.remove">×</button>
               </div>
               <p class="field-note" id="fileStatus" role="status">Всё считается локально: файл не загружается на сервер.</p>
 
               <details class="ai-helper">
                 <summary class="ai-helper-summary" id="ai-helper-title">
-                  <span class="ai-helper-badge">ОПЦИОНАЛЬНО</span>
+                  <span class="ai-helper-badge" data-i18n="ai.badge">ОПЦИОНАЛЬНО</span>
                   <span class="ai-helper-target" id="aiPromptTarget">70 клеток · до 16 цветов</span>
-                  <strong class="ai-helper-title">Подготовить фото через ИИ</strong>
+                  <strong class="ai-helper-title" data-i18n="ai.title">Подготовить фото через ИИ</strong>
                   <span class="ai-helper-chevron" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none">
                       <path d="m7 9.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
@@ -281,32 +322,33 @@
                   </span>
                 </summary>
                 <div class="ai-helper-body">
-                  <p class="ai-helper-copy">
+                  <p class="ai-helper-copy" data-i18n="ai.copy">
                     Попросите ChatGPT, Gemini или другой редактор превратить сложный снимок
                     в чистый pixel art. Крупные формы лучше сохранятся в небольшой схеме.
                   </p>
                   <ol class="ai-helper-steps">
-                    <li>Выберите ниже размер схемы и число цветов.</li>
-                    <li>Прикрепите исходное фото к диалогу с ИИ и вставьте промпт.</li>
-                    <li>Скачайте полученный PNG и загрузите его в Stitchloom.</li>
+                    <li data-i18n="ai.step1">Выберите ниже размер схемы и число цветов.</li>
+                    <li data-i18n="ai.step2">Прикрепите исходное фото к диалогу с ИИ и вставьте промпт.</li>
+                    <li data-i18n="ai.step3">Скачайте полученный PNG и загрузите его в Stitchloom.</li>
                   </ol>
                   <button class="copy-prompt-button" id="copyAiPrompt" type="button">
                     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <rect x="8" y="8" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.7" />
                       <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
                     </svg>
-                    <span id="copyAiPromptLabel">Скопировать промпт</span>
+                    <span id="copyAiPromptLabel" data-i18n="ai.copyButton">Скопировать промпт</span>
                   </button>
                   <details class="ai-prompt-details" id="aiPromptDetails">
-                    <summary>Посмотреть и отредактировать текст</summary>
+                    <summary data-i18n="ai.edit">Посмотреть и отредактировать текст</summary>
                     <textarea
                       id="aiPromptText"
                       rows="13"
                       aria-label="Промпт для художественного упрощения фотографии"
+                      data-i18n-aria-label="ai.promptLabel"
                       spellcheck="false"
                     ></textarea>
                   </details>
-                  <p class="ai-helper-privacy">
+                  <p class="ai-helper-privacy" data-i18n="ai.privacy">
                     Stitchloom ничего не отправляет сам. При загрузке фото во внешний
                     ИИ-сервис действуют правила конфиденциальности этого сервиса.
                   </p>
@@ -321,22 +363,22 @@
               <div class="step-heading">
                 <span class="step-number">02</span>
                 <div>
-                  <p class="eyebrow">ПАРАМЕТРЫ</p>
-                  <h2>Настройте основу</h2>
+                  <p class="eyebrow" data-i18n="settings.eyebrow">ПАРАМЕТРЫ</p>
+                  <h2 data-i18n="settings.title">Настройте основу</h2>
                 </div>
               </div>
 
               <label class="field-label" for="sizeSelect">
-                <span>Размер по ширине</span>
+                <span data-i18n="settings.width">Размер по ширине</span>
                 <span class="field-value" id="sizeValue">70 клеток</span>
               </label>
               <div class="select-shell">
                 <select class="select-control" id="sizeSelect">
-                  <option value="36">36 клеток · быстрый эскиз</option>
-                  <option value="52">52 клетки · сбалансированно</option>
-                  <option value="70" selected>70 клеток · по умолчанию</option>
-                  <option value="90">90 клеток · детально</option>
-                  <option value="110">110 клеток · максимум деталей</option>
+                  <option value="36" data-i18n="settings.size36">36 клеток · быстрый эскиз</option>
+                  <option value="52" data-i18n="settings.size52">52 клетки · сбалансированно</option>
+                  <option value="70" data-i18n="settings.size70" selected>70 клеток · по умолчанию</option>
+                  <option value="90" data-i18n="settings.size90">90 клеток · детально</option>
+                  <option value="110" data-i18n="settings.size110">110 клеток · максимум деталей</option>
                 </select>
                 <svg class="select-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="m7 9.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
@@ -344,11 +386,11 @@
               </div>
 
               <label class="field-label range-label" for="colorCount">
-                <span>Цветов в палитре</span>
+                <span data-i18n="settings.colors">Цветов в палитре</span>
                 <span class="field-value" id="colorCountValue">16</span>
               </label>
               <div class="color-choice-row">
-                <div class="color-presets" role="group" aria-label="Быстрый выбор количества цветов">
+                <div class="color-presets" role="group" aria-label="Быстрый выбор количества цветов" data-i18n-aria-label="settings.presetsLabel">
                   <button type="button" data-color-preset="8" aria-pressed="false">8</button>
                   <button type="button" data-color-preset="16" aria-pressed="true">16</button>
                   <button type="button" data-color-preset="24" aria-pressed="false">24</button>
@@ -356,17 +398,17 @@
                   <button type="button" data-color-preset="64" aria-pressed="false">64</button>
                 </div>
                 <label class="color-number-control" for="colorNumber">
-                  <span>Точно</span>
-                  <input id="colorNumber" type="number" min="2" max="256" value="16" inputmode="numeric" aria-label="Точное количество цветов" />
+                  <span data-i18n="settings.exact">Точно</span>
+                  <input id="colorNumber" type="number" min="2" max="256" value="16" inputmode="numeric" aria-label="Точное количество цветов" data-i18n-aria-label="settings.exactLabel" />
                 </label>
               </div>
               <input class="range-control" id="colorCount" type="range" min="2" max="256" value="16" />
-              <div class="range-scale"><span>2 · графично</span><span>256 · ближе к фото</span></div>
+              <div class="range-scale"><span data-i18n="settings.rangeLow">2 · графично</span><span data-i18n="settings.rangeHigh">256 · ближе к фото</span></div>
               <p class="color-guidance" id="colorGuidance">16 — хороший баланс деталей и удобного ключа.</p>
 
               <div class="algorithm-note">
                 <span class="note-mark" aria-hidden="true">✳</span>
-                <span>Сначала усредняем участок фото под клеткой, затем собираем выбранное число цветов — без смешивания соседних клеток.</span>
+                <span data-i18n="settings.algorithm">Сначала усредняем участок фото под клеткой, затем собираем выбранное число цветов — без смешивания соседних клеток.</span>
               </div>
 
               <div class="auto-update-note" id="autoUpdateStatus" role="status" aria-live="polite">
@@ -379,29 +421,29 @@
           <section class="pattern-panel" id="patternPanel" aria-labelledby="pattern-heading" aria-live="polite">
             <div class="pattern-header">
               <div>
-                <p class="eyebrow">РЕЗУЛЬТАТ</p>
+                <p class="eyebrow" data-i18n="result.eyebrow">РЕЗУЛЬТАТ</p>
                 <h2 id="pattern-heading">Ваша схема появится здесь</h2>
               </div>
               <div class="status-chip" id="patternStatus"><span class="status-dot"></span><span>Ждёт фото</span></div>
             </div>
 
             <div class="pattern-toolbar is-hidden" id="patternToolbar">
-              <div class="view-switch" role="group" aria-label="Режим просмотра">
-                <button type="button" class="view-button is-active" data-view="pattern" aria-pressed="true">Схема</button>
-                <button type="button" class="view-button" data-view="photo" aria-pressed="false">Фото</button>
+              <div class="view-switch" role="group" aria-label="Режим просмотра" data-i18n-aria-label="result.viewMode">
+                <button type="button" class="view-button is-active" data-view="pattern" aria-pressed="true" data-i18n="result.pattern">Схема</button>
+                <button type="button" class="view-button" data-view="photo" aria-pressed="false" data-i18n="result.photo">Фото</button>
               </div>
               <div class="pattern-toolbar-actions">
                 <div class="display-options">
-                  <label class="check-control"><input id="showSymbols" type="checkbox" checked /><span>Символы</span></label>
-                  <label class="check-control"><input id="showGrid" type="checkbox" checked /><span>Сетка</span></label>
+                  <label class="check-control"><input id="showSymbols" type="checkbox" checked /><span data-i18n="result.symbols">Символы</span></label>
+                  <label class="check-control"><input id="showGrid" type="checkbox" checked /><span data-i18n="result.grid">Сетка</span></label>
                 </div>
-                <div class="zoom-control" role="group" aria-label="Масштаб схемы">
-                  <button class="zoom-button" id="zoomOut" type="button" aria-label="Уменьшить масштаб" title="Уменьшить" disabled>−</button>
-                  <button class="zoom-button zoom-value" id="zoomReset" type="button" aria-label="Вписать схему в область просмотра" title="Вписать схему" disabled>
-                    <span class="zoom-fit-label">Вписать</span>
+                <div class="zoom-control" role="group" aria-label="Масштаб схемы" data-i18n-aria-label="zoom.group">
+                  <button class="zoom-button" id="zoomOut" type="button" aria-label="Уменьшить масштаб" title="Уменьшить" data-i18n-aria-label="zoom.out" data-i18n-title="zoom.outShort" disabled>−</button>
+                  <button class="zoom-button zoom-value" id="zoomReset" type="button" aria-label="Вписать схему в область просмотра" title="Вписать схему" data-i18n-title="zoom.fitShort" disabled>
+                    <span class="zoom-fit-label" data-i18n="zoom.fit">Вписать</span>
                     <span id="zoomValue" aria-live="polite">100%</span>
                   </button>
-                  <button class="zoom-button" id="zoomIn" type="button" aria-label="Увеличить масштаб" title="Увеличить" disabled>+</button>
+                  <button class="zoom-button" id="zoomIn" type="button" aria-label="Увеличить масштаб" title="Увеличить" data-i18n-aria-label="zoom.in" data-i18n-title="zoom.inShort" disabled>+</button>
                 </div>
               </div>
             </div>
@@ -415,16 +457,16 @@
                 <span class="accent"></span><span></span><span></span><span></span><span></span><span></span>
                 <span></span><span></span><span></span><span class="accent"></span><span></span><span></span>
               </div>
-              <strong>Начните с фотографии</strong>
-              <span>После загрузки здесь появятся клетчатое поле, символы и ключ цветов.</span>
+              <strong data-i18n="result.emptyTitle">Начните с фотографии</strong>
+              <span data-i18n="result.emptyCopy">После загрузки здесь появятся клетчатое поле, символы и ключ цветов.</span>
             </div>
 
             <div class="pattern-result is-hidden" id="patternResult">
               <div class="pattern-meta">
-                <span id="patternDimension">70 × 70 клеток</span>
+                <span id="patternDimension" data-i18n="result.sampleDimension">70 × 70 клеток</span>
                 <span class="meta-divider">/</span>
-                <span id="patternDetails">16 цветов · 4 900 стежков</span>
-                <span class="square-badge">КЛЕТКИ 1:1</span>
+                <span id="patternDetails" data-i18n="result.sampleDetails">16 цветов · 4 900 стежков</span>
+                <span class="square-badge" data-i18n="result.squareBadge">КЛЕТКИ 1:1</span>
               </div>
               <div
                 class="canvas-shell"
@@ -432,22 +474,23 @@
                 tabindex="0"
                 role="region"
                 aria-label="Область схемы. Используйте кнопки масштаба, щипок или Control и колесо мыши. При увеличении схему можно перетаскивать."
+                data-i18n-aria-label="result.canvasRegion"
               >
-                <canvas id="patternCanvas" role="img" aria-label="Схема вышивки крестиком">Схема вышивки крестиком</canvas>
+                <canvas id="patternCanvas" role="img" aria-label="Схема вышивки крестиком" data-i18n-aria-label="result.canvasAlt" data-i18n="result.canvasAlt">Схема вышивки крестиком</canvas>
               </div>
-              <p class="canvas-hint"><span>Щипок или кнопки — масштаб</span><span>При увеличении перетаскивайте схему</span></p>
+              <p class="canvas-hint"><span data-i18n="result.zoomHint">Щипок или кнопки — масштаб</span><span data-i18n="result.panHint">При увеличении перетаскивайте схему</span></p>
               <div class="pattern-actions">
                 <button class="secondary-button secondary-button--pdf" id="downloadPdf" type="button" disabled aria-describedby="exportStatus">
                   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h8l4 4V20.5H6zM14 3.5v4h4M9 12.5h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  <span id="downloadPdfLabel">Скачать PDF</span>
+                  <span id="downloadPdfLabel" data-i18n="result.downloadPdf">Скачать PDF</span>
                 </button>
                 <button class="secondary-button" id="downloadPng" type="button" disabled>
                   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19.5h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  Скачать PNG
+                  <span data-i18n="result.downloadPng">Скачать PNG</span>
                 </button>
                 <button class="secondary-button" id="downloadCsv" type="button" disabled>
                   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h8l4 4V20.5H6zM14 3.5v4h4M9 12h6m-6 3.5h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  Скачать CSV
+                  <span data-i18n="result.downloadCsv">Скачать CSV</span>
                 </button>
               </div>
               <p class="export-status" id="exportStatus" role="status" aria-live="polite"></p>
@@ -455,13 +498,13 @@
               <div class="legend-section">
                 <div class="legend-heading">
                   <div>
-                    <p class="eyebrow">КЛЮЧ</p>
-                    <h3>Цвета и символы</h3>
+                    <p class="eyebrow" data-i18n="legend.eyebrow">КЛЮЧ</p>
+                    <h3 data-i18n="legend.title">Цвета и символы</h3>
                   </div>
-                  <span id="legendCount">0 цветов</span>
+                  <span id="legendCount" data-i18n="legend.zero">0 цветов</span>
                 </div>
-                <div class="legend-list" id="legendList" role="region" tabindex="0" aria-label="Прокручиваемый ключ цветов и символов"></div>
-                <p class="legend-note">Экран показывает приближённые оттенки. Перед покупкой мулине сверьтесь с физическим каталогом.</p>
+                <div class="legend-list" id="legendList" role="region" tabindex="0" aria-label="Прокручиваемый ключ цветов и символов" data-i18n-aria-label="legend.region"></div>
+                <p class="legend-note" data-i18n="legend.note">Экран показывает приближённые оттенки. Перед покупкой мулине сверьтесь с физическим каталогом.</p>
               </div>
             </div>
           </section>
@@ -470,10 +513,10 @@
         <section class="seo-guide" aria-labelledby="seo-guide-title">
           <header class="seo-guide-heading">
             <div>
-              <p class="eyebrow">КОРОТКО О ПРОЦЕССЕ</p>
-              <h2 id="seo-guide-title">Как сделать схему вышивки крестиком по фото</h2>
+              <p class="eyebrow" data-i18n="guide.eyebrow">КОРОТКО О ПРОЦЕССЕ</p>
+              <h2 id="seo-guide-title" data-i18n="guide.title">Как сделать схему вышивки крестиком по фото</h2>
             </div>
-            <p>
+            <p data-i18n="guide.copy">
               Stitchloom превращает фотографию в готовую клетчатую схему прямо в браузере —
               без аккаунта, ручной разметки и загрузки исходника на сервер.
             </p>
@@ -483,40 +526,40 @@
             <li>
               <span>01</span>
               <div>
-                <h3>Загрузите фотографию</h3>
-                <p>Выберите снимок с понятным силуэтом. Для сложного фона можно сначала скопировать промпт и упростить изображение через ИИ.</p>
+                <h3 data-i18n="guide.step1Title">Загрузите фотографию</h3>
+                <p data-i18n="guide.step1Copy">Выберите снимок с понятным силуэтом. Для сложного фона можно сначала скопировать промпт и упростить изображение через ИИ.</p>
               </div>
             </li>
             <li>
               <span>02</span>
               <div>
-                <h3>Настройте клетки и палитру</h3>
-                <p>Задайте ширину схемы и число цветов от 2 до 256. Высота подстроится сама, а клетки останутся строго квадратными.</p>
+                <h3 data-i18n="guide.step2Title">Настройте клетки и палитру</h3>
+                <p data-i18n="guide.step2Copy">Задайте ширину схемы и число цветов от 2 до 256. Высота подстроится сама, а клетки останутся строго квадратными.</p>
               </div>
             </li>
             <li>
               <span>03</span>
               <div>
-                <h3>Сохраните результат</h3>
-                <p>Проверьте символы и сетку, приблизьте нужный участок и скачайте схему в PDF, PNG или CSV.</p>
+                <h3 data-i18n="guide.step3Title">Сохраните результат</h3>
+                <p data-i18n="guide.step3Copy">Проверьте символы и сетку, приблизьте нужный участок и скачайте схему в PDF, PNG или CSV.</p>
               </div>
             </li>
           </ol>
 
           <section class="seo-faq" aria-labelledby="seo-faq-title">
-            <h3 id="seo-faq-title">Частые вопросы</h3>
+            <h3 id="seo-faq-title" data-i18n="faq.title">Частые вопросы</h3>
             <div class="seo-faq-grid">
               <details>
-                <summary>Фото загружается на сервер?</summary>
-                <p>Нет. Stitchloom обрабатывает фотографию локально в браузере и не отправляет её на сервер.</p>
+                <summary data-i18n="faq.uploadQuestion">Фото загружается на сервер?</summary>
+                <p data-i18n="faq.uploadAnswer">Нет. Stitchloom обрабатывает фотографию локально в браузере и не отправляет её на сервер.</p>
               </details>
               <details>
-                <summary>Как выбрать размер схемы?</summary>
-                <p>Выберите ширину в клетках. Высота рассчитается автоматически по пропорциям фотографии, а каждая клетка останется квадратной.</p>
+                <summary data-i18n="faq.sizeQuestion">Как выбрать размер схемы?</summary>
+                <p data-i18n="faq.sizeAnswer">Выберите ширину в клетках. Высота рассчитается автоматически по пропорциям фотографии, а каждая клетка останется квадратной.</p>
               </details>
               <details>
-                <summary>Сколько цветов выбрать?</summary>
-                <p>Начните с 16 цветов. Для простых изображений часто достаточно 8, а сложным фотографиям может понадобиться 24 или больше.</p>
+                <summary data-i18n="faq.colorsQuestion">Сколько цветов выбрать?</summary>
+                <p data-i18n="faq.colorsAnswer">Начните с 16 цветов. Для простых изображений часто достаточно 8, а сложным фотографиям может понадобиться 24 или больше.</p>
               </details>
             </div>
           </section>
@@ -525,7 +568,7 @@
 
       <footer class="footer">
         <span>STITCHLOOM / PHOTO TO CROSS-STITCH</span>
-        <span>Работает без аккаунта · без загрузки на сервер</span>
+        <span data-i18n="footer.privacy">Работает без аккаунта · без загрузки на сервер</span>
         <span class="footer-links">
           <a href="./llms.txt">LLMS.TXT</a>
           <a href="./SKILL.md">SKILL.MD</a>
@@ -533,12 +576,12 @@
       </footer>
     </div>
 
-    <button class="mobile-result-bar is-hidden" id="mobileResultBar" type="button" aria-label="Перейти к готовой схеме">
+    <button class="mobile-result-bar is-hidden" id="mobileResultBar" type="button" aria-label="Перейти к готовой схеме" data-i18n-aria-label="mobile.goToResult">
       <span class="mobile-result-copy">
-        <small>СХЕМА ГОТОВА</small>
-        <strong id="mobileResultSummary">Открыть результат</strong>
+        <small data-i18n="mobile.ready">СХЕМА ГОТОВА</small>
+        <strong id="mobileResultSummary" data-i18n="mobile.openResult">Открыть результат</strong>
       </span>
-      <span class="mobile-result-action">Открыть <span aria-hidden="true">↓</span></span>
+      <span class="mobile-result-action"><span data-i18n="mobile.open">Открыть</span> <span aria-hidden="true">↓</span></span>
     </button>
 
     <dialog
@@ -549,14 +592,15 @@
       <div class="onboarding-shell">
         <header class="onboarding-header">
           <div>
-            <p class="eyebrow">БЫСТРЫЙ СТАРТ</p>
-            <h2 id="onboardingTitle">Как работает Stitchloom</h2>
+            <p class="eyebrow" data-i18n="onboarding.eyebrow">БЫСТРЫЙ СТАРТ</p>
+            <h2 id="onboardingTitle" data-i18n="onboarding.title">Как работает Stitchloom</h2>
           </div>
           <button
             class="onboarding-close"
             id="closeOnboarding"
             type="button"
             aria-label="Закрыть подсказки"
+            data-i18n-aria-label="onboarding.close"
           >
             <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path d="M5.5 5.5 14.5 14.5M14.5 5.5 5.5 14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -564,30 +608,30 @@
           </button>
         </header>
 
-        <div class="onboarding-stage" role="region" tabindex="0" aria-label="Шаг онбординга">
+        <div class="onboarding-stage" role="region" tabindex="0" aria-label="Шаг онбординга" data-i18n-aria-label="onboarding.region">
           <article class="onboarding-step is-active" data-onboarding-step>
             <div class="onboarding-visual onboarding-visual--local" aria-hidden="true">
-              <span class="onboarding-visual-code">01 / ИСХОДНИК</span>
+              <span class="onboarding-visual-code" data-i18n="onboarding.step1Code">01 / ИСХОДНИК</span>
               <svg viewBox="0 0 96 96" fill="none">
                 <rect x="18" y="20" width="60" height="56" rx="12" />
                 <path d="M48 58V34m0 0-9 9m9-9 9 9M30 63v4h36v-4" />
               </svg>
-              <span class="onboarding-visual-label">ЛОКАЛЬНО В БРАУЗЕРЕ</span>
+              <span class="onboarding-visual-label" data-i18n="onboarding.step1Visual">ЛОКАЛЬНО В БРАУЗЕРЕ</span>
             </div>
-            <p class="onboarding-kicker">Шаг 1 · Загрузка</p>
-            <h3>Сначала — фотография</h3>
-            <p class="onboarding-copy">
+            <p class="onboarding-kicker" data-i18n="onboarding.step1Kicker">Шаг 1 · Загрузка</p>
+            <h3 data-i18n="onboarding.step1Title">Сначала — фотография</h3>
+            <p class="onboarding-copy" data-i18n="onboarding.step1Copy">
               Перетащите PNG, JPG или WEBP. Stitchloom прочитает изображение прямо
               в браузере: для создания схемы файл не отправляется на сервер.
             </p>
-            <p class="onboarding-callout">
+            <p class="onboarding-callout" data-i18n="onboarding.step1Callout">
               Лучше всего работают кадры с ясным силуэтом и спокойным фоном.
             </p>
           </article>
 
           <article class="onboarding-step" data-onboarding-step hidden>
             <div class="onboarding-visual onboarding-visual--grid" aria-hidden="true">
-              <span class="onboarding-visual-code">02 / ПАРАМЕТРЫ</span>
+              <span class="onboarding-visual-code" data-i18n="onboarding.step2Code">02 / ПАРАМЕТРЫ</span>
               <svg viewBox="0 0 96 96" fill="none">
                 <rect x="19" y="19" width="17" height="17" />
                 <rect x="40" y="19" width="17" height="17" class="is-cobalt" />
@@ -599,25 +643,25 @@
                 <rect x="40" y="61" width="17" height="17" class="is-coral" />
                 <rect x="61" y="61" width="17" height="17" />
               </svg>
-              <span class="onboarding-visual-label">КАЖДАЯ КЛЕТКА 1:1</span>
+              <span class="onboarding-visual-label" data-i18n="onboarding.step2Visual">КАЖДАЯ КЛЕТКА 1:1</span>
             </div>
-            <p class="onboarding-kicker">Шаг 2 · Основа</p>
-            <h3>Клетки всегда квадратные</h3>
-            <p class="onboarding-copy">
+            <p class="onboarding-kicker" data-i18n="onboarding.step2Kicker">Шаг 2 · Основа</p>
+            <h3 data-i18n="onboarding.step2Title">Клетки всегда квадратные</h3>
+            <p class="onboarding-copy" data-i18n="onboarding.step2Copy">
               Выберите ширину схемы — высота подстроится под пропорции фото.
               Выберите палитру пресетом или точным числом. Схема обновляется сама,
               а 16 цветов обычно дают хороший первый результат.
             </p>
-            <div class="onboarding-chips" aria-label="Диапазоны настроек">
-              <span>36–110 клеток</span>
-              <span>2–256 цветов</span>
-              <span>Клетка 1:1</span>
+            <div class="onboarding-chips" aria-label="Диапазоны настроек" data-i18n-aria-label="onboarding.ranges">
+              <span data-i18n="onboarding.cellsRange">36–110 клеток</span>
+              <span data-i18n="onboarding.colorsRange">2–256 цветов</span>
+              <span data-i18n="onboarding.squareCell">Клетка 1:1</span>
             </div>
           </article>
 
           <article class="onboarding-step" data-onboarding-step hidden>
             <div class="onboarding-visual onboarding-visual--ai" aria-hidden="true">
-              <span class="onboarding-visual-code">03 / ОПЦИОНАЛЬНО</span>
+              <span class="onboarding-visual-code" data-i18n="onboarding.step3Code">03 / ОПЦИОНАЛЬНО</span>
               <svg viewBox="0 0 96 96" fill="none">
                 <path d="M29 67 61 35" />
                 <path d="m25 63 8 8" />
@@ -625,15 +669,15 @@
                 <rect x="19" y="25" width="13" height="13" class="is-cobalt" />
                 <rect x="65" y="59" width="13" height="13" />
               </svg>
-              <span class="onboarding-visual-label">ФОТО → ЧИСТЫЙ PIXEL ART</span>
+              <span class="onboarding-visual-label" data-i18n="onboarding.step3Visual">ФОТО → ЧИСТЫЙ PIXEL ART</span>
             </div>
-            <p class="onboarding-kicker">Шаг 3 · Подготовка</p>
-            <h3>Сложный снимок можно упростить</h3>
-            <p class="onboarding-copy">
+            <p class="onboarding-kicker" data-i18n="onboarding.step3Kicker">Шаг 3 · Подготовка</p>
+            <h3 data-i18n="onboarding.step3Title">Сложный снимок можно упростить</h3>
+            <p class="onboarding-copy" data-i18n="onboarding.step3Copy">
               В блоке исходника есть готовый промпт для ChatGPT, Gemini или другого ИИ.
               Он автоматически учитывает выбранные размер схемы и число цветов.
             </p>
-            <p class="onboarding-callout onboarding-callout--privacy">
+            <p class="onboarding-callout onboarding-callout--privacy" data-i18n="onboarding.step3Callout">
               Это необязательно. При загрузке фото во внешний ИИ действуют правила
               конфиденциальности выбранного сервиса.
             </p>
@@ -641,20 +685,20 @@
 
           <article class="onboarding-step" data-onboarding-step hidden>
             <div class="onboarding-visual onboarding-visual--export" aria-hidden="true">
-              <span class="onboarding-visual-code">04 / РЕЗУЛЬТАТ</span>
+              <span class="onboarding-visual-code" data-i18n="onboarding.step4Code">04 / РЕЗУЛЬТАТ</span>
               <svg viewBox="0 0 96 96" fill="none">
                 <rect x="24" y="16" width="48" height="64" rx="8" />
                 <path d="M35 33h26M35 45h26M35 57h16M48 68V50m0 18-7-7m7 7 7-7" />
               </svg>
-              <span class="onboarding-visual-label">МАСШТАБ · PDF · PNG · CSV</span>
+              <span class="onboarding-visual-label" data-i18n="onboarding.step4Visual">МАСШТАБ · PDF · PNG · CSV</span>
             </div>
-            <p class="onboarding-kicker">Шаг 4 · Работа</p>
-            <h3>Проверьте и сохраните схему</h3>
-            <p class="onboarding-copy">
+            <p class="onboarding-kicker" data-i18n="onboarding.step4Kicker">Шаг 4 · Работа</p>
+            <h3 data-i18n="onboarding.step4Title">Проверьте и сохраните схему</h3>
+            <p class="onboarding-copy" data-i18n="onboarding.step4Copy">
               Переключайте сетку и символы, масштабируйте кнопками или щипком,
               перетаскивайте увеличенную схему, а затем скачайте PDF, PNG или CSV.
             </p>
-            <p class="onboarding-callout">
+            <p class="onboarding-callout" data-i18n="onboarding.step4Callout">
               Этот обзор всегда можно открыть снова кнопкой «?» в шапке.
             </p>
           </article>
@@ -671,9 +715,9 @@
         </div>
 
         <footer class="onboarding-navigation">
-          <button class="onboarding-skip" id="skipOnboarding" type="button">Пропустить</button>
+          <button class="onboarding-skip" id="skipOnboarding" type="button" data-i18n="onboarding.skip">Пропустить</button>
           <div class="onboarding-nav-actions">
-            <button class="onboarding-back" id="onboardingBack" type="button" disabled>Назад</button>
+            <button class="onboarding-back" id="onboardingBack" type="button" data-i18n="onboarding.back" disabled>Назад</button>
             <button class="onboarding-next" id="onboardingNext" type="button">Дальше</button>
           </div>
         </footer>

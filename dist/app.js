@@ -4,6 +4,7 @@ const DEFAULT_COLOR_COUNT = 16;
 const MIN_ZOOM = 50;
 const MAX_ZOOM = 300;
 const ZOOM_STEP = 25;
+const LOCALE_STORAGE_KEY = "stitchloom:locale:v1";
 const THEME_STORAGE_KEY = "stitchloom:theme:v1";
 const ONBOARDING_STORAGE_KEY = "stitchloom:onboarding:v1";
 const ONBOARDING_COOKIE_KEY = "stitchloom_onboarding_v1";
@@ -32,6 +33,15 @@ const elements = {
   copyAiPrompt: $("copyAiPrompt"),
   copyAiPromptLabel: $("copyAiPromptLabel"),
   aiPromptStatus: $("aiPromptStatus"),
+  appManifest: $("appManifest"),
+  canonicalUrl: $("canonicalUrl"),
+  ogLocale: $("ogLocale"),
+  ogLocaleAlternate: $("ogLocaleAlternate"),
+  ogUrl: $("ogUrl"),
+  structuredData: $("structuredData"),
+  localeToggle: $("localeToggle"),
+  localeToggleLabel: $("localeToggleLabel"),
+  brandHome: $("brandHome"),
   themeColor: $("themeColor"),
   themePicker: $("themePicker"),
   themePickerSummary: $("themePickerSummary"),
@@ -92,6 +102,7 @@ const state = {
   drag: null,
   pinch: null,
   resizeFrame: null,
+  locale: "ru",
   themePreference: "auto",
   settings: {
     view: "pattern",
@@ -102,6 +113,296 @@ const state = {
   },
 };
 
+const EN_TRANSLATIONS = {
+  "meta.title": "Stitchloom — cross-stitch pattern from a photo",
+  "meta.description": "Turn a photo into a cross-stitch pattern directly in your browser: square cells, 2–256 colors, and PDF, PNG, or CSV export.",
+  "meta.ogTitle": "Stitchloom — photo to cross-stitch pattern",
+  "meta.ogDescription": "Square cells, a 2–256 color palette, and PDF export — processed entirely in your browser.",
+  "meta.twitterDescription": "Create a cross-stitch pattern from a photo directly in your browser.",
+  "meta.imageAlt": "Stitchloom turns a photo into a pattern of square stitches",
+  "brand.home": "Stitchloom, home",
+  "privacy.full": "YOUR PHOTO STAYS ON THIS DEVICE",
+  "privacy.short": "LOCAL",
+  "theme.groupLabel": "Choose an interface theme",
+  "theme.auto": "Auto",
+  "theme.autoHint": "Match the system",
+  "theme.light": "Light",
+  "theme.lightHint": "Always light",
+  "theme.dark": "Dark",
+  "theme.darkHint": "Always dark",
+  "tour.label": "How it works",
+  "hero.eyebrow": "PATTERN STUDIO",
+  "hero.title": "Photo to stitches.<br /><em>Cell by cell.</em>",
+  "hero.copy": "Upload an image, choose the density, and get a flat pattern with one color and one symbol for every cell.",
+  "controls.label": "Pattern settings",
+  "source.eyebrow": "SOURCE",
+  "source.title": "Upload a photo",
+  "source.choose": "Choose an image",
+  "source.dropTitle": "Drop your photo here",
+  "source.dropHint": "or click to choose a file",
+  "source.formats": "PNG, JPG, WEBP · up to 20 MB",
+  "source.previewAlt": "Uploaded photo",
+  "source.readyToProcess": "Ready to process",
+  "source.remove": "Remove image",
+  "ai.badge": "OPTIONAL",
+  "ai.title": "Prepare the photo with AI",
+  "ai.copy": "Ask ChatGPT, Gemini, or another image editor to turn a complex photo into clean pixel art. Large shapes survive better in a small pattern.",
+  "ai.step1": "Choose the pattern size and color count below.",
+  "ai.step2": "Attach the source photo to an AI chat and paste the prompt.",
+  "ai.step3": "Download the resulting PNG and upload it to Stitchloom.",
+  "ai.copyButton": "Copy prompt",
+  "ai.edit": "View and edit the text",
+  "ai.promptLabel": "Prompt for artistically simplifying the photo",
+  "ai.privacy": "Stitchloom does not send anything itself. When you upload a photo to an external AI service, that service’s privacy policy applies.",
+  "settings.eyebrow": "SETTINGS",
+  "settings.title": "Set up the pattern",
+  "settings.width": "Width in cells",
+  "settings.size36": "36 cells · quick sketch",
+  "settings.size52": "52 cells · balanced",
+  "settings.size70": "70 cells · default",
+  "settings.size90": "90 cells · detailed",
+  "settings.size110": "110 cells · maximum detail",
+  "settings.colors": "Colors in palette",
+  "settings.presetsLabel": "Quick color-count presets",
+  "settings.exact": "Exact",
+  "settings.exactLabel": "Exact number of colors",
+  "settings.rangeLow": "2 · graphic",
+  "settings.rangeHigh": "256 · closer to photo",
+  "settings.algorithm": "First we average the photo area under each cell, then build the selected palette — with no blending between neighboring cells.",
+  "result.eyebrow": "RESULT",
+  "result.viewMode": "View mode",
+  "result.pattern": "Pattern",
+  "result.photo": "Photo",
+  "result.symbols": "Symbols",
+  "result.grid": "Grid",
+  "zoom.group": "Pattern zoom",
+  "zoom.out": "Zoom out",
+  "zoom.outShort": "Zoom out",
+  "zoom.fit": "Fit",
+  "zoom.fitShort": "Fit pattern",
+  "zoom.in": "Zoom in",
+  "zoom.inShort": "Zoom in",
+  "result.emptyTitle": "Start with a photo",
+  "result.emptyCopy": "Once uploaded, the grid, symbols, and color key will appear here.",
+  "result.squareBadge": "SQUARE 1:1",
+  "result.canvasRegion": "Pattern area. Use the zoom buttons, pinch, or Control and the mouse wheel. Drag the pattern when zoomed in.",
+  "result.canvasAlt": "Cross-stitch pattern",
+  "result.zoomHint": "Pinch or use the buttons to zoom",
+  "result.panHint": "Drag the pattern when zoomed in",
+  "result.downloadPdf": "Download PDF",
+  "result.downloadPng": "Download PNG",
+  "result.downloadCsv": "Download CSV",
+  "result.sampleDimension": "70 × 70 cells",
+  "result.sampleDetails": "16 colors · 4,900 stitches",
+  "legend.eyebrow": "KEY",
+  "legend.title": "Colors and symbols",
+  "legend.region": "Scrollable color and symbol key",
+  "legend.zero": "0 colors",
+  "legend.note": "On-screen shades are approximate. Check them against a physical thread chart before buying floss.",
+  "guide.eyebrow": "THE PROCESS AT A GLANCE",
+  "guide.title": "How to make a cross-stitch pattern from a photo",
+  "guide.copy": "Stitchloom turns a photo into a ready-to-use gridded pattern directly in your browser — with no account, manual tracing, or server upload.",
+  "guide.step1Title": "Upload a photo",
+  "guide.step1Copy": "Choose an image with a clear silhouette. For a busy background, copy the prompt first and simplify the image with AI.",
+  "guide.step2Title": "Set the grid and palette",
+  "guide.step2Copy": "Choose the pattern width and 2–256 colors. The height adapts automatically, while every cell stays perfectly square.",
+  "guide.step3Title": "Save the result",
+  "guide.step3Copy": "Check the symbols and grid, zoom into any area, and download the pattern as PDF, PNG, or CSV.",
+  "faq.title": "Frequently asked questions",
+  "faq.uploadQuestion": "Is my photo uploaded to a server?",
+  "faq.uploadAnswer": "No. Stitchloom processes the photo locally in your browser and does not send it to a server.",
+  "faq.sizeQuestion": "How do I choose the pattern size?",
+  "faq.sizeAnswer": "Choose the width in cells. The height is calculated automatically from the photo’s proportions, and every cell remains square.",
+  "faq.colorsQuestion": "How many colors should I choose?",
+  "faq.colorsAnswer": "Start with 16 colors. Eight is often enough for simple artwork, while complex photos may need 24 or more.",
+  "footer.privacy": "No account · no server upload",
+  "mobile.goToResult": "Go to the finished pattern",
+  "mobile.ready": "PATTERN READY",
+  "mobile.openResult": "Open result",
+  "mobile.open": "Open",
+  "onboarding.eyebrow": "QUICK START",
+  "onboarding.title": "How Stitchloom works",
+  "onboarding.close": "Close tips",
+  "onboarding.region": "Onboarding step",
+  "onboarding.step1Code": "01 / SOURCE",
+  "onboarding.step1Visual": "LOCAL IN YOUR BROWSER",
+  "onboarding.step1Kicker": "Step 1 · Upload",
+  "onboarding.step1Title": "Start with a photo",
+  "onboarding.step1Copy": "Drop in a PNG, JPG, or WEBP. Stitchloom reads it directly in your browser: the file is not uploaded to a server to create the pattern.",
+  "onboarding.step1Callout": "Images with a clear silhouette and calm background work best.",
+  "onboarding.step2Code": "02 / SETTINGS",
+  "onboarding.step2Visual": "EVERY CELL IS 1:1",
+  "onboarding.step2Kicker": "Step 2 · Foundation",
+  "onboarding.step2Title": "Cells are always square",
+  "onboarding.step2Copy": "Choose the pattern width and the height follows the photo’s proportions. Pick a palette preset or enter an exact number. The pattern updates automatically, and 16 colors is usually a strong starting point.",
+  "onboarding.ranges": "Setting ranges",
+  "onboarding.cellsRange": "36–110 cells",
+  "onboarding.colorsRange": "2–256 colors",
+  "onboarding.squareCell": "Square 1:1 cell",
+  "onboarding.step3Code": "03 / OPTIONAL",
+  "onboarding.step3Visual": "PHOTO → CLEAN PIXEL ART",
+  "onboarding.step3Kicker": "Step 3 · Preparation",
+  "onboarding.step3Title": "Simplify a complex photo",
+  "onboarding.step3Copy": "The source section includes a ready-made prompt for ChatGPT, Gemini, or another AI tool. It automatically uses your chosen pattern width and color count.",
+  "onboarding.step3Callout": "This is optional. If you upload a photo to an external AI service, that service’s privacy policy applies.",
+  "onboarding.step4Code": "04 / RESULT",
+  "onboarding.step4Visual": "ZOOM · PDF · PNG · CSV",
+  "onboarding.step4Kicker": "Step 4 · Review",
+  "onboarding.step4Title": "Check and save the pattern",
+  "onboarding.step4Copy": "Toggle the grid and symbols, zoom with the controls or a pinch, drag the enlarged pattern, and then download PDF, PNG, or CSV.",
+  "onboarding.step4Callout": "You can reopen this tour at any time with the “?” button in the header.",
+  "onboarding.skip": "Skip",
+  "onboarding.back": "Back",
+};
+
+const UI_MESSAGES = {
+  ru: {
+    "theme.auto": "Авто",
+    "theme.light": "Светлая",
+    "theme.dark": "Тёмная",
+    "theme.current": "Тема: {value}",
+    "locale.switch": "Переключить на английский",
+    "onboarding.progress": "Шаг {current} из {total}",
+    "onboarding.start": "Начать работу",
+    "onboarding.next": "Дальше",
+    "ai.target": "{width} клеток · до {colors} цветов",
+    "ai.copy": "Скопировать промпт",
+    "ai.copied": "Промпт скопирован",
+    "ai.copiedStatus": "Теперь прикрепите фото и вставьте промпт в выбранный ИИ-сервис.",
+    "ai.select": "Выделить промпт",
+    "ai.manualStatus": "Автокопирование недоступно — текст раскрыт и выделен для ручного копирования.",
+    "guidance.low": "Графичный результат с коротким и простым ключом.",
+    "guidance.balanced": "{colors} — хороший баланс деталей и удобного ключа.",
+    "guidance.detailed": "Больше нюансов; для печати ключ уже будет длиннее.",
+    "guidance.high": "Для ручной вышивки обычно удобнее до 64 цветов. Символы скрыты по умолчанию, но их можно включить.",
+    "auto.noPhoto": "Загрузите фото — схема соберётся автоматически.",
+    "auto.updating": "Настройки изменились — пересчитываю схему…",
+    "auto.ready": "Готово: {width} × {height} клеток, {palette}. Изменения применяются автоматически.",
+    "pattern.updatingStatus": "Обновляю…",
+    "pattern.updatingHeading": "Обновляю схему",
+    "pattern.buildingHeading": "Считаю клетки и подбираю цвета",
+    "pattern.buildingStatus": "Собираю схему…",
+    "pattern.readyStatus": "Схема готова",
+    "pattern.readyHeading": "Схема готова к вышивке",
+    "pattern.emptyHeading": "Ваша схема появится здесь",
+    "pattern.waiting": "Ждёт фото",
+    "zoom.current": "Текущий масштаб {zoom} процентов. Вписать схему в область просмотра",
+    "file.local": "Всё считается локально: файл не загружается на сервер.",
+    "file.ready": "Изображение готово. Схема строится локально в этом окне.",
+    "file.patternReady": "Готово. Меняйте настройки — фото останется локальным, а схема обновится сама.",
+    "file.invalid": "Нужен файл изображения: PNG, JPG, WEBP или GIF.",
+    "file.tooLarge": "Файл слишком большой. Максимальный размер — 20 МБ.",
+    "file.openFailed": "Не получилось открыть изображение. Попробуйте другой файл.",
+    "legend.stitches": "Стежков",
+    "pdf.ready": "PDF готов. ",
+    "pdf.retry": "Скачать ещё раз",
+    "pdf.readFailed": "Не удалось прочитать страницу PDF",
+    "pdf.pageFailed": "Не удалось подготовить страницу PDF",
+    "pdf.preparing": "Готовлю PDF…",
+    "pdf.pages": "Собираю страницы: {current} / {total}",
+    "pdf.packing": "Упаковываю PDF…",
+    "pdf.failed": "Не удалось собрать PDF. Попробуйте уменьшить размер схемы.",
+    "pdf.download": "Скачать PDF",
+    "pdf.footerLocal": "Схема создана локально — stitchloom",
+    "pdf.page": "Страница {page} / {total}",
+    "pdf.overviewSection": "ОБЗОР СХЕМЫ",
+    "pdf.coverTitle": "Схема для вышивки",
+    "pdf.coverSubtitle": "клетка за клеткой",
+    "pdf.imageDefault": "Изображение",
+    "pdf.size": "РАЗМЕР",
+    "pdf.colors": "ЦВЕТОВ",
+    "pdf.stitches": "СТЕЖКОВ",
+    "pdf.nextPages": "ДЕТАЛЬНАЯ СЕТКА И КЛЮЧ ЦВЕТОВ — НА СЛЕДУЮЩИХ СТРАНИЦАХ",
+    "pdf.gridSection": "СЕТКА {current} / {total}",
+    "pdf.gridTitle": "Квадратная схема 1:1",
+    "pdf.gridRange": "Столбцы {columnStart}–{columnEnd} · ряды {rowStart}–{rowEnd}",
+    "pdf.thickLine": "Толстая линия — каждые 10 клеток",
+    "pdf.keySection": "КЛЮЧ {current} / {total}",
+    "pdf.legendTitle": "Цвета и символы",
+    "pdf.legendNote": "Оттенки на экране приблизительные — сверяйтесь с физическим каталогом мулине.",
+  },
+  en: {
+    "theme.auto": "Auto",
+    "theme.light": "Light",
+    "theme.dark": "Dark",
+    "theme.current": "Theme: {value}",
+    "locale.switch": "Switch to Russian",
+    "onboarding.progress": "Step {current} of {total}",
+    "onboarding.start": "Start creating",
+    "onboarding.next": "Next",
+    "ai.target": "{width} cells · up to {colors} colors",
+    "ai.copy": "Copy prompt",
+    "ai.copied": "Prompt copied",
+    "ai.copiedStatus": "Now attach the photo and paste the prompt into your chosen AI service.",
+    "ai.select": "Select prompt",
+    "ai.manualStatus": "Automatic copying is unavailable — the text is open and selected for manual copying.",
+    "guidance.low": "A graphic result with a short, simple key.",
+    "guidance.balanced": "{colors} is a good balance between detail and a manageable key.",
+    "guidance.detailed": "More nuance, but the printable key will be longer.",
+    "guidance.high": "Up to 64 colors is usually more practical for hand stitching. Symbols are hidden by default, but you can turn them on.",
+    "auto.noPhoto": "Upload a photo — the pattern will build automatically.",
+    "auto.updating": "Settings changed — rebuilding the pattern…",
+    "auto.ready": "Ready: {width} × {height} cells, {palette}. Changes apply automatically.",
+    "pattern.updatingStatus": "Updating…",
+    "pattern.updatingHeading": "Updating pattern",
+    "pattern.buildingHeading": "Calculating cells and choosing colors",
+    "pattern.buildingStatus": "Building pattern…",
+    "pattern.readyStatus": "Pattern ready",
+    "pattern.readyHeading": "Pattern ready to stitch",
+    "pattern.emptyHeading": "Your pattern will appear here",
+    "pattern.waiting": "Waiting for photo",
+    "zoom.current": "Current zoom {zoom} percent. Fit the pattern to the viewport",
+    "file.local": "Everything is processed locally: the file is not uploaded to a server.",
+    "file.ready": "Image ready. The pattern is being built locally in this window.",
+    "file.patternReady": "Ready. Change the settings — the photo stays local and the pattern updates automatically.",
+    "file.invalid": "Choose an image file: PNG, JPG, WEBP, or GIF.",
+    "file.tooLarge": "The file is too large. The maximum size is 20 MB.",
+    "file.openFailed": "The image could not be opened. Try another file.",
+    "legend.stitches": "Stitches",
+    "pdf.ready": "PDF ready. ",
+    "pdf.retry": "Download again",
+    "pdf.readFailed": "Could not read the PDF page",
+    "pdf.pageFailed": "Could not prepare the PDF page",
+    "pdf.preparing": "Preparing PDF…",
+    "pdf.pages": "Building pages: {current} / {total}",
+    "pdf.packing": "Packaging PDF…",
+    "pdf.failed": "Could not build the PDF. Try a smaller pattern size.",
+    "pdf.download": "Download PDF",
+    "pdf.footerLocal": "Pattern created locally — stitchloom",
+    "pdf.page": "Page {page} / {total}",
+    "pdf.overviewSection": "PATTERN OVERVIEW",
+    "pdf.coverTitle": "Cross-stitch pattern",
+    "pdf.coverSubtitle": "cell by cell",
+    "pdf.imageDefault": "Image",
+    "pdf.size": "SIZE",
+    "pdf.colors": "COLORS",
+    "pdf.stitches": "STITCHES",
+    "pdf.nextPages": "DETAILED GRID AND COLOR KEY — ON THE FOLLOWING PAGES",
+    "pdf.gridSection": "GRID {current} / {total}",
+    "pdf.gridTitle": "Square 1:1 pattern",
+    "pdf.gridRange": "Columns {columnStart}–{columnEnd} · rows {rowStart}–{rowEnd}",
+    "pdf.thickLine": "Bold line every 10 cells",
+    "pdf.keySection": "KEY {current} / {total}",
+    "pdf.legendTitle": "Colors and symbols",
+    "pdf.legendNote": "On-screen shades are approximate — check them against a physical thread chart.",
+  },
+};
+
+const UNIT_FORMS = {
+  ru: {
+    cell: ["клетка", "клетки", "клеток"],
+    color: ["цвет", "цвета", "цветов"],
+    stitch: ["стежок", "стежка", "стежков"],
+  },
+  en: {
+    cell: ["cell", "cells"],
+    color: ["color", "colors"],
+    stitch: ["stitch", "stitches"],
+  },
+};
+
+const staticLocaleCache = new Map();
+
 const SYMBOLS = [
   "■", "●", "▲", "◆", "✚", "×", "○", "□",
   "△", "◇", "★", "∗", "⌁", "≋", "◉", "◌",
@@ -111,44 +412,52 @@ const SYMBOLS = [
 const SYMBOL_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 const DMC_PALETTE = [
-  { code: "B5200", name: "Белый", hex: "#ffffff", r: 255, g: 255, b: 255 },
-  { code: "3865", name: "Зимний белый", hex: "#f4f0e6", r: 244, g: 240, b: 230 },
-  { code: "762", name: "Жемчужно-серый, светлый", hex: "#d7d0c4", r: 215, g: 208, b: 196 },
-  { code: "318", name: "Стальной серый, светлый", hex: "#a7abb0", r: 167, g: 171, b: 176 },
-  { code: "414", name: "Стальной серый, тёмный", hex: "#73777a", r: 115, g: 119, b: 122 },
-  { code: "535", name: "Графитовый серый", hex: "#55585a", r: 85, g: 88, b: 90 },
-  { code: "413", name: "Серый, тёмный", hex: "#44484a", r: 68, g: 72, b: 74 },
-  { code: "3799", name: "Серый, очень тёмный", hex: "#25292b", r: 37, g: 41, b: 43 },
-  { code: "310", name: "Чёрный", hex: "#171719", r: 23, g: 23, b: 25 },
-  { code: "3371", name: "Коричневый, почти чёрный", hex: "#30201d", r: 48, g: 32, b: 29 },
-  { code: "754", name: "Персиковый, светлый", hex: "#f1c7ae", r: 241, g: 199, b: 174 },
-  { code: "210", name: "Розовый, тёмный", hex: "#c87878", r: 200, g: 120, b: 120 },
-  { code: "3712", name: "Лососевый, тёмный", hex: "#ad5b5e", r: 173, g: 91, b: 94 },
-  { code: "962", name: "Пыльная роза, средний", hex: "#d18d94", r: 209, g: 141, b: 148 },
-  { code: "3803", name: "Розово-лиловый, светлый", hex: "#ad6b7b", r: 173, g: 107, b: 123 },
-  { code: "321", name: "Красный", hex: "#bd2435", r: 189, g: 36, b: 53 },
-  { code: "606", name: "Красно-оранжевый", hex: "#ef4c3c", r: 239, g: 76, b: 60 },
-  { code: "782", name: "Топаз, тёмный", hex: "#ad7b3d", r: 173, g: 123, b: 61 },
-  { code: "783", name: "Топаз, средний", hex: "#c39a59", r: 195, g: 154, b: 89 },
-  { code: "3047", name: "Жёлтый, очень светлый", hex: "#e9dca4", r: 233, g: 220, b: 164 },
-  { code: "3346", name: "Охотничий зелёный", hex: "#64814b", r: 100, g: 129, b: 75 },
-  { code: "702", name: "Келли-зелёный", hex: "#5a9a5a", r: 90, g: 154, b: 90 },
-  { code: "890", name: "Фисташковый, тёмный", hex: "#417342", r: 65, g: 115, b: 66 },
-  { code: "799", name: "Синий Delft, средний", hex: "#3c6290", r: 60, g: 98, b: 144 },
-  { code: "820", name: "Королевский синий, тёмный", hex: "#263f72", r: 38, g: 63, b: 114 },
-  { code: "3325", name: "Синий, светлый", hex: "#8ca4c2", r: 140, g: 164, b: 194 },
-  { code: "550", name: "Фиолетовый, тёмный", hex: "#684c79", r: 104, g: 76, b: 121 },
-  { code: "718", name: "Сливовый", hex: "#a44770", r: 164, g: 71, b: 112 },
-  { code: "3862", name: "Мокко, средний", hex: "#a47756", r: 164, g: 119, b: 86 },
-  { code: "3866", name: "Мокко, очень светлый", hex: "#f0ddc1", r: 240, g: 221, b: 193 },
+  { code: "B5200", name: { ru: "Белый", en: "Snow White" }, hex: "#ffffff", r: 255, g: 255, b: 255 },
+  { code: "3865", name: { ru: "Зимний белый", en: "Winter White" }, hex: "#f4f0e6", r: 244, g: 240, b: 230 },
+  { code: "762", name: { ru: "Жемчужно-серый, светлый", en: "Pearl Gray, very light" }, hex: "#d7d0c4", r: 215, g: 208, b: 196 },
+  { code: "318", name: { ru: "Стальной серый, светлый", en: "Steel Gray, light" }, hex: "#a7abb0", r: 167, g: 171, b: 176 },
+  { code: "414", name: { ru: "Стальной серый, тёмный", en: "Steel Gray, dark" }, hex: "#73777a", r: 115, g: 119, b: 122 },
+  { code: "535", name: { ru: "Графитовый серый", en: "Graphite Gray" }, hex: "#55585a", r: 85, g: 88, b: 90 },
+  { code: "413", name: { ru: "Серый, тёмный", en: "Gray, dark" }, hex: "#44484a", r: 68, g: 72, b: 74 },
+  { code: "3799", name: { ru: "Серый, очень тёмный", en: "Gray, very dark" }, hex: "#25292b", r: 37, g: 41, b: 43 },
+  { code: "310", name: { ru: "Чёрный", en: "Black" }, hex: "#171719", r: 23, g: 23, b: 25 },
+  { code: "3371", name: { ru: "Коричневый, почти чёрный", en: "Brown, very dark" }, hex: "#30201d", r: 48, g: 32, b: 29 },
+  { code: "754", name: { ru: "Персиковый, светлый", en: "Peach, light" }, hex: "#f1c7ae", r: 241, g: 199, b: 174 },
+  { code: "210", name: { ru: "Розовый, тёмный", en: "Pink, dark" }, hex: "#c87878", r: 200, g: 120, b: 120 },
+  { code: "3712", name: { ru: "Лососевый, тёмный", en: "Salmon, dark" }, hex: "#ad5b5e", r: 173, g: 91, b: 94 },
+  { code: "962", name: { ru: "Пыльная роза, средний", en: "Dusty Rose, medium" }, hex: "#d18d94", r: 209, g: 141, b: 148 },
+  { code: "3803", name: { ru: "Розово-лиловый, светлый", en: "Mauve, light" }, hex: "#ad6b7b", r: 173, g: 107, b: 123 },
+  { code: "321", name: { ru: "Красный", en: "Red" }, hex: "#bd2435", r: 189, g: 36, b: 53 },
+  { code: "606", name: { ru: "Красно-оранжевый", en: "Bright Orange-Red" }, hex: "#ef4c3c", r: 239, g: 76, b: 60 },
+  { code: "782", name: { ru: "Топаз, тёмный", en: "Topaz, dark" }, hex: "#ad7b3d", r: 173, g: 123, b: 61 },
+  { code: "783", name: { ru: "Топаз, средний", en: "Topaz, medium" }, hex: "#c39a59", r: 195, g: 154, b: 89 },
+  { code: "3047", name: { ru: "Жёлтый, очень светлый", en: "Yellow, very light" }, hex: "#e9dca4", r: 233, g: 220, b: 164 },
+  { code: "3346", name: { ru: "Охотничий зелёный", en: "Hunter Green" }, hex: "#64814b", r: 100, g: 129, b: 75 },
+  { code: "702", name: { ru: "Келли-зелёный", en: "Kelly Green" }, hex: "#5a9a5a", r: 90, g: 154, b: 90 },
+  { code: "890", name: { ru: "Фисташковый, тёмный", en: "Pistachio Green, dark" }, hex: "#417342", r: 65, g: 115, b: 66 },
+  { code: "799", name: { ru: "Синий Delft, средний", en: "Delft Blue, medium" }, hex: "#3c6290", r: 60, g: 98, b: 144 },
+  { code: "820", name: { ru: "Королевский синий, тёмный", en: "Royal Blue, dark" }, hex: "#263f72", r: 38, g: 63, b: 114 },
+  { code: "3325", name: { ru: "Синий, светлый", en: "Blue, light" }, hex: "#8ca4c2", r: 140, g: 164, b: 194 },
+  { code: "550", name: { ru: "Фиолетовый, тёмный", en: "Violet, dark" }, hex: "#684c79", r: 104, g: 76, b: 121 },
+  { code: "718", name: { ru: "Сливовый", en: "Plum" }, hex: "#a44770", r: 164, g: 71, b: 112 },
+  { code: "3862", name: { ru: "Мокко, средний", en: "Mocha Brown, medium" }, hex: "#a47756", r: 164, g: 119, b: 86 },
+  { code: "3866", name: { ru: "Мокко, очень светлый", en: "Mocha Brown, very light" }, hex: "#f0ddc1", r: 240, g: 221, b: 193 },
 ];
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+function t(key, variables = {}) {
+  const localeMessages = UI_MESSAGES[state.locale] || UI_MESSAGES.ru;
+  const template = localeMessages[key] ?? UI_MESSAGES.ru[key] ?? key;
+  return String(template).replace(/\{(\w+)\}/g, (_, name) => (
+    Object.prototype.hasOwnProperty.call(variables, name) ? String(variables[name]) : `{${name}}`
+  ));
+}
+
 function formatNumber(value) {
-  return new Intl.NumberFormat("ru-RU").format(value);
+  return new Intl.NumberFormat(state.locale === "en" ? "en-US" : "ru-RU").format(value);
 }
 
 function plural(value, one, few, many) {
@@ -159,11 +468,74 @@ function plural(value, one, few, many) {
   return many;
 }
 
+function formatUnit(value, unit) {
+  const forms = UNIT_FORMS[state.locale]?.[unit] || UNIT_FORMS.ru[unit];
+  if (state.locale === "en") return value === 1 ? forms[0] : forms[1];
+  return plural(value, forms[0], forms[1], forms[2]);
+}
+
 function formatBytes(bytes) {
   if (bytes < 1024 * 1024) {
-    return Math.max(1, Math.round(bytes / 1024)) + " КБ";
+    return Math.max(1, Math.round(bytes / 1024)) + (state.locale === "en" ? " KB" : " КБ");
   }
-  return (bytes / (1024 * 1024)).toFixed(1).replace(".", ",") + " МБ";
+  const value = new Intl.NumberFormat(state.locale === "en" ? "en-US" : "ru-RU", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(bytes / (1024 * 1024));
+  return value + (state.locale === "en" ? " MB" : " МБ");
+}
+
+function cacheStaticLocaleValues() {
+  const bindings = [
+    { selector: "[data-i18n]", datasetKey: "i18n", property: "textContent", suffix: "text" },
+    { selector: "[data-i18n-html]", datasetKey: "i18nHtml", property: "innerHTML", suffix: "html" },
+    { selector: "[data-i18n-aria-label]", datasetKey: "i18nAriaLabel", attribute: "aria-label", suffix: "aria" },
+    { selector: "[data-i18n-title]", datasetKey: "i18nTitle", attribute: "title", suffix: "title" },
+    { selector: "[data-i18n-content]", datasetKey: "i18nContent", attribute: "content", suffix: "content" },
+    { selector: "[data-i18n-alt]", datasetKey: "i18nAlt", attribute: "alt", suffix: "alt" },
+  ];
+
+  bindings.forEach((binding) => {
+    document.querySelectorAll(binding.selector).forEach((element) => {
+      const key = element.dataset[binding.datasetKey];
+      const cacheKey = `${key}:${binding.suffix}`;
+      if (!staticLocaleCache.has(cacheKey)) {
+        staticLocaleCache.set(
+          cacheKey,
+          binding.attribute ? element.getAttribute(binding.attribute) || "" : element[binding.property],
+        );
+      }
+    });
+  });
+}
+
+function applyStaticTranslations(locale) {
+  const bindings = [
+    { selector: "[data-i18n]", datasetKey: "i18n", property: "textContent", suffix: "text" },
+    { selector: "[data-i18n-html]", datasetKey: "i18nHtml", property: "innerHTML", suffix: "html" },
+    { selector: "[data-i18n-aria-label]", datasetKey: "i18nAriaLabel", attribute: "aria-label", suffix: "aria" },
+    { selector: "[data-i18n-title]", datasetKey: "i18nTitle", attribute: "title", suffix: "title" },
+    { selector: "[data-i18n-content]", datasetKey: "i18nContent", attribute: "content", suffix: "content" },
+    { selector: "[data-i18n-alt]", datasetKey: "i18nAlt", attribute: "alt", suffix: "alt" },
+  ];
+
+  bindings.forEach((binding) => {
+    document.querySelectorAll(binding.selector).forEach((element) => {
+      const key = element.dataset[binding.datasetKey];
+      const fallback = staticLocaleCache.get(`${key}:${binding.suffix}`);
+      const value = locale === "en" ? EN_TRANSLATIONS[key] : fallback;
+      if (typeof value !== "string") return;
+      if (binding.attribute) element.setAttribute(binding.attribute, value);
+      else element[binding.property] = value;
+    });
+  });
+}
+
+function getStaticTranslation(key, locale = state.locale) {
+  if (locale === "en") return EN_TRANSLATIONS[key] || key;
+  return staticLocaleCache.get(`${key}:text`)
+    || staticLocaleCache.get(`${key}:content`)
+    || key;
 }
 
 function escapeHtml(value) {
@@ -216,10 +588,160 @@ const safeLocalStorage = getSafeStorage("localStorage");
 const safeSessionStorage = getSafeStorage("sessionStorage");
 const systemThemeMedia = window.matchMedia("(prefers-color-scheme: dark)");
 
+function isSupportedLocale(value) {
+  return value === "ru" || value === "en";
+}
+
+function getInitialLocale() {
+  const documentLocale = document.documentElement.dataset.locale;
+  if (isSupportedLocale(documentLocale)) return documentLocale;
+  return "ru";
+}
+
+function getLocalizedCanonicalUrl(locale) {
+  const url = new URL("https://stitchloom.antonlenev.chatgpt.site/");
+  if (locale === "en") url.searchParams.set("lang", "en");
+  return url.href;
+}
+
+function buildStructuredData(locale) {
+  const url = getLocalizedCanonicalUrl(locale);
+  const english = locale === "en";
+  const appDescription = english
+    ? "A browser-based generator that turns photos into cross-stitch patterns."
+    : "Браузерный генератор схем вышивки крестиком из фотографий.";
+  const featureList = english
+    ? [
+      "Square pattern cells",
+      "Palette from 2 to 256 colors",
+      "PDF, PNG, and CSV export",
+      "Local image processing",
+    ]
+    : [
+      "Квадратные клетки схемы",
+      "Палитра от 2 до 256 цветов",
+      "Экспорт в PDF, PNG и CSV",
+      "Локальная обработка изображения",
+    ];
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://stitchloom.antonlenev.chatgpt.site/#website",
+        url,
+        name: "Stitchloom",
+        alternateName: getStaticTranslation("meta.title", locale),
+        description: appDescription,
+        inLanguage: locale,
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://stitchloom.antonlenev.chatgpt.site/#app",
+        name: "Stitchloom",
+        url,
+        description: appDescription,
+        applicationCategory: "DesignApplication",
+        operatingSystem: "Any",
+        inLanguage: locale,
+        image: "https://stitchloom.antonlenev.chatgpt.site/og.png",
+        isPartOf: { "@id": "https://stitchloom.antonlenev.chatgpt.site/#website" },
+        featureList,
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: english ? "USD" : "RUB",
+        },
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://stitchloom.antonlenev.chatgpt.site/#faq",
+        inLanguage: locale,
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: getStaticTranslation("faq.uploadQuestion", locale),
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: getStaticTranslation("faq.uploadAnswer", locale),
+            },
+          },
+          {
+            "@type": "Question",
+            name: getStaticTranslation("faq.sizeQuestion", locale),
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: getStaticTranslation("faq.sizeAnswer", locale),
+            },
+          },
+          {
+            "@type": "Question",
+            name: getStaticTranslation("faq.colorsQuestion", locale),
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: getStaticTranslation("faq.colorsAnswer", locale),
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function persistLocale(locale) {
+  try {
+    safeLocalStorage?.setItem(LOCALE_STORAGE_KEY, locale);
+  } catch {
+    // The URL still preserves the choice when storage is unavailable.
+  }
+
+  try {
+    const url = new URL(window.location.href);
+    if (locale === "en") url.searchParams.set("lang", "en");
+    else url.searchParams.delete("lang");
+    history.replaceState(history.state, document.title, url);
+  } catch {
+    // The selected language still applies for the current page view.
+  }
+}
+
+function applyLocale(locale, persist = false, refresh = true) {
+  const nextLocale = isSupportedLocale(locale) ? locale : "ru";
+  state.locale = nextLocale;
+  document.documentElement.lang = nextLocale;
+  document.documentElement.dataset.locale = nextLocale;
+  applyStaticTranslations(nextLocale);
+
+  const localizedUrl = getLocalizedCanonicalUrl(nextLocale);
+  elements.canonicalUrl.href = localizedUrl;
+  elements.ogUrl.content = localizedUrl;
+  elements.ogLocale.content = nextLocale === "en" ? "en_US" : "ru_RU";
+  elements.ogLocaleAlternate.content = nextLocale === "en" ? "ru_RU" : "en_US";
+  elements.structuredData.textContent = JSON.stringify(buildStructuredData(nextLocale));
+  elements.appManifest.href = nextLocale === "en"
+    ? new URL("./manifest.en.webmanifest", window.location.href).href
+    : new URL("./manifest.webmanifest", window.location.href).href;
+
+  elements.localeToggleLabel.textContent = nextLocale === "en" ? "RU" : "EN";
+  elements.localeToggleLabel.lang = nextLocale === "en" ? "ru" : "en";
+  elements.localeToggle.setAttribute("aria-label", t("locale.switch"));
+  elements.localeToggle.title = t("locale.switch");
+  elements.brandHome.href = nextLocale === "en" ? "./?lang=en" : "./";
+
+  if (persist) persistLocale(nextLocale);
+  if (refresh) refreshLocalizedUi();
+}
+
+function initLocale() {
+  cacheStaticLocaleValues();
+  applyLocale(getInitialLocale(), false, false);
+}
+
 const THEME_LABELS = {
-  auto: "Авто",
-  light: "Светлая",
-  dark: "Тёмная",
+  auto: "theme.auto",
+  light: "theme.light",
+  dark: "theme.dark",
 };
 
 function isThemePreference(value) {
@@ -252,9 +774,11 @@ function applyTheme(preference, persist = false) {
 
   document.documentElement.dataset.themePreference = nextPreference;
   document.documentElement.dataset.theme = resolvedTheme;
-  elements.themePickerLabel.textContent = THEME_LABELS[nextPreference];
-  elements.themePickerSummary.setAttribute("aria-label", `Тема: ${THEME_LABELS[nextPreference]}`);
-  elements.themePickerSummary.title = `Тема: ${THEME_LABELS[nextPreference]}`;
+  const themeLabel = t(THEME_LABELS[nextPreference]);
+  const themeDescription = t("theme.current", { value: themeLabel });
+  elements.themePickerLabel.textContent = themeLabel;
+  elements.themePickerSummary.setAttribute("aria-label", themeDescription);
+  elements.themePickerSummary.title = themeDescription;
   elements.themeColor.content = resolvedTheme === "dark" ? "#131718" : "#e9e5dd";
 
   elements.themeChoices.forEach((button) => {
@@ -377,13 +901,15 @@ function updateOnboardingStep(nextStep) {
     dot.classList.toggle("is-active", index === state.onboardingStep);
   });
 
-  elements.onboardingProgress.textContent =
-    `Шаг ${state.onboardingStep + 1} из ${elements.onboardingSteps.length}`;
+  elements.onboardingProgress.textContent = t("onboarding.progress", {
+    current: state.onboardingStep + 1,
+    total: elements.onboardingSteps.length,
+  });
   elements.onboardingBack.disabled = state.onboardingStep === 0;
   elements.skipOnboarding.hidden = state.onboardingStep === lastStep;
   elements.onboardingNext.textContent = state.onboardingStep === lastStep
-    ? "Начать работу"
-    : "Дальше";
+    ? t("onboarding.start")
+    : t("onboarding.next");
 }
 
 function openOnboarding() {
@@ -432,6 +958,28 @@ function buildSimplificationPrompt() {
   const width = Number(elements.sizeSelect.value || DEFAULT_GRID_WIDTH);
   const colorCount = Number(elements.colorCount.value || DEFAULT_COLOR_COUNT);
 
+  if (state.locale === "en") {
+    return [
+      "Use the attached photograph as the only visual reference.",
+      "",
+      "Transform it into a clean, simplified pixel-art illustration prepared for conversion into a cross-stitch pattern.",
+      "",
+      "Requirements:",
+      `- use a working resolution of exactly ${width} square pixels (cells) wide; calculate the height proportionally from the source photo;`,
+      `- use no more than ${colorCount} clearly distinguishable solid colors;`,
+      "- preserve the recognizable silhouette, pose, composition, and defining features; do not crop the main subject;",
+      "- merge fine details, noise, and texture into large, readable color regions;",
+      "- every pixel must be perfectly square, equal in size, and contain exactly one color;",
+      "- use hard edges with no blur, transparency, gradients, antialiasing, or dithering;",
+      "- do not add a grid, symbols, labels, text, a frame, fabric texture, crosses, or stitched thread;",
+      "- do not change the subject or invent details that are not present in the photo;",
+      "- simplify the background into a few large color regions or one flat color if it is not important;",
+      "- output only the finished PNG image. For display, enlarge it only by an integer factor with nearest-neighbor scaling so pixel edges remain crisp.",
+      "",
+      "The result should look like clean pixel art / color blocking and be suitable for upload to the Stitchloom pattern generator.",
+    ].join("\n");
+  }
+
   return [
     "Используй прикреплённую фотографию как единственный визуальный источник.",
     "",
@@ -456,13 +1004,13 @@ function buildSimplificationPrompt() {
 function updateAiPrompt() {
   const width = Number(elements.sizeSelect.value || DEFAULT_GRID_WIDTH);
   const colorCount = Number(elements.colorCount.value || DEFAULT_COLOR_COUNT);
-  elements.aiPromptTarget.textContent = `${width} клеток · до ${colorCount} цветов`;
+  elements.aiPromptTarget.textContent = t("ai.target", { width, colors: colorCount });
   elements.aiPromptText.value = buildSimplificationPrompt();
 }
 
 function resetPromptCopyState() {
   elements.copyAiPrompt.classList.remove("is-copied");
-  elements.copyAiPromptLabel.textContent = "Скопировать промпт";
+  elements.copyAiPromptLabel.textContent = t("ai.copy");
   elements.aiPromptStatus.textContent = "";
   elements.aiPromptStatus.classList.remove("is-error");
   state.copyResetTimer = null;
@@ -499,12 +1047,12 @@ async function copySimplificationPrompt() {
   elements.aiPromptStatus.classList.toggle("is-error", !copied);
 
   if (copied) {
-    elements.copyAiPromptLabel.textContent = "Промпт скопирован";
-    elements.aiPromptStatus.textContent = "Теперь прикрепите фото и вставьте промпт в выбранный ИИ-сервис.";
+    elements.copyAiPromptLabel.textContent = t("ai.copied");
+    elements.aiPromptStatus.textContent = t("ai.copiedStatus");
     state.copyResetTimer = window.setTimeout(resetPromptCopyState, 3600);
   } else {
-    elements.copyAiPromptLabel.textContent = "Выделить промпт";
-    elements.aiPromptStatus.textContent = "Автокопирование недоступно — текст раскрыт и выделен для ручного копирования.";
+    elements.copyAiPromptLabel.textContent = t("ai.select");
+    elements.aiPromptStatus.textContent = t("ai.manualStatus");
   }
 }
 
@@ -517,7 +1065,7 @@ function updateControls() {
   );
   elements.colorCount.value = String(colorCount);
   elements.colorNumber.value = String(colorCount);
-  elements.sizeValue.textContent = width + " " + plural(width, "клетка", "клетки", "клеток");
+  elements.sizeValue.textContent = width + " " + formatUnit(width, "cell");
   elements.colorCountValue.textContent = String(colorCount);
   elements.colorPresets.forEach((button) => {
     const isActive = Number(button.dataset.colorPreset) === colorCount;
@@ -526,13 +1074,13 @@ function updateControls() {
   });
 
   if (colorCount <= 8) {
-    elements.colorGuidance.textContent = "Графичный результат с коротким и простым ключом.";
+    elements.colorGuidance.textContent = t("guidance.low");
   } else if (colorCount <= 32) {
-    elements.colorGuidance.textContent = `${colorCount} — хороший баланс деталей и удобного ключа.`;
+    elements.colorGuidance.textContent = t("guidance.balanced", { colors: colorCount });
   } else if (colorCount <= 64) {
-    elements.colorGuidance.textContent = "Больше нюансов; для печати ключ уже будет длиннее.";
+    elements.colorGuidance.textContent = t("guidance.detailed");
   } else {
-    elements.colorGuidance.textContent = "Для ручной вышивки обычно удобнее до 64 цветов. Символы скрыты по умолчанию, но их можно включить.";
+    elements.colorGuidance.textContent = t("guidance.high");
   }
   updateAiPrompt();
 }
@@ -549,21 +1097,31 @@ function setColorCount(value, shouldBuild = true) {
   if (shouldBuild && state.image) schedulePatternBuild();
 }
 
+function formatPaletteSummary(paletteLength, requestedColors) {
+  if (paletteLength === requestedColors) {
+    return `${paletteLength} ${formatUnit(paletteLength, "color")}`;
+  }
+
+  return state.locale === "en"
+    ? `${paletteLength} of ${requestedColors} colors`
+    : `${paletteLength} из ${requestedColors} цветов`;
+}
+
 function schedulePatternBuild(delay = 220) {
   if (state.rebuildTimer) window.clearTimeout(state.rebuildTimer);
   state.buildRevision += 1;
 
   if (!state.image) {
-    setAutoUpdateStatus("Загрузите фото — схема соберётся автоматически.");
+    setAutoUpdateStatus(t("auto.noPhoto"));
     return;
   }
 
   const revision = state.buildRevision;
-  setPatternStatus("Обновляю…", "busy");
+  setPatternStatus(t("pattern.updatingStatus"), "busy");
   elements.patternHeading.textContent = state.pattern
-    ? "Обновляю схему"
-    : "Считаю клетки и подбираю цвета";
-  setAutoUpdateStatus("Настройки изменились — пересчитываю схему…", "busy");
+    ? t("pattern.updatingHeading")
+    : t("pattern.buildingHeading");
+  setAutoUpdateStatus(t("auto.updating"), "busy");
   state.rebuildTimer = window.setTimeout(() => {
     state.rebuildTimer = null;
     if (revision !== state.buildRevision) return;
@@ -577,7 +1135,7 @@ function updateZoomControls() {
   elements.zoomValue.textContent = zoom + "%";
   elements.zoomReset.setAttribute(
     "aria-label",
-    "Текущий масштаб " + zoom + " процентов. Вписать схему в область просмотра",
+    t("zoom.current", { zoom }),
   );
   elements.zoomOut.disabled = !hasPattern || zoom <= MIN_ZOOM;
   elements.zoomReset.disabled = !hasPattern;
@@ -791,8 +1349,8 @@ function buildPattern(revision = state.buildRevision) {
   if (!state.image) return;
   if (revision !== state.buildRevision) return;
 
-  setPatternStatus("Собираю схему…", "busy");
-  elements.patternHeading.textContent = "Считаю клетки и подбираю цвета";
+  setPatternStatus(t("pattern.buildingStatus"), "busy");
+  elements.patternHeading.textContent = t("pattern.buildingHeading");
 
   const width = Number(elements.sizeSelect.value);
   const sourceWidth = state.image.naturalWidth || state.image.width;
@@ -822,15 +1380,18 @@ function buildPattern(revision = state.buildRevision) {
   });
 
   const cells = localCells.map((index) => remap.get(index));
-  const legend = ordered.map((item, index) => ({
-    ...item.color,
-    hex: colorToHex(item.color),
-    code: "C" + String(index + 1).padStart(3, "0"),
-    dmcCode: DMC_PALETTE[nearestColorIndex(item.color, DMC_PALETTE)].code,
-    dmcName: DMC_PALETTE[nearestColorIndex(item.color, DMC_PALETTE)].name,
-    count: item.count,
-    symbol: symbolForIndex(index),
-  }));
+  const legend = ordered.map((item, index) => {
+    const dmc = DMC_PALETTE[nearestColorIndex(item.color, DMC_PALETTE)];
+    return {
+      ...item.color,
+      hex: colorToHex(item.color),
+      code: "C" + String(index + 1).padStart(3, "0"),
+      dmcCode: dmc.code,
+      dmcName: dmc.name,
+      count: item.count,
+      symbol: symbolForIndex(index),
+    };
+  });
 
   state.pattern = {
     width,
@@ -842,13 +1403,11 @@ function buildPattern(revision = state.buildRevision) {
   };
 
   renderPattern();
-  setPatternStatus("Схема готова", "ready");
-  elements.patternHeading.textContent = "Схема готова к вышивке";
-  const paletteSummary = legend.length === requestedColors
-    ? `${legend.length} ${plural(legend.length, "цвет", "цвета", "цветов")}`
-    : `${legend.length} из ${requestedColors} цветов`;
-  setAutoUpdateStatus(`Готово: ${width} × ${height} клеток, ${paletteSummary}. Изменения применяются автоматически.`, "ready");
-  setFileStatus("Готово. Меняйте настройки — фото останется локальным, а схема обновится сама.");
+  setPatternStatus(t("pattern.readyStatus"), "ready");
+  elements.patternHeading.textContent = t("pattern.readyHeading");
+  const paletteSummary = formatPaletteSummary(legend.length, requestedColors);
+  setAutoUpdateStatus(t("auto.ready", { width, height, palette: paletteSummary }), "ready");
+  setFileStatus(t("file.patternReady"));
   updateMobileResultBar();
 }
 
@@ -925,27 +1484,32 @@ function drawPatternToCanvas(canvas, cellSize, mode, pixelRatio) {
   context.strokeRect(0.75, 0.75, canvasWidth - 1.5, canvasHeight - 1.5);
 }
 
+function getLocalizedDmcName(color) {
+  if (color.dmcName && typeof color.dmcName === "object") {
+    return color.dmcName[state.locale] || color.dmcName.ru || "";
+  }
+  return color.dmcName || "";
+}
+
 function renderLegend() {
   if (!state.pattern) {
     elements.legendList.innerHTML = "";
-    elements.legendCount.textContent = "0 цветов";
+    elements.legendCount.textContent = "0 " + formatUnit(0, "color");
     return;
   }
 
   const palette = state.pattern.palette;
   const requestedColors = state.pattern.requestedColors || palette.length;
-  elements.legendCount.textContent = palette.length === requestedColors
-    ? palette.length + " " + plural(palette.length, "цвет", "цвета", "цветов")
-    : `${palette.length} из ${requestedColors} цветов`;
+  elements.legendCount.textContent = formatPaletteSummary(palette.length, requestedColors);
   elements.legendList.innerHTML = palette.map((color) => {
-    const colorDescription = `${color.hex.toUpperCase()} · ≈ DMC ${color.dmcCode} ${color.dmcName}`;
+    const colorDescription = `${color.hex.toUpperCase()} · ≈ DMC ${color.dmcCode} ${getLocalizedDmcName(color)}`;
     return (
       '<div class="legend-row" title="' + escapeHtml(colorDescription) + '">' +
         '<span class="legend-swatch" style="background:' + color.hex + '" aria-hidden="true"></span>' +
         '<span class="legend-symbol">' + escapeHtml(color.symbol) + "</span>" +
         '<span class="legend-code">' + escapeHtml(color.code) + "</span>" +
         '<span class="legend-name">' + escapeHtml(colorDescription) + "</span>" +
-        '<span class="legend-count" title="Стежков">' + formatNumber(color.count) + "</span>" +
+        '<span class="legend-count" title="' + escapeHtml(t("legend.stitches")) + '">' + formatNumber(color.count) + "</span>" +
       "</div>"
     );
   }).join("");
@@ -959,7 +1523,7 @@ function updateMobileResultBar() {
 
   const paletteLength = state.pattern.palette.length;
   elements.mobileResultSummary.textContent =
-    `${state.pattern.width} × ${state.pattern.height} · ${paletteLength} ${plural(paletteLength, "цвет", "цвета", "цветов")}`;
+    `${state.pattern.width} × ${state.pattern.height} · ${paletteLength} ${formatUnit(paletteLength, "color")}`;
 }
 
 function renderPattern() {
@@ -973,20 +1537,18 @@ function renderPattern() {
   updateZoomControls();
 
   if (!hasPattern) {
-    elements.patternHeading.textContent = "Ваша схема появится здесь";
+    elements.patternHeading.textContent = t("pattern.emptyHeading");
     updateMobileResultBar();
     return;
   }
 
   const pattern = state.pattern;
   const cellCount = pattern.width * pattern.height;
-  elements.patternDimension.textContent = pattern.width + " × " + pattern.height + " клеток";
-  const paletteText = pattern.palette.length === pattern.requestedColors
-    ? pattern.palette.length + " " + plural(pattern.palette.length, "цвет", "цвета", "цветов")
-    : `${pattern.palette.length} из ${pattern.requestedColors} цветов`;
+  elements.patternDimension.textContent = pattern.width + " × " + pattern.height + " " + formatUnit(pattern.height, "cell");
+  const paletteText = formatPaletteSummary(pattern.palette.length, pattern.requestedColors);
   elements.patternDetails.textContent =
     paletteText +
-    " · " + formatNumber(cellCount) + " " + plural(cellCount, "стежок", "стежка", "стежков");
+    " · " + formatNumber(cellCount) + " " + formatUnit(cellCount, "stitch");
 
   const displaySize = clamp(Math.floor(900 / Math.max(pattern.width, pattern.height)), 7, 20);
   drawPatternToCanvas(elements.patternCanvas, displaySize, state.settings.view);
@@ -1001,6 +1563,74 @@ function updateViewButtons() {
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
   });
+}
+
+function refreshLocalizedUi() {
+  applyTheme(state.themePreference);
+  updateControls();
+  updateOnboardingStep(state.onboardingStep);
+  updateViewButtons();
+  renderPattern();
+
+  if (state.image) {
+    const sourceWidth = state.image.naturalWidth || state.image.width;
+    const sourceHeight = state.image.naturalHeight || state.image.height;
+    elements.fileMeta.textContent =
+      `${sourceWidth} × ${sourceHeight} px · ${formatBytes(state.fileSize)}`;
+  }
+
+  if (state.image && state.rebuildTimer) {
+    setPatternStatus(t("pattern.updatingStatus"), "busy");
+    elements.patternHeading.textContent = state.pattern
+      ? t("pattern.updatingHeading")
+      : t("pattern.buildingHeading");
+    setAutoUpdateStatus(t("auto.updating"), "busy");
+    setFileStatus(t("file.ready"));
+  } else if (state.pattern) {
+    const pattern = state.pattern;
+    const paletteSummary = formatPaletteSummary(
+      pattern.palette.length,
+      pattern.requestedColors,
+    );
+    setPatternStatus(t("pattern.readyStatus"), "ready");
+    elements.patternHeading.textContent = t("pattern.readyHeading");
+    setAutoUpdateStatus(t("auto.ready", {
+      width: pattern.width,
+      height: pattern.height,
+      palette: paletteSummary,
+    }), "ready");
+    setFileStatus(t("file.patternReady"));
+  } else if (state.image) {
+    setPatternStatus(t("pattern.buildingStatus"), "busy");
+    elements.patternHeading.textContent = t("pattern.buildingHeading");
+    setAutoUpdateStatus(t("auto.updating"), "busy");
+    setFileStatus(t("file.ready"));
+  } else {
+    setPatternStatus(t("pattern.waiting"));
+    elements.patternHeading.textContent = t("pattern.emptyHeading");
+    setAutoUpdateStatus(t("auto.noPhoto"));
+    setFileStatus(t("file.local"));
+  }
+
+  elements.downloadPdfLabel.textContent = elements.downloadPdf.classList.contains("is-busy")
+    ? t("pdf.preparing")
+    : t("pdf.download");
+
+  const retryLink = elements.exportStatus.querySelector("a");
+  if (retryLink && state.lastDownloadUrl) {
+    const filename = retryLink.download;
+    elements.exportStatus.textContent = t("pdf.ready");
+    const localizedRetryLink = document.createElement("a");
+    localizedRetryLink.href = state.lastDownloadUrl;
+    localizedRetryLink.download = filename;
+    localizedRetryLink.target = "_blank";
+    localizedRetryLink.rel = "noopener";
+    localizedRetryLink.textContent = t("pdf.retry");
+    elements.exportStatus.appendChild(localizedRetryLink);
+  }
+
+  if (state.copyResetTimer) window.clearTimeout(state.copyResetTimer);
+  resetPromptCopyState();
 }
 
 function clearImage() {
@@ -1019,9 +1649,9 @@ function clearImage() {
   elements.sourcePreview.removeAttribute("src");
   elements.sourceCard.classList.add("is-hidden");
   elements.dropzone.classList.remove("is-hidden");
-  setAutoUpdateStatus("Загрузите фото — схема соберётся автоматически.");
-  setFileStatus("Всё считается локально: файл не загружается на сервер.");
-  setPatternStatus("Ждёт фото");
+  setAutoUpdateStatus(t("auto.noPhoto"));
+  setFileStatus(t("file.local"));
+  setPatternStatus(t("pattern.waiting"));
   setExportStatus("");
   renderPattern();
 }
@@ -1029,11 +1659,11 @@ function clearImage() {
 function loadImageFile(file) {
   if (!file) return;
   if (!file.type || !file.type.startsWith("image/")) {
-    setFileStatus("Нужен файл изображения: PNG, JPG, WEBP или GIF.", true);
+    setFileStatus(t("file.invalid"), true);
     return;
   }
   if (file.size > MAX_FILE_SIZE) {
-    setFileStatus("Файл слишком большой. Максимальный размер — 20 МБ.", true);
+    setFileStatus(t("file.tooLarge"), true);
     return;
   }
 
@@ -1056,12 +1686,12 @@ function loadImageFile(file) {
       image.naturalWidth + " × " + image.naturalHeight + " px · " + formatBytes(file.size);
     elements.sourceCard.classList.remove("is-hidden");
     elements.dropzone.classList.add("is-hidden");
-    setFileStatus("Изображение готово. Схема строится локально в этом окне.");
+    setFileStatus(t("file.ready"));
     schedulePatternBuild(60);
   };
   image.onerror = () => {
     URL.revokeObjectURL(objectUrl);
-    setFileStatus("Не получилось открыть изображение. Попробуйте другой файл.", true);
+    setFileStatus(t("file.openFailed"), true);
   };
   image.src = objectUrl;
 }
@@ -1100,13 +1730,13 @@ function offerPdfDownload(blob, filename) {
   link.remove();
 
   elements.exportStatus.classList.remove("is-error");
-  elements.exportStatus.textContent = "PDF готов. ";
+  elements.exportStatus.textContent = t("pdf.ready");
   const retryLink = document.createElement("a");
   retryLink.href = url;
   retryLink.download = filename;
   retryLink.target = "_blank";
   retryLink.rel = "noopener";
-  retryLink.textContent = "Скачать ещё раз";
+  retryLink.textContent = t("pdf.retry");
   elements.exportStatus.appendChild(retryLink);
 }
 
@@ -1122,7 +1752,7 @@ function blobToBytes(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(new Uint8Array(reader.result));
-    reader.onerror = () => reject(reader.error || new Error("Не удалось прочитать страницу PDF"));
+    reader.onerror = () => reject(reader.error || new Error(t("pdf.readFailed")));
     reader.readAsArrayBuffer(blob);
   });
 }
@@ -1131,7 +1761,7 @@ function canvasToJpegBytes(canvas) {
   return new Promise((resolve, reject) => {
     canvas.toBlob(async (blob) => {
       if (!blob) {
-        reject(new Error("Не удалось подготовить страницу PDF"));
+        reject(new Error(t("pdf.pageFailed")));
         return;
       }
       try {
@@ -1251,27 +1881,27 @@ function drawPdfChrome(context, layout, pageNumber, section) {
   context.fillStyle = "#6c706d";
   context.font = "600 13px Arial, sans-serif";
   context.textAlign = "left";
-  context.fillText("Схема создана локально — stitchloom", margin, footerY);
+  context.fillText(t("pdf.footerLocal"), margin, footerY);
   context.textAlign = "right";
-  context.fillText("Страница " + pageNumber + " / " + layout.totalPages, page.width - margin, footerY);
+  context.fillText(t("pdf.page", { page: pageNumber, total: layout.totalPages }), page.width - margin, footerY);
   context.textAlign = "left";
 }
 
 function drawPdfCover(context, layout, pattern, fileName) {
   const { page, margin } = layout;
-  drawPdfChrome(context, layout, 1, "ОБЗОР СХЕМЫ");
+  drawPdfChrome(context, layout, 1, t("pdf.overviewSection"));
 
   context.fillStyle = "#141819";
   context.font = "800 52px Arial, sans-serif";
-  context.fillText("Схема для вышивки", margin, 148);
+  context.fillText(t("pdf.coverTitle"), margin, 148);
   context.fillStyle = "#5058bd";
   context.font = "italic 700 40px Georgia, serif";
-  context.fillText("клетка за клеткой", margin, 198);
+  context.fillText(t("pdf.coverSubtitle"), margin, 198);
 
   context.fillStyle = "#6c706d";
   context.font = "600 16px Arial, sans-serif";
   context.fillText(
-    fitCanvasText(context, fileName || "Изображение", page.width - margin * 2),
+    fitCanvasText(context, fileName || t("pdf.imageDefault"), page.width - margin * 2),
     margin,
     238,
   );
@@ -1280,9 +1910,9 @@ function drawPdfCover(context, layout, pattern, fileName) {
   const cardWidth = (page.width - margin * 2 - cardGap * 2) / 3;
   const cardY = 270;
   const cardValues = [
-    { label: "РАЗМЕР", value: pattern.width + " × " + pattern.height },
-    { label: "ЦВЕТОВ", value: String(pattern.palette.length) },
-    { label: "СТЕЖКОВ", value: formatNumber(pattern.totalStitches) },
+    { label: t("pdf.size"), value: pattern.width + " × " + pattern.height },
+    { label: t("pdf.colors"), value: String(pattern.palette.length) },
+    { label: t("pdf.stitches"), value: formatNumber(pattern.totalStitches) },
   ];
 
   cardValues.forEach((card, index) => {
@@ -1332,7 +1962,7 @@ function drawPdfCover(context, layout, pattern, fileName) {
 
   context.fillStyle = "#5058bd";
   context.font = "800 14px Arial, sans-serif";
-  context.fillText("ДЕТАЛЬНАЯ СЕТКА И КЛЮЧ ЦВЕТОВ — НА СЛЕДУЮЩИХ СТРАНИЦАХ", margin, page.height - 94);
+  context.fillText(t("pdf.nextPages"), margin, page.height - 94);
 }
 
 function shouldLabelAxis(value, first, last) {
@@ -1366,15 +1996,23 @@ function drawPdfPatternTile(context, layout, pattern, tileColumn, tileRow, pageN
     context,
     layout,
     pageNumber,
-    "СЕТКА " + (tileRow * tileColumns + tileColumn + 1) + " / " + (tileColumns * tileRows),
+    t("pdf.gridSection", {
+      current: tileRow * tileColumns + tileColumn + 1,
+      total: tileColumns * tileRows,
+    }),
   );
   context.fillStyle = "#141819";
   context.font = "800 31px Arial, sans-serif";
-  context.fillText("Квадратная схема 1:1", margin, margin + 61);
+  context.fillText(t("pdf.gridTitle"), margin, margin + 61);
   context.fillStyle = "#6c706d";
   context.font = "600 15px Arial, sans-serif";
   context.fillText(
-    "Столбцы " + (columnStart + 1) + "–" + columnEnd + " · ряды " + (rowStart + 1) + "–" + rowEnd,
+    t("pdf.gridRange", {
+      columnStart: columnStart + 1,
+      columnEnd,
+      rowStart: rowStart + 1,
+      rowEnd,
+    }),
     margin,
     margin + 91,
   );
@@ -1447,7 +2085,7 @@ function drawPdfPatternTile(context, layout, pattern, tileColumn, tileRow, pageN
   context.font = "600 13px Arial, sans-serif";
   const noteX = Math.min(page.width - margin - 330, gridX + gridWidth + 24);
   if (noteX > gridX + gridWidth + 8) {
-    context.fillText("Толстая линия — каждые 10 клеток", noteX, gridY + 17);
+    context.fillText(t("pdf.thickLine"), noteX, gridY + 17);
   }
 }
 
@@ -1471,14 +2109,14 @@ function drawPdfLegendPage(context, layout, pattern, legendPageIndex, pageNumber
     context,
     layout,
     pageNumber,
-    "КЛЮЧ " + (legendPageIndex + 1) + " / " + legendPageCount,
+    t("pdf.keySection", { current: legendPageIndex + 1, total: legendPageCount }),
   );
   context.fillStyle = "#141819";
   context.font = "800 31px Arial, sans-serif";
-  context.fillText("Цвета и символы", margin, margin + 61);
+  context.fillText(t("pdf.legendTitle"), margin, margin + 61);
   context.fillStyle = "#6c706d";
   context.font = "600 15px Arial, sans-serif";
-  context.fillText("Оттенки на экране приблизительные — сверяйтесь с физическим каталогом мулине.", margin, margin + 91);
+  context.fillText(t("pdf.legendNote"), margin, margin + 91);
 
   for (let paletteIndex = startIndex; paletteIndex < endIndex; paletteIndex += 1) {
     const localIndex = paletteIndex - startIndex;
@@ -1522,7 +2160,7 @@ function drawPdfLegendPage(context, layout, pattern, legendPageIndex, pageNumber
     context.fillStyle = "#6c706d";
     context.font = "600 12px Arial, sans-serif";
     context.fillText(
-      fitCanvasText(context, "≈ DMC " + color.dmcCode + " · " + color.dmcName, textWidth),
+      fitCanvasText(context, "≈ DMC " + color.dmcCode + " · " + getLocalizedDmcName(color), textWidth),
       textX,
       y + 42,
     );
@@ -1650,8 +2288,8 @@ async function downloadPdf() {
   elements.downloadPdf.disabled = true;
   elements.downloadPdf.classList.add("is-busy");
   elements.downloadPdf.setAttribute("aria-busy", "true");
-  elements.downloadPdfLabel.textContent = "Готовлю PDF…";
-  setExportStatus("Собираю страницы: 0 / " + layout.totalPages);
+  elements.downloadPdfLabel.textContent = t("pdf.preparing");
+  setExportStatus(t("pdf.pages", { current: 0, total: layout.totalPages }));
   await nextPaint();
 
   const addPage = async (drawPage) => {
@@ -1660,7 +2298,7 @@ async function downloadPdf() {
     drawPage(context);
     await appendPdfCanvasPage(pages, canvas, layout);
     completedPages += 1;
-    setExportStatus("Собираю страницы: " + completedPages + " / " + layout.totalPages);
+    setExportStatus(t("pdf.pages", { current: completedPages, total: layout.totalPages }));
     await nextPaint();
   };
 
@@ -1683,7 +2321,7 @@ async function downloadPdf() {
       });
     }
 
-    setExportStatus("Упаковываю PDF…");
+    setExportStatus(t("pdf.packing"));
     await nextPaint();
     const pdfBytes = buildImagePdf(pages);
     const blob = new Blob([pdfBytes], { type: "application/pdf" });
@@ -1691,11 +2329,11 @@ async function downloadPdf() {
     offerPdfDownload(blob, filename);
   } catch (error) {
     console.error(error);
-    setExportStatus("Не удалось собрать PDF. Попробуйте уменьшить размер схемы.", true);
+    setExportStatus(t("pdf.failed"), true);
   } finally {
     elements.downloadPdf.classList.remove("is-busy");
     elements.downloadPdf.removeAttribute("aria-busy");
-    elements.downloadPdfLabel.textContent = "Скачать PDF";
+    elements.downloadPdfLabel.textContent = t("pdf.download");
     elements.downloadPdf.disabled = !state.pattern;
   }
 }
@@ -1783,6 +2421,9 @@ elements.colorPresets.forEach((button) => {
   button.addEventListener("click", () => setColorCount(button.dataset.colorPreset));
 });
 elements.copyAiPrompt.addEventListener("click", copySimplificationPrompt);
+elements.localeToggle.addEventListener("click", () => {
+  applyLocale(state.locale === "ru" ? "en" : "ru", true);
+});
 document.addEventListener("keydown", () => {
   document.documentElement.dataset.inputModality = "keyboard";
 }, true);
@@ -1963,8 +2604,12 @@ if ("IntersectionObserver" in window) {
   patternObserver.observe(elements.patternPanel);
 }
 
+initLocale();
 initTheme();
 updateControls();
 updateViewButtons();
 renderPattern();
+setPatternStatus(t("pattern.waiting"));
+setAutoUpdateStatus(t("auto.noPhoto"));
+setFileStatus(t("file.local"));
 initOnboarding();

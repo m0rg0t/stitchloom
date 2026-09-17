@@ -14,6 +14,7 @@ Create a usable pattern-making tool, not a mockup. Keep the final photo-to-grid 
 - Give every cell exactly one palette index and one symbol.
 - Support a palette limit of 2–256 colors and use 16 as the default.
 - Keep the core workflow in the browser without uploading the source image.
+- Keep Russian and English interfaces behaviorally equivalent, including generated prompts, status text, thread names, exports, metadata, PWA installation, and error pages.
 - Make external AI preprocessing optional and clearly identify its separate privacy boundary.
 - Treat thread-catalog matches as approximate unless a calibrated conversion and authoritative catalog justify a stronger claim.
 
@@ -100,6 +101,7 @@ Before publishing, verify observable behavior rather than only checking strings:
 - exercise zoom limits and reset without changing exports;
 - open every export and inspect at least one tiled PDF boundary;
 - test keyboard operation and a 320 px mobile viewport without page overflow;
+- switch between Russian and English before and after pattern generation, reload the saved choice, and inspect localized metadata, AI prompts, DMC names, PWA manifests, PDFs, and the 404 page;
 - confirm the network panel shows no image upload during the local path;
 - run JavaScript syntax and static-asset checks before committing.
 
