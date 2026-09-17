@@ -178,9 +178,18 @@
                 <button type="button" class="view-button is-active" data-view="pattern">Схема</button>
                 <button type="button" class="view-button" data-view="photo">Фото</button>
               </div>
-              <div class="display-options">
-                <label class="check-control"><input id="showSymbols" type="checkbox" checked /><span>Символы</span></label>
-                <label class="check-control"><input id="showGrid" type="checkbox" checked /><span>Сетка</span></label>
+              <div class="pattern-toolbar-actions">
+                <div class="display-options">
+                  <label class="check-control"><input id="showSymbols" type="checkbox" checked /><span>Символы</span></label>
+                  <label class="check-control"><input id="showGrid" type="checkbox" checked /><span>Сетка</span></label>
+                </div>
+                <div class="zoom-control" role="group" aria-label="Масштаб схемы">
+                  <button class="zoom-button" id="zoomOut" type="button" aria-label="Уменьшить масштаб" title="Уменьшить" disabled>−</button>
+                  <button class="zoom-button zoom-value" id="zoomReset" type="button" aria-label="Сбросить масштаб до 100 процентов" title="Вернуть 100%" disabled>
+                    <span id="zoomValue" aria-live="polite">100%</span>
+                  </button>
+                  <button class="zoom-button" id="zoomIn" type="button" aria-label="Увеличить масштаб" title="Увеличить" disabled>+</button>
+                </div>
               </div>
             </div>
 
@@ -204,7 +213,12 @@
                 <span id="patternDetails">16 цветов · 4 900 стежков</span>
                 <span class="square-badge">КЛЕТКИ 1:1</span>
               </div>
-              <div class="canvas-shell">
+              <div
+                class="canvas-shell"
+                id="canvasShell"
+                tabindex="0"
+                aria-label="Область схемы. Используйте кнопки масштаба или Control и колесо мыши."
+              >
                 <canvas id="patternCanvas" aria-label="Схема вышивки крестиком"></canvas>
               </div>
               <div class="pattern-actions">

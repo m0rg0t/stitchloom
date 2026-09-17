@@ -573,6 +573,53 @@ h1 em {
   gap: 14px;
 }
 
+.pattern-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.zoom-control {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid rgba(28, 32, 32, 0.12);
+  border-radius: 10px;
+  background: rgba(28, 32, 32, 0.06);
+}
+
+.zoom-button {
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--paper-ink);
+  background: transparent;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  transition: color 160ms ease, background 160ms ease, opacity 160ms ease;
+}
+
+.zoom-button:hover:not(:disabled) {
+  color: #5058bd;
+  background: var(--paper-bright);
+}
+
+.zoom-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.32;
+}
+
+.zoom-value {
+  min-width: 58px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
 .check-control {
   display: inline-flex;
   align-items: center;
@@ -667,9 +714,13 @@ h1 em {
 .canvas-shell {
   display: grid;
   place-items: center;
+  place-items: safe center;
+  height: clamp(390px, 55vw, 710px);
   min-height: 390px;
   padding: 16px;
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(28, 32, 32, 0.32) transparent;
   border: 1px solid rgba(28, 32, 32, 0.13);
   border-radius: 13px;
   background:
@@ -681,9 +732,11 @@ h1 em {
 
 #patternCanvas {
   display: block;
-  width: 100%;
+  width: auto;
   height: auto;
-  max-height: 710px;
+  max-width: none;
+  max-height: none;
+  flex: none;
   border: 1px solid rgba(28, 32, 32, 0.28);
   box-shadow: 0 9px 20px rgba(28, 32, 32, 0.12);
 }
@@ -949,9 +1002,15 @@ h1 em {
     gap: 14px;
   }
 
-  .display-options {
+  .pattern-toolbar-actions {
     width: 100%;
     justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .display-options {
+    width: auto;
   }
 
   .empty-state {
@@ -959,6 +1018,7 @@ h1 em {
   }
 
   .canvas-shell {
+    height: min(64vh, 520px);
     min-height: 280px;
     padding: 8px;
   }

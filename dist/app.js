@@ -1,5 +1,8 @@
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const DEFAULT_GRID_WIDTH = 70;
+const MIN_ZOOM = 50;
+const MAX_ZOOM = 300;
+const ZOOM_STEP = 25;
 
 const $ = (id) => document.getElementById(id);
 
@@ -24,8 +27,13 @@ const elements = {
   patternDimension: $("patternDimension"),
   patternDetails: $("patternDetails"),
   patternCanvas: $("patternCanvas"),
+  canvasShell: $("canvasShell"),
   showSymbols: $("showSymbols"),
   showGrid: $("showGrid"),
+  zoomOut: $("zoomOut"),
+  zoomReset: $("zoomReset"),
+  zoomIn: $("zoomIn"),
+  zoomValue: $("zoomValue"),
   legendCount: $("legendCount"),
   legendList: $("legendList"),
   downloadPng: $("downloadPng"),
@@ -43,6 +51,7 @@ const state = {
     view: "pattern",
     showSymbols: true,
     showGrid: true,
+    zoom: 100,
   },
 };
 
@@ -125,6 +134,58 @@ function updateControls() {
   const colorCount = Number(elements.colorCount.value);
   elements.sizeValue.textContent = width + " " + plural(width, "клетка", "клетки", "клеток");
   elements.colorCountValue.textContent = String(colorCount);
+}
+
+function updateZoomControls() {
+  const hasPattern = Boolean(state.pattern);
+  const zoom = state.settings.zoom;
+  elements.zoomValue.textContent = zoom + "%";
+  elements.zoomReset.setAttribute(
+    "aria-label",
+    "Текущий масштаб " + zoom + " процентов. Сбросить до 100 процентов",
+  );
+  elements.zoomOut.disabled = !hasPattern || zoom <= MIN_ZOOM;
+  elements.zoomReset.disabled = !hasPattern;
+  elements.zoomIn.disabled = !hasPattern || zoom >= MAX_ZOOM;
+}
+
+function applyCanvasZoom() {
+  if (!state.pattern || !elements.canvasShell.clientWidth) return;
+
+  const shellStyle = window.getComputedStyle(elements.canvasShell);
+  const horizontalPadding =
+    (Number.parseFloat(shellStyle.paddingLeft) || 0) +
+    (Number.parseFloat(shellStyle.paddingRight) || 0);
+  const availableWidth = Math.max(1, elements.canvasShell.clientWidth - horizontalPadding);
+  const scale = state.settings.zoom / 100;
+  const displayWidth = Math.max(1, Math.round(availableWidth * scale));
+  const aspectRatio = elements.patternCanvas.width / elements.patternCanvas.height;
+
+  elements.patternCanvas.style.width = displayWidth + "px";
+  elements.patternCanvas.style.height = Math.max(1, Math.round(displayWidth / aspectRatio)) + "px";
+}
+
+function setZoom(nextZoom, anchor) {
+  if (!state.pattern) return;
+
+  const zoom = clamp(Math.round(nextZoom / ZOOM_STEP) * ZOOM_STEP, MIN_ZOOM, MAX_ZOOM);
+  if (zoom === state.settings.zoom) return;
+
+  const shell = elements.canvasShell;
+  const bounds = shell.getBoundingClientRect();
+  const anchorX = anchor ? anchor.clientX - bounds.left : shell.clientWidth / 2;
+  const anchorY = anchor ? anchor.clientY - bounds.top : shell.clientHeight / 2;
+  const relativeX = (shell.scrollLeft + anchorX) / Math.max(shell.scrollWidth, 1);
+  const relativeY = (shell.scrollTop + anchorY) / Math.max(shell.scrollHeight, 1);
+
+  state.settings.zoom = zoom;
+  applyCanvasZoom();
+  updateZoomControls();
+
+  window.requestAnimationFrame(() => {
+    shell.scrollLeft = relativeX * shell.scrollWidth - anchorX;
+    shell.scrollTop = relativeY * shell.scrollHeight - anchorY;
+  });
 }
 
 function getRgbDistance(colorA, colorB) {
@@ -338,9 +399,6 @@ function prepareCanvas(canvas, width, height, pixelRatio) {
   canvas.width = Math.max(1, Math.floor(width * ratio));
   canvas.height = Math.max(1, Math.floor(height * ratio));
   canvas.style.aspectRatio = width + " / " + height;
-  canvas.style.width = "100%";
-  canvas.style.height = "auto";
-  canvas.style.maxWidth = "100%";
   const context = canvas.getContext("2d");
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
   return context;
@@ -437,6 +495,7 @@ function renderPattern() {
   elements.patternResult.classList.toggle("is-hidden", !hasPattern);
   elements.downloadPng.disabled = !hasPattern;
   elements.downloadCsv.disabled = !hasPattern;
+  updateZoomControls();
 
   if (!hasPattern) {
     elements.patternHeading.textContent = "Ваша схема появится здесь";
@@ -452,6 +511,7 @@ function renderPattern() {
 
   const displaySize = clamp(Math.floor(900 / Math.max(pattern.width, pattern.height)), 7, 20);
   drawPatternToCanvas(elements.patternCanvas, displaySize, state.settings.view);
+  applyCanvasZoom();
   renderLegend();
 }
 
@@ -468,6 +528,7 @@ function clearImage() {
   state.fileName = "";
   state.fileSize = 0;
   state.pattern = null;
+  state.settings.zoom = 100;
   elements.fileInput.value = "";
   elements.sourcePreview.removeAttribute("src");
   elements.sourceCard.classList.add("is-hidden");
@@ -607,6 +668,28 @@ elements.showGrid.addEventListener("change", () => {
   state.settings.showGrid = elements.showGrid.checked;
   renderPattern();
 });
+elements.zoomOut.addEventListener("click", () => setZoom(state.settings.zoom - ZOOM_STEP));
+elements.zoomReset.addEventListener("click", () => setZoom(100));
+elements.zoomIn.addEventListener("click", () => setZoom(state.settings.zoom + ZOOM_STEP));
+elements.canvasShell.addEventListener("keydown", (event) => {
+  if (!state.pattern) return;
+  if (event.key === "+" || event.key === "=") {
+    event.preventDefault();
+    setZoom(state.settings.zoom + ZOOM_STEP);
+  } else if (event.key === "-" || event.key === "_") {
+    event.preventDefault();
+    setZoom(state.settings.zoom - ZOOM_STEP);
+  } else if (event.key === "0") {
+    event.preventDefault();
+    setZoom(100);
+  }
+});
+elements.canvasShell.addEventListener("wheel", (event) => {
+  if (!state.pattern || (!event.ctrlKey && !event.metaKey)) return;
+  event.preventDefault();
+  const direction = event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+  setZoom(state.settings.zoom + direction, event);
+}, { passive: false });
 elements.viewButtons.forEach((button) => {
   button.addEventListener("click", () => {
     state.settings.view = button.dataset.view;
