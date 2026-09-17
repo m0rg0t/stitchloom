@@ -14,7 +14,9 @@ Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Ea
 - zooms and scrolls the on-screen pattern from 50% to 300% without changing export quality;
 - reduces the result to a selectable 2–256 color palette (16 by default);
 - shows a color-and-symbol key with stitch counts;
-- exports the current pattern as PNG or a cell-by-cell CSV.
+- exports a print-ready, multi-page PDF with a tiled square grid and full color key;
+- exports the current pattern as PNG or a cell-by-cell CSV;
+- keeps upload, zoom and export controls comfortable on mobile screens.
 
 The color reduction uses the average color of the image area covered by each cell and a median-cut quantizer. Lower values make the pattern more graphic; higher values preserve more of the original image. The legend also shows the nearest DMC-inspired reference shade for orientation, not as a guarantee of a physical thread match.
 

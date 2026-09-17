@@ -2,7 +2,7 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#141819" />
     <meta name="color-scheme" content="dark" />
     <meta name="application-name" content="Stitchloom" />
@@ -10,7 +10,7 @@
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta
       name="description"
-      content="Превратите фотографию в схему вышивки крестиком прямо в браузере: квадратные клетки, 2–256 цветов, экспорт PNG и CSV."
+      content="Превратите фотографию в схему вышивки крестиком прямо в браузере: квадратные клетки, 2–256 цветов, экспорт PDF, PNG и CSV."
     />
     <link rel="canonical" href="https://stitchloom.antonlenev.chatgpt.site/" />
 
@@ -20,7 +20,7 @@
     <meta property="og:title" content="Stitchloom — фото в схему вышивки" />
     <meta
       property="og:description"
-      content="Квадратные клетки, палитра от 2 до 256 цветов и экспорт готовой схемы — полностью в вашем браузере."
+      content="Квадратные клетки, палитра от 2 до 256 цветов и экспорт готовой схемы в PDF — полностью в вашем браузере."
     />
     <meta property="og:url" content="https://stitchloom.antonlenev.chatgpt.site/" />
     <meta property="og:image" content="https://stitchloom.antonlenev.chatgpt.site/og.png" />
@@ -222,6 +222,10 @@
                 <canvas id="patternCanvas" aria-label="Схема вышивки крестиком"></canvas>
               </div>
               <div class="pattern-actions">
+                <button class="secondary-button secondary-button--pdf" id="downloadPdf" type="button" disabled aria-describedby="exportStatus">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h8l4 4V20.5H6zM14 3.5v4h4M9 12.5h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span id="downloadPdfLabel">Скачать PDF</span>
+                </button>
                 <button class="secondary-button" id="downloadPng" type="button" disabled>
                   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19.5h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                   Скачать PNG
@@ -231,6 +235,7 @@
                   Скачать CSV
                 </button>
               </div>
+              <p class="export-status" id="exportStatus" role="status" aria-live="polite"></p>
 
               <div class="legend-section">
                 <div class="legend-heading">

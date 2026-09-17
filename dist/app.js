@@ -36,8 +36,11 @@ const elements = {
   zoomValue: $("zoomValue"),
   legendCount: $("legendCount"),
   legendList: $("legendList"),
+  downloadPdf: $("downloadPdf"),
+  downloadPdfLabel: $("downloadPdfLabel"),
   downloadPng: $("downloadPng"),
   downloadCsv: $("downloadCsv"),
+  exportStatus: $("exportStatus"),
   viewButtons: Array.from(document.querySelectorAll("[data-view]")),
 };
 
@@ -47,6 +50,7 @@ const state = {
   fileName: "",
   fileSize: 0,
   pattern: null,
+  lastDownloadUrl: null,
   settings: {
     view: "pattern",
     showSymbols: true,
@@ -127,6 +131,11 @@ function setPatternStatus(label, kind) {
 function setFileStatus(message, isError) {
   elements.fileStatus.textContent = message;
   elements.fileStatus.classList.toggle("is-error", Boolean(isError));
+}
+
+function setExportStatus(message, isError) {
+  elements.exportStatus.textContent = message;
+  elements.exportStatus.classList.toggle("is-error", Boolean(isError));
 }
 
 function updateControls() {
@@ -493,6 +502,7 @@ function renderPattern() {
   const hasPattern = Boolean(state.pattern);
   elements.emptyState.classList.toggle("is-hidden", hasPattern);
   elements.patternResult.classList.toggle("is-hidden", !hasPattern);
+  elements.downloadPdf.disabled = !hasPattern || elements.downloadPdf.classList.contains("is-busy");
   elements.downloadPng.disabled = !hasPattern;
   elements.downloadCsv.disabled = !hasPattern;
   updateZoomControls();
@@ -529,6 +539,7 @@ function clearImage() {
   state.fileSize = 0;
   state.pattern = null;
   state.settings.zoom = 100;
+  clearLastDownloadUrl();
   elements.fileInput.value = "";
   elements.sourcePreview.removeAttribute("src");
   elements.sourceCard.classList.add("is-hidden");
@@ -536,6 +547,7 @@ function clearImage() {
   elements.rebuildButton.disabled = true;
   setFileStatus("Всё считается локально: файл не загружается на сервер.");
   setPatternStatus("Ждёт фото");
+  setExportStatus("");
   renderPattern();
 }
 
@@ -581,10 +593,633 @@ function triggerDownload(blob, filename) {
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
+  link.target = "_blank";
+  link.rel = "noopener";
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+function clearLastDownloadUrl() {
+  if (!state.lastDownloadUrl) return;
+  URL.revokeObjectURL(state.lastDownloadUrl);
+  state.lastDownloadUrl = null;
+}
+
+function offerPdfDownload(blob, filename) {
+  clearLastDownloadUrl();
+  const url = URL.createObjectURL(blob);
+  state.lastDownloadUrl = url;
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.target = "_blank";
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  elements.exportStatus.classList.remove("is-error");
+  elements.exportStatus.textContent = "PDF готов. ";
+  const retryLink = document.createElement("a");
+  retryLink.href = url;
+  retryLink.download = filename;
+  retryLink.target = "_blank";
+  retryLink.rel = "noopener";
+  retryLink.textContent = "Скачать ещё раз";
+  elements.exportStatus.appendChild(retryLink);
+}
+
+function nextPaint() {
+  return new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+}
+
+function blobToBytes(blob) {
+  if (typeof blob.arrayBuffer === "function") {
+    return blob.arrayBuffer().then((buffer) => new Uint8Array(buffer));
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(new Uint8Array(reader.result));
+    reader.onerror = () => reject(reader.error || new Error("Не удалось прочитать страницу PDF"));
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
+function canvasToJpegBytes(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        reject(new Error("Не удалось подготовить страницу PDF"));
+        return;
+      }
+      try {
+        resolve(await blobToBytes(blob));
+      } catch (error) {
+        reject(error);
+      }
+    }, "image/jpeg", 0.92);
+  });
+}
+
+function drawRoundedRect(context, x, y, width, height, radius) {
+  const safeRadius = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + safeRadius, y);
+  context.arcTo(x + width, y, x + width, y + height, safeRadius);
+  context.arcTo(x + width, y + height, x, y + height, safeRadius);
+  context.arcTo(x, y + height, x, y, safeRadius);
+  context.arcTo(x, y, x + width, y, safeRadius);
+  context.closePath();
+}
+
+function fitCanvasText(context, text, maxWidth) {
+  const value = String(text);
+  if (context.measureText(value).width <= maxWidth) return value;
+  let shortened = value;
+  while (shortened.length > 1 && context.measureText(shortened + "…").width > maxWidth) {
+    shortened = shortened.slice(0, -1);
+  }
+  return shortened + "…";
+}
+
+function getPdfLayout(pattern) {
+  const landscape = pattern.width > pattern.height * 1.2;
+  const page = landscape
+    ? { width: 1754, height: 1240, widthPt: 841.89, heightPt: 595.28 }
+    : { width: 1240, height: 1754, widthPt: 595.28, heightPt: 841.89 };
+  const margin = 72;
+  const headerHeight = 126;
+  const footerHeight = 58;
+  const axisSize = 42;
+  const cellSize = 28;
+  const columnsPerPage = Math.max(
+    1,
+    Math.floor((page.width - margin * 2 - axisSize) / cellSize),
+  );
+  const rowsPerPage = Math.max(
+    1,
+    Math.floor((page.height - margin * 2 - headerHeight - footerHeight - axisSize) / cellSize),
+  );
+  const tileColumns = Math.ceil(pattern.width / columnsPerPage);
+  const tileRows = Math.ceil(pattern.height / rowsPerPage);
+  const tilePageCount = tileColumns * tileRows;
+  const legendColumns = landscape ? 3 : 2;
+  const legendRowHeight = 64;
+  const legendTop = margin + 145;
+  const legendRows = Math.max(
+    1,
+    Math.floor((page.height - legendTop - margin - footerHeight) / legendRowHeight),
+  );
+  const legendCapacity = legendColumns * legendRows;
+  const legendPageCount = Math.ceil(pattern.palette.length / legendCapacity);
+
+  return {
+    page,
+    margin,
+    headerHeight,
+    footerHeight,
+    axisSize,
+    cellSize,
+    columnsPerPage,
+    rowsPerPage,
+    tileColumns,
+    tileRows,
+    tilePageCount,
+    legendColumns,
+    legendRows,
+    legendRowHeight,
+    legendTop,
+    legendCapacity,
+    legendPageCount,
+    totalPages: 1 + tilePageCount + legendPageCount,
+  };
+}
+
+function createPdfCanvas(layout) {
+  const canvas = document.createElement("canvas");
+  canvas.width = layout.page.width;
+  canvas.height = layout.page.height;
+  return canvas;
+}
+
+function drawPdfChrome(context, layout, pageNumber, section) {
+  const { page, margin } = layout;
+  context.fillStyle = "#fffaf1";
+  context.fillRect(0, 0, page.width, page.height);
+  context.fillStyle = "#141819";
+  context.fillRect(0, 0, page.width, 16);
+
+  context.fillStyle = "#141819";
+  context.font = "800 20px Arial, sans-serif";
+  context.letterSpacing = "2px";
+  context.fillText("STITCHLOOM", margin, 58);
+  context.letterSpacing = "0px";
+  context.fillStyle = "#6c706d";
+  context.font = "700 15px Arial, sans-serif";
+  context.textAlign = "right";
+  context.fillText(section, page.width - margin, 58);
+
+  const footerY = page.height - 42;
+  context.strokeStyle = "rgba(20, 24, 25, 0.18)";
+  context.lineWidth = 1;
+  context.beginPath();
+  context.moveTo(margin, footerY - 20);
+  context.lineTo(page.width - margin, footerY - 20);
+  context.stroke();
+  context.fillStyle = "#6c706d";
+  context.font = "600 13px Arial, sans-serif";
+  context.textAlign = "left";
+  context.fillText("Схема создана локально — stitchloom", margin, footerY);
+  context.textAlign = "right";
+  context.fillText("Страница " + pageNumber + " / " + layout.totalPages, page.width - margin, footerY);
+  context.textAlign = "left";
+}
+
+function drawPdfCover(context, layout, pattern, fileName) {
+  const { page, margin } = layout;
+  drawPdfChrome(context, layout, 1, "ОБЗОР СХЕМЫ");
+
+  context.fillStyle = "#141819";
+  context.font = "800 52px Arial, sans-serif";
+  context.fillText("Схема для вышивки", margin, 148);
+  context.fillStyle = "#5058bd";
+  context.font = "italic 700 40px Georgia, serif";
+  context.fillText("клетка за клеткой", margin, 198);
+
+  context.fillStyle = "#6c706d";
+  context.font = "600 16px Arial, sans-serif";
+  context.fillText(
+    fitCanvasText(context, fileName || "Изображение", page.width - margin * 2),
+    margin,
+    238,
+  );
+
+  const cardGap = 16;
+  const cardWidth = (page.width - margin * 2 - cardGap * 2) / 3;
+  const cardY = 270;
+  const cardValues = [
+    { label: "РАЗМЕР", value: pattern.width + " × " + pattern.height },
+    { label: "ЦВЕТОВ", value: String(pattern.palette.length) },
+    { label: "СТЕЖКОВ", value: formatNumber(pattern.totalStitches) },
+  ];
+
+  cardValues.forEach((card, index) => {
+    const x = margin + index * (cardWidth + cardGap);
+    drawRoundedRect(context, x, cardY, cardWidth, 92, 13);
+    context.fillStyle = index === 1 ? "#eef0ff" : "#f1e9dd";
+    context.fill();
+    context.fillStyle = "#6c706d";
+    context.font = "800 12px Arial, sans-serif";
+    context.fillText(card.label, x + 18, cardY + 27);
+    context.fillStyle = "#141819";
+    context.font = "800 27px Arial, sans-serif";
+    context.fillText(card.value, x + 18, cardY + 65);
+  });
+
+  const previewX = margin;
+  const previewY = 392;
+  const previewWidth = page.width - margin * 2;
+  const previewHeight = page.height - previewY - 150;
+  drawRoundedRect(context, previewX, previewY, previewWidth, previewHeight, 14);
+  context.fillStyle = "#e8dfd2";
+  context.fill();
+
+  const previewScale = Math.min(
+    (previewWidth - 44) / pattern.width,
+    (previewHeight - 44) / pattern.height,
+  );
+  const gridWidth = pattern.width * previewScale;
+  const gridHeight = pattern.height * previewScale;
+  const gridX = previewX + (previewWidth - gridWidth) / 2;
+  const gridY = previewY + (previewHeight - gridHeight) / 2;
+
+  pattern.cells.forEach((paletteIndex, index) => {
+    const column = index % pattern.width;
+    const row = Math.floor(index / pattern.width);
+    context.fillStyle = pattern.palette[paletteIndex].hex;
+    context.fillRect(
+      gridX + column * previewScale,
+      gridY + row * previewScale,
+      Math.ceil(previewScale + 0.2),
+      Math.ceil(previewScale + 0.2),
+    );
+  });
+  context.strokeStyle = "rgba(20, 24, 25, 0.55)";
+  context.lineWidth = 2;
+  context.strokeRect(gridX, gridY, gridWidth, gridHeight);
+
+  context.fillStyle = "#5058bd";
+  context.font = "800 14px Arial, sans-serif";
+  context.fillText("ДЕТАЛЬНАЯ СЕТКА И КЛЮЧ ЦВЕТОВ — НА СЛЕДУЮЩИХ СТРАНИЦАХ", margin, page.height - 94);
+}
+
+function shouldLabelAxis(value, first, last) {
+  return value === first || value === last || value % 5 === 0;
+}
+
+function drawPdfPatternTile(context, layout, pattern, tileColumn, tileRow, pageNumber) {
+  const {
+    page,
+    margin,
+    headerHeight,
+    axisSize,
+    cellSize,
+    columnsPerPage,
+    rowsPerPage,
+    tileColumns,
+    tileRows,
+  } = layout;
+  const columnStart = tileColumn * columnsPerPage;
+  const rowStart = tileRow * rowsPerPage;
+  const columnEnd = Math.min(pattern.width, columnStart + columnsPerPage);
+  const rowEnd = Math.min(pattern.height, rowStart + rowsPerPage);
+  const columnCount = columnEnd - columnStart;
+  const rowCount = rowEnd - rowStart;
+  const gridX = margin + axisSize;
+  const gridY = margin + headerHeight + axisSize;
+  const gridWidth = columnCount * cellSize;
+  const gridHeight = rowCount * cellSize;
+
+  drawPdfChrome(
+    context,
+    layout,
+    pageNumber,
+    "СЕТКА " + (tileRow * tileColumns + tileColumn + 1) + " / " + (tileColumns * tileRows),
+  );
+  context.fillStyle = "#141819";
+  context.font = "800 31px Arial, sans-serif";
+  context.fillText("Квадратная схема 1:1", margin, margin + 61);
+  context.fillStyle = "#6c706d";
+  context.font = "600 15px Arial, sans-serif";
+  context.fillText(
+    "Столбцы " + (columnStart + 1) + "–" + columnEnd + " · ряды " + (rowStart + 1) + "–" + rowEnd,
+    margin,
+    margin + 91,
+  );
+
+  for (let row = rowStart; row < rowEnd; row += 1) {
+    for (let column = columnStart; column < columnEnd; column += 1) {
+      const paletteIndex = pattern.cells[row * pattern.width + column];
+      const color = pattern.palette[paletteIndex];
+      const x = gridX + (column - columnStart) * cellSize;
+      const y = gridY + (row - rowStart) * cellSize;
+      context.fillStyle = color.hex;
+      context.fillRect(x, y, cellSize, cellSize);
+      context.fillStyle = getContrastColor(color);
+      context.font = color.symbol.length > 1
+        ? "800 10px Arial, sans-serif"
+        : "800 15px Georgia, serif";
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText(color.symbol, x + cellSize / 2, y + cellSize / 2 + 0.5);
+    }
+  }
+
+  context.textBaseline = "alphabetic";
+  for (let index = 0; index <= columnCount; index += 1) {
+    const globalBoundary = columnStart + index;
+    const x = gridX + index * cellSize + 0.5;
+    context.strokeStyle = globalBoundary % 10 === 0
+      ? "rgba(20, 24, 25, 0.72)"
+      : "rgba(20, 24, 25, 0.30)";
+    context.lineWidth = globalBoundary % 10 === 0 ? 2 : 0.8;
+    context.beginPath();
+    context.moveTo(x, gridY);
+    context.lineTo(x, gridY + gridHeight);
+    context.stroke();
+  }
+  for (let index = 0; index <= rowCount; index += 1) {
+    const globalBoundary = rowStart + index;
+    const y = gridY + index * cellSize + 0.5;
+    context.strokeStyle = globalBoundary % 10 === 0
+      ? "rgba(20, 24, 25, 0.72)"
+      : "rgba(20, 24, 25, 0.30)";
+    context.lineWidth = globalBoundary % 10 === 0 ? 2 : 0.8;
+    context.beginPath();
+    context.moveTo(gridX, y);
+    context.lineTo(gridX + gridWidth, y);
+    context.stroke();
+  }
+
+  context.fillStyle = "#5058bd";
+  context.font = "800 13px Arial, sans-serif";
+  context.textAlign = "center";
+  for (let column = columnStart; column < columnEnd; column += 1) {
+    const humanColumn = column + 1;
+    if (!shouldLabelAxis(humanColumn, columnStart + 1, columnEnd)) continue;
+    const x = gridX + (column - columnStart + 0.5) * cellSize;
+    context.fillText(String(humanColumn), x, gridY - 13);
+  }
+  context.textAlign = "right";
+  context.textBaseline = "middle";
+  for (let row = rowStart; row < rowEnd; row += 1) {
+    const humanRow = row + 1;
+    if (!shouldLabelAxis(humanRow, rowStart + 1, rowEnd)) continue;
+    const y = gridY + (row - rowStart + 0.5) * cellSize;
+    context.fillText(String(humanRow), gridX - 11, y);
+  }
+  context.textAlign = "left";
+  context.textBaseline = "alphabetic";
+
+  context.fillStyle = "#6c706d";
+  context.font = "600 13px Arial, sans-serif";
+  const noteX = Math.min(page.width - margin - 330, gridX + gridWidth + 24);
+  if (noteX > gridX + gridWidth + 8) {
+    context.fillText("Толстая линия — каждые 10 клеток", noteX, gridY + 17);
+  }
+}
+
+function drawPdfLegendPage(context, layout, pattern, legendPageIndex, pageNumber) {
+  const {
+    page,
+    margin,
+    legendColumns,
+    legendRows,
+    legendRowHeight,
+    legendTop,
+    legendCapacity,
+    legendPageCount,
+  } = layout;
+  const gap = 18;
+  const columnWidth = (page.width - margin * 2 - gap * (legendColumns - 1)) / legendColumns;
+  const startIndex = legendPageIndex * legendCapacity;
+  const endIndex = Math.min(pattern.palette.length, startIndex + legendCapacity);
+
+  drawPdfChrome(
+    context,
+    layout,
+    pageNumber,
+    "КЛЮЧ " + (legendPageIndex + 1) + " / " + legendPageCount,
+  );
+  context.fillStyle = "#141819";
+  context.font = "800 31px Arial, sans-serif";
+  context.fillText("Цвета и символы", margin, margin + 61);
+  context.fillStyle = "#6c706d";
+  context.font = "600 15px Arial, sans-serif";
+  context.fillText("Оттенки на экране приблизительные — сверяйтесь с физическим каталогом мулине.", margin, margin + 91);
+
+  for (let paletteIndex = startIndex; paletteIndex < endIndex; paletteIndex += 1) {
+    const localIndex = paletteIndex - startIndex;
+    const column = Math.floor(localIndex / legendRows);
+    const row = localIndex % legendRows;
+    const x = margin + column * (columnWidth + gap);
+    const y = legendTop + row * legendRowHeight;
+    const color = pattern.palette[paletteIndex];
+
+    drawRoundedRect(context, x, y, columnWidth, legendRowHeight - 8, 9);
+    context.fillStyle = paletteIndex % 2 === 0 ? "#f3ece2" : "#f8f2e9";
+    context.fill();
+
+    context.fillStyle = color.hex;
+    context.fillRect(x + 9, y + 9, 38, 38);
+    context.strokeStyle = "rgba(20, 24, 25, 0.25)";
+    context.lineWidth = 1;
+    context.strokeRect(x + 9.5, y + 9.5, 37, 37);
+
+    drawRoundedRect(context, x + 54, y + 9, 38, 38, 7);
+    context.fillStyle = "#fffaf1";
+    context.fill();
+    context.strokeStyle = "rgba(20, 24, 25, 0.18)";
+    context.stroke();
+    context.fillStyle = "#141819";
+    context.font = color.symbol.length > 1
+      ? "800 11px Arial, sans-serif"
+      : "800 18px Georgia, serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(color.symbol, x + 73, y + 28);
+
+    const textX = x + 102;
+    const countWidth = 58;
+    const textWidth = columnWidth - 111 - countWidth;
+    context.textAlign = "left";
+    context.textBaseline = "alphabetic";
+    context.fillStyle = "#141819";
+    context.font = "800 14px Arial, sans-serif";
+    context.fillText(color.code + " · " + color.hex.toUpperCase(), textX, y + 22);
+    context.fillStyle = "#6c706d";
+    context.font = "600 12px Arial, sans-serif";
+    context.fillText(
+      fitCanvasText(context, "≈ DMC " + color.dmcCode + " · " + color.dmcName, textWidth),
+      textX,
+      y + 42,
+    );
+    context.fillStyle = "#5058bd";
+    context.font = "800 12px Arial, sans-serif";
+    context.textAlign = "right";
+    context.fillText(formatNumber(color.count), x + columnWidth - 10, y + 32);
+    context.textAlign = "left";
+  }
+}
+
+function asciiBytes(value) {
+  return new TextEncoder().encode(value);
+}
+
+function buildImagePdf(pages) {
+  const objectCount = 2 + pages.length * 3;
+  const offsets = new Array(objectCount + 1).fill(0);
+  const chunks = [];
+  let byteLength = 0;
+
+  const pushBytes = (bytes) => {
+    chunks.push(bytes);
+    byteLength += bytes.length;
+  };
+  const pushAscii = (value) => pushBytes(asciiBytes(value));
+  const startObject = (objectId) => {
+    offsets[objectId] = byteLength;
+    pushAscii(objectId + " 0 obj\n");
+  };
+  const endObject = () => pushAscii("endobj\n");
+
+  pushAscii("%PDF-1.4\n");
+  pushBytes(new Uint8Array([0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a]));
+
+  startObject(1);
+  pushAscii("<< /Type /Catalog /Pages 2 0 R >>\n");
+  endObject();
+
+  const pageReferences = pages.map((_, index) => (3 + index * 3) + " 0 R").join(" ");
+  startObject(2);
+  pushAscii("<< /Type /Pages /Count " + pages.length + " /Kids [" + pageReferences + "] >>\n");
+  endObject();
+
+  pages.forEach((page, index) => {
+    const pageObjectId = 3 + index * 3;
+    const imageObjectId = pageObjectId + 1;
+    const contentObjectId = pageObjectId + 2;
+    const widthPt = page.widthPt.toFixed(2);
+    const heightPt = page.heightPt.toFixed(2);
+    const content =
+      "q\n" + widthPt + " 0 0 " + heightPt + " 0 0 cm\n/Im0 Do\nQ\n";
+    const contentBytes = asciiBytes(content);
+
+    startObject(pageObjectId);
+    pushAscii(
+      "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + widthPt + " " + heightPt + "] " +
+      "/Resources << /ProcSet [/PDF /ImageC] /XObject << /Im0 " + imageObjectId + " 0 R >> >> " +
+      "/Contents " + contentObjectId + " 0 R >>\n",
+    );
+    endObject();
+
+    startObject(imageObjectId);
+    pushAscii(
+      "<< /Type /XObject /Subtype /Image /Width " + page.imageWidth +
+      " /Height " + page.imageHeight +
+      " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Interpolate false /Length " +
+      page.jpeg.length + " >>\nstream\n",
+    );
+    pushBytes(page.jpeg);
+    pushAscii("\nendstream\n");
+    endObject();
+
+    startObject(contentObjectId);
+    pushAscii("<< /Length " + contentBytes.length + " >>\nstream\n");
+    pushBytes(contentBytes);
+    pushAscii("endstream\n");
+    endObject();
+  });
+
+  const xrefOffset = byteLength;
+  pushAscii("xref\n0 " + (objectCount + 1) + "\n");
+  pushAscii("0000000000 65535 f \n");
+  for (let objectId = 1; objectId <= objectCount; objectId += 1) {
+    pushAscii(String(offsets[objectId]).padStart(10, "0") + " 00000 n \n");
+  }
+  pushAscii(
+    "trailer\n<< /Size " + (objectCount + 1) + " /Root 1 0 R >>\n" +
+    "startxref\n" + xrefOffset + "\n%%EOF\n",
+  );
+
+  const output = new Uint8Array(byteLength);
+  let cursor = 0;
+  chunks.forEach((chunk) => {
+    output.set(chunk, cursor);
+    cursor += chunk.length;
+  });
+  return output;
+}
+
+async function appendPdfCanvasPage(pages, canvas, layout) {
+  const jpeg = await canvasToJpegBytes(canvas);
+  pages.push({
+    jpeg,
+    imageWidth: canvas.width,
+    imageHeight: canvas.height,
+    widthPt: layout.page.widthPt,
+    heightPt: layout.page.heightPt,
+  });
+  canvas.width = 1;
+  canvas.height = 1;
+}
+
+async function downloadPdf() {
+  if (!state.pattern || elements.downloadPdf.classList.contains("is-busy")) return;
+  const pattern = {
+    ...state.pattern,
+    cells: state.pattern.cells.slice(),
+    palette: state.pattern.palette.map((color) => ({ ...color })),
+  };
+  const layout = getPdfLayout(pattern);
+  const pages = [];
+  let completedPages = 0;
+
+  elements.downloadPdf.disabled = true;
+  elements.downloadPdf.classList.add("is-busy");
+  elements.downloadPdf.setAttribute("aria-busy", "true");
+  elements.downloadPdfLabel.textContent = "Готовлю PDF…";
+  setExportStatus("Собираю страницы: 0 / " + layout.totalPages);
+  await nextPaint();
+
+  const addPage = async (drawPage) => {
+    const canvas = createPdfCanvas(layout);
+    const context = canvas.getContext("2d");
+    drawPage(context);
+    await appendPdfCanvasPage(pages, canvas, layout);
+    completedPages += 1;
+    setExportStatus("Собираю страницы: " + completedPages + " / " + layout.totalPages);
+    await nextPaint();
+  };
+
+  try {
+    await addPage((context) => drawPdfCover(context, layout, pattern, state.fileName));
+
+    for (let tileRow = 0; tileRow < layout.tileRows; tileRow += 1) {
+      for (let tileColumn = 0; tileColumn < layout.tileColumns; tileColumn += 1) {
+        const pageNumber = pages.length + 1;
+        await addPage((context) => {
+          drawPdfPatternTile(context, layout, pattern, tileColumn, tileRow, pageNumber);
+        });
+      }
+    }
+
+    for (let legendPageIndex = 0; legendPageIndex < layout.legendPageCount; legendPageIndex += 1) {
+      const pageNumber = pages.length + 1;
+      await addPage((context) => {
+        drawPdfLegendPage(context, layout, pattern, legendPageIndex, pageNumber);
+      });
+    }
+
+    setExportStatus("Упаковываю PDF…");
+    await nextPaint();
+    const pdfBytes = buildImagePdf(pages);
+    const blob = new Blob([pdfBytes], { type: "application/pdf" });
+    const filename = "stitchloom-" + pattern.width + "x" + pattern.height + ".pdf";
+    offerPdfDownload(blob, filename);
+  } catch (error) {
+    console.error(error);
+    setExportStatus("Не удалось собрать PDF. Попробуйте уменьшить размер схемы.", true);
+  } finally {
+    elements.downloadPdf.classList.remove("is-busy");
+    elements.downloadPdf.removeAttribute("aria-busy");
+    elements.downloadPdfLabel.textContent = "Скачать PDF";
+    elements.downloadPdf.disabled = !state.pattern;
+  }
 }
 
 function downloadPng() {
@@ -699,9 +1334,11 @@ elements.viewButtons.forEach((button) => {
 });
 elements.downloadPng.addEventListener("click", downloadPng);
 elements.downloadCsv.addEventListener("click", downloadCsv);
+elements.downloadPdf.addEventListener("click", downloadPdf);
 window.addEventListener("resize", () => {
   if (state.pattern) renderPattern();
 });
+window.addEventListener("beforeunload", clearLastDownloadUrl);
 
 updateControls();
 updateViewButtons();

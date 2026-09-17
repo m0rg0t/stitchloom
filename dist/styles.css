@@ -720,6 +720,8 @@ h1 em {
   padding: 16px;
   overflow: auto;
   overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
   scrollbar-color: rgba(28, 32, 32, 0.32) transparent;
   border: 1px solid rgba(28, 32, 32, 0.13);
   border-radius: 13px;
@@ -743,6 +745,7 @@ h1 em {
 
 .pattern-actions {
   justify-content: flex-start;
+  flex-wrap: wrap;
   margin: 16px 0 28px;
 }
 
@@ -776,6 +779,45 @@ h1 em {
 .secondary-button:disabled {
   cursor: not-allowed;
   opacity: 0.42;
+}
+
+.secondary-button--pdf {
+  border-color: #5058bd;
+  color: #fff;
+  background: #5058bd;
+}
+
+.secondary-button--pdf:hover:not(:disabled) {
+  border-color: #3f46a8;
+  color: #fff;
+  background: #3f46a8;
+}
+
+.secondary-button--pdf.is-busy {
+  cursor: wait;
+}
+
+.export-status {
+  min-height: 20px;
+  margin: -16px 0 24px;
+  color: var(--paper-soft-ink);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.export-status:empty {
+  display: none;
+}
+
+.export-status.is-error {
+  color: #a33b2f;
+}
+
+.export-status a {
+  color: #5058bd;
+  font-weight: 800;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 .legend-section {
@@ -936,7 +978,10 @@ h1 em {
 
 @media (max-width: 650px) {
   .app-shell {
-    padding: 0 14px 18px;
+    padding-top: 0;
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+    padding-left: max(14px, env(safe-area-inset-left));
   }
 
   .topbar {
@@ -1009,8 +1054,21 @@ h1 em {
     flex-wrap: wrap;
   }
 
+  .view-button,
+  .zoom-button {
+    min-height: 44px;
+  }
+
+  .zoom-button {
+    min-width: 44px;
+  }
+
   .display-options {
     width: auto;
+  }
+
+  .check-control {
+    min-height: 44px;
   }
 
   .empty-state {
@@ -1026,6 +1084,11 @@ h1 em {
   .pattern-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .secondary-button--pdf {
+    grid-column: 1 / -1;
   }
 
   .square-badge {
@@ -1034,7 +1097,19 @@ h1 em {
 
   .secondary-button {
     min-width: 0;
-    padding: 0 8px;
+    min-height: 48px;
+    padding: 0 10px;
+    font-size: 14px;
+  }
+
+  .pattern-meta {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  .export-status {
+    margin-top: -16px;
+    font-size: 13px;
   }
 
   .legend-list {
@@ -1046,5 +1121,15 @@ h1 em {
     flex-direction: column;
     gap: 9px;
     font-size: 9px;
+  }
+}
+
+@media (max-width: 380px) {
+  .pattern-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .secondary-button--pdf {
+    grid-column: auto;
   }
 }
