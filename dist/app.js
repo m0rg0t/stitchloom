@@ -4,6 +4,8 @@ const DEFAULT_COLOR_COUNT = 16;
 const MIN_ZOOM = 50;
 const MAX_ZOOM = 300;
 const ZOOM_STEP = 25;
+const ONBOARDING_STORAGE_KEY = "stitchloom:onboarding:v1";
+const ONBOARDING_COOKIE_KEY = "stitchloom_onboarding_v1";
 
 const $ = (id) => document.getElementById(id);
 
@@ -26,6 +28,15 @@ const elements = {
   copyAiPrompt: $("copyAiPrompt"),
   copyAiPromptLabel: $("copyAiPromptLabel"),
   aiPromptStatus: $("aiPromptStatus"),
+  openOnboarding: $("openOnboarding"),
+  onboardingDialog: $("onboardingDialog"),
+  closeOnboarding: $("closeOnboarding"),
+  skipOnboarding: $("skipOnboarding"),
+  onboardingBack: $("onboardingBack"),
+  onboardingNext: $("onboardingNext"),
+  onboardingProgress: $("onboardingProgress"),
+  onboardingSteps: Array.from(document.querySelectorAll("[data-onboarding-step]")),
+  onboardingDots: Array.from(document.querySelectorAll("[data-onboarding-dot]")),
   rebuildButton: $("rebuildButton"),
   patternHeading: $("pattern-heading"),
   patternStatus: $("patternStatus"),
@@ -59,6 +70,9 @@ const state = {
   pattern: null,
   lastDownloadUrl: null,
   copyResetTimer: null,
+  onboardingStep: 0,
+  onboardingSeenThisPage: false,
+  onboardingOpenTimer: null,
   settings: {
     view: "pattern",
     showSymbols: true,
@@ -144,6 +158,165 @@ function setFileStatus(message, isError) {
 function setExportStatus(message, isError) {
   elements.exportStatus.textContent = message;
   elements.exportStatus.classList.toggle("is-error", Boolean(isError));
+}
+
+function getSafeStorage(name) {
+  try {
+    const storage = window[name];
+    const testKey = ONBOARDING_STORAGE_KEY + ":test";
+    storage.setItem(testKey, "1");
+    storage.removeItem(testKey);
+    return storage;
+  } catch {
+    return null;
+  }
+}
+
+const onboardingLocalStorage = getSafeStorage("localStorage");
+const onboardingSessionStorage = getSafeStorage("sessionStorage");
+
+function hasOnboardingCookie() {
+  try {
+    return document.cookie
+      .split(";")
+      .map((part) => part.trim())
+      .includes(ONBOARDING_COOKIE_KEY + "=1");
+  } catch {
+    return false;
+  }
+}
+
+function writeOnboardingCookie() {
+  try {
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${ONBOARDING_COOKIE_KEY}=1; Max-Age=31536000; Path=/; SameSite=Lax${secure}`;
+    return hasOnboardingCookie();
+  } catch {
+    return false;
+  }
+}
+
+function hasSeenOnboarding() {
+  if (state.onboardingSeenThisPage) return true;
+
+  try {
+    if (onboardingLocalStorage?.getItem(ONBOARDING_STORAGE_KEY) === "1") return true;
+  } catch {
+    // Continue through the non-localStorage fallbacks.
+  }
+
+  if (hasOnboardingCookie()) return true;
+
+  try {
+    if (onboardingSessionStorage?.getItem(ONBOARDING_STORAGE_KEY) === "1") return true;
+  } catch {
+    // Fall through to history state.
+  }
+
+  try {
+    return Boolean(history.state?.[ONBOARDING_STORAGE_KEY]);
+  } catch {
+    return false;
+  }
+}
+
+function rememberOnboarding() {
+  state.onboardingSeenThisPage = true;
+
+  try {
+    if (onboardingLocalStorage) {
+      onboardingLocalStorage.setItem(ONBOARDING_STORAGE_KEY, "1");
+      return;
+    }
+  } catch {
+    // Try the next persistence option.
+  }
+
+  if (writeOnboardingCookie()) return;
+
+  try {
+    if (onboardingSessionStorage) {
+      onboardingSessionStorage.setItem(ONBOARDING_STORAGE_KEY, "1");
+      return;
+    }
+  } catch {
+    // Keep the dismissal in this history entry as a last browser fallback.
+  }
+
+  try {
+    const nextState = history.state && typeof history.state === "object"
+      ? { ...history.state }
+      : {};
+    nextState[ONBOARDING_STORAGE_KEY] = true;
+    history.replaceState(nextState, document.title);
+  } catch {
+    // In-memory state still prevents another opening during this page view.
+  }
+}
+
+function updateOnboardingStep(nextStep) {
+  const lastStep = elements.onboardingSteps.length - 1;
+  state.onboardingStep = clamp(nextStep, 0, lastStep);
+
+  elements.onboardingSteps.forEach((step, index) => {
+    const isActive = index === state.onboardingStep;
+    step.hidden = !isActive;
+    step.classList.toggle("is-active", isActive);
+  });
+
+  elements.onboardingDots.forEach((dot, index) => {
+    dot.classList.toggle("is-active", index === state.onboardingStep);
+  });
+
+  elements.onboardingProgress.textContent =
+    `Шаг ${state.onboardingStep + 1} из ${elements.onboardingSteps.length}`;
+  elements.onboardingBack.disabled = state.onboardingStep === 0;
+  elements.skipOnboarding.hidden = state.onboardingStep === lastStep;
+  elements.onboardingNext.textContent = state.onboardingStep === lastStep
+    ? "Начать работу"
+    : "Дальше";
+}
+
+function openOnboarding() {
+  if (state.onboardingOpenTimer) {
+    window.clearTimeout(state.onboardingOpenTimer);
+    state.onboardingOpenTimer = null;
+  }
+
+  updateOnboardingStep(0);
+  if (elements.onboardingDialog.open) return;
+
+  if (typeof elements.onboardingDialog.showModal === "function") {
+    elements.onboardingDialog.showModal();
+  } else {
+    elements.onboardingDialog.setAttribute("open", "");
+    elements.onboardingDialog.classList.add("is-fallback");
+  }
+
+  document.body.classList.add("onboarding-open");
+  window.setTimeout(() => elements.onboardingNext.focus(), 0);
+}
+
+function closeOnboarding() {
+  rememberOnboarding();
+
+  if (typeof elements.onboardingDialog.close === "function") {
+    elements.onboardingDialog.close();
+  } else {
+    elements.onboardingDialog.removeAttribute("open");
+    elements.onboardingDialog.classList.remove("is-fallback");
+    document.body.classList.remove("onboarding-open");
+  }
+}
+
+function initOnboarding() {
+  updateOnboardingStep(0);
+  if (hasSeenOnboarding()) return;
+
+  state.onboardingOpenTimer = window.setTimeout(() => {
+    state.onboardingOpenTimer = null;
+    openOnboarding();
+  }, 360);
 }
 
 function buildSimplificationPrompt() {
@@ -1384,6 +1557,41 @@ elements.colorCount.addEventListener("change", () => {
   if (state.image) buildPattern();
 });
 elements.copyAiPrompt.addEventListener("click", copySimplificationPrompt);
+elements.openOnboarding.addEventListener("click", openOnboarding);
+elements.closeOnboarding.addEventListener("click", closeOnboarding);
+elements.skipOnboarding.addEventListener("click", closeOnboarding);
+elements.onboardingBack.addEventListener("click", () => {
+  updateOnboardingStep(state.onboardingStep - 1);
+});
+elements.onboardingNext.addEventListener("click", () => {
+  if (state.onboardingStep === elements.onboardingSteps.length - 1) {
+    closeOnboarding();
+    return;
+  }
+  updateOnboardingStep(state.onboardingStep + 1);
+});
+elements.onboardingDialog.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  closeOnboarding();
+});
+elements.onboardingDialog.addEventListener("close", () => {
+  document.body.classList.remove("onboarding-open");
+});
+elements.onboardingDialog.addEventListener("click", (event) => {
+  if (event.target === elements.onboardingDialog) closeOnboarding();
+});
+elements.onboardingDialog.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowLeft" && state.onboardingStep > 0) {
+    event.preventDefault();
+    updateOnboardingStep(state.onboardingStep - 1);
+  } else if (
+    event.key === "ArrowRight" &&
+    state.onboardingStep < elements.onboardingSteps.length - 1
+  ) {
+    event.preventDefault();
+    updateOnboardingStep(state.onboardingStep + 1);
+  }
+});
 elements.rebuildButton.addEventListener("click", buildPattern);
 elements.showSymbols.addEventListener("change", () => {
   state.settings.showSymbols = elements.showSymbols.checked;
@@ -1433,3 +1641,4 @@ window.addEventListener("beforeunload", clearLastDownloadUrl);
 updateControls();
 updateViewButtons();
 renderPattern();
+initOnboarding();
