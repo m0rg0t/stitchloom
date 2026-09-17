@@ -152,15 +152,127 @@ function getContrastColor(color) {
   return luminance > 156 ? "#1f2525" : "#fffaf1";
 }
 
-function createSampleCanvas(image, width, height) {
+function colorToHex(color) {
+  return "#" + [color.r, color.g, color.b]
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function symbolForIndex(index) {
+  if (index < SYMBOLS.length) return SYMBOLS[index];
+  return String(index + 1).padStart(3, "0");
+}
+
+function createSampleCanvas(image, width, height, scale) {
   const sampleCanvas = document.createElement("canvas");
-  sampleCanvas.width = width;
-  sampleCanvas.height = height;
+  sampleCanvas.width = width * scale;
+  sampleCanvas.height = height * scale;
   const context = sampleCanvas.getContext("2d", { willReadFrequently: true });
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, sampleCanvas.width, sampleCanvas.height);
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
-  context.drawImage(image, 0, 0, width, height);
+  context.drawImage(image, 0, 0, sampleCanvas.width, sampleCanvas.height);
   return sampleCanvas;
+}
+
+function getCellColors(sampleCanvas, width, height, scale) {
+  const context = sampleCanvas.getContext("2d", { willReadFrequently: true });
+  const pixels = context.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height).data;
+  const colors = [];
+  const sampleArea = scale * scale;
+
+  for (let row = 0; row < height; row += 1) {
+    for (let column = 0; column < width; column += 1) {
+      let red = 0;
+      let green = 0;
+      let blue = 0;
+
+      for (let y = 0; y < scale; y += 1) {
+        for (let x = 0; x < scale; x += 1) {
+          const pixelIndex = ((row * scale + y) * sampleCanvas.width + column * scale + x) * 4;
+          red += pixels[pixelIndex];
+          green += pixels[pixelIndex + 1];
+          blue += pixels[pixelIndex + 2];
+        }
+      }
+
+      colors.push({
+        r: Math.round(red / sampleArea),
+        g: Math.round(green / sampleArea),
+        b: Math.round(blue / sampleArea),
+      });
+    }
+  }
+
+  return colors;
+}
+
+function getColorBounds(indices, colors) {
+  const bounds = {
+    r: { min: 255, max: 0 },
+    g: { min: 255, max: 0 },
+    b: { min: 255, max: 0 },
+  };
+
+  indices.forEach((index) => {
+    const color = colors[index];
+    bounds.r.min = Math.min(bounds.r.min, color.r);
+    bounds.r.max = Math.max(bounds.r.max, color.r);
+    bounds.g.min = Math.min(bounds.g.min, color.g);
+    bounds.g.max = Math.max(bounds.g.max, color.g);
+    bounds.b.min = Math.min(bounds.b.min, color.b);
+    bounds.b.max = Math.max(bounds.b.max, color.b);
+  });
+
+  return bounds;
+}
+
+function medianCut(colors, requestedCount) {
+  const target = clamp(requestedCount, 2, 256);
+  const boxes = [colors.map((_, index) => index)];
+  const channels = ["r", "g", "b"];
+
+  while (boxes.length < target) {
+    let splitIndex = -1;
+    let splitChannel = "r";
+    let splitScore = -1;
+
+    boxes.forEach((box, index) => {
+      if (box.length < 2) return;
+      const bounds = getColorBounds(box, colors);
+      const ranges = channels.map((channel) => bounds[channel].max - bounds[channel].min);
+      const largestRange = Math.max(...ranges);
+      const channelIndex = ranges.indexOf(largestRange);
+      const score = largestRange * Math.log2(box.length + 1);
+      if (score > splitScore) {
+        splitIndex = index;
+        splitChannel = channels[channelIndex];
+        splitScore = score;
+      }
+    });
+
+    if (splitIndex === -1) break;
+    const box = boxes.splice(splitIndex, 1)[0];
+    box.sort((a, b) => colors[a][splitChannel] - colors[b][splitChannel]);
+    const midpoint = Math.floor(box.length / 2);
+    boxes.push(box.slice(0, midpoint), box.slice(midpoint));
+  }
+
+  return boxes.map((box) => {
+    const sum = box.reduce((result, index) => {
+      result.r += colors[index].r;
+      result.g += colors[index].g;
+      result.b += colors[index].b;
+      return result;
+    }, { r: 0, g: 0, b: 0 });
+
+    return {
+      r: Math.round(sum.r / box.length),
+      g: Math.round(sum.g / box.length),
+      b: Math.round(sum.b / box.length),
+    };
+  });
 }
 
 function buildPattern() {
@@ -173,41 +285,21 @@ function buildPattern() {
   const sourceWidth = state.image.naturalWidth || state.image.width;
   const sourceHeight = state.image.naturalHeight || state.image.height;
   const aspectRatio = sourceWidth / sourceHeight;
-  const height = clamp(Math.round(width / aspectRatio), 16, 140);
-  const sampleCanvas = createSampleCanvas(state.image, width, height);
-  const context = sampleCanvas.getContext("2d", { willReadFrequently: true });
-  const pixels = context.getImageData(0, 0, width, height).data;
-  const rawColors = [];
-  const fullCounts = new Array(DMC_PALETTE.length).fill(0);
-
-  for (let index = 0; index < pixels.length; index += 4) {
-    const color = {
-      r: pixels[index],
-      g: pixels[index + 1],
-      b: pixels[index + 2],
-    };
-    rawColors.push(color);
-    const paletteIndex = nearestColorIndex(color, DMC_PALETTE);
-    fullCounts[paletteIndex] += 1;
-  }
-
-  const ranked = DMC_PALETTE
-    .map((entry, index) => ({ entry, index, count: fullCounts[index] }))
-    .filter((item) => item.count > 0)
-    .sort((a, b) => b.count - a.count);
-
+  const height = clamp(Math.round(width / aspectRatio), 16, 220);
+  const sampleScale = 4;
+  const sampleCanvas = createSampleCanvas(state.image, width, height, sampleScale);
+  const rawColors = getCellColors(sampleCanvas, width, height, sampleScale);
   const requestedColors = Number(elements.colorCount.value);
-  const selected = ranked.slice(0, requestedColors);
-  const selectedColors = selected.map((item) => item.entry);
-  const localCells = rawColors.map((color) => nearestColorIndex(color, selectedColors));
-  const localCounts = new Array(selected.length).fill(0);
+  const quantizedColors = medianCut(rawColors, requestedColors);
+  const localCells = rawColors.map((color) => nearestColorIndex(color, quantizedColors));
+  const localCounts = new Array(quantizedColors.length).fill(0);
 
   localCells.forEach((index) => {
     localCounts[index] += 1;
   });
 
-  const ordered = selected
-    .map((item, index) => ({ entry: item.entry, index, count: localCounts[index] }))
+  const ordered = quantizedColors
+    .map((color, index) => ({ color, index, count: localCounts[index] }))
     .sort((a, b) => b.count - a.count);
   const remap = new Map();
 
@@ -217,9 +309,13 @@ function buildPattern() {
 
   const cells = localCells.map((index) => remap.get(index));
   const legend = ordered.map((item, index) => ({
-    ...item.entry,
+    ...item.color,
+    hex: colorToHex(item.color),
+    code: "C" + String(index + 1).padStart(3, "0"),
+    dmcCode: DMC_PALETTE[nearestColorIndex(item.color, DMC_PALETTE)].code,
+    dmcName: DMC_PALETTE[nearestColorIndex(item.color, DMC_PALETTE)].name,
     count: item.count,
-    symbol: SYMBOLS[index % SYMBOLS.length],
+    symbol: symbolForIndex(index),
   }));
 
   state.pattern = {
@@ -325,10 +421,10 @@ function renderLegend() {
   elements.legendList.innerHTML = palette.map((color) => {
     return (
       '<div class="legend-row">' +
-        '<span class="legend-swatch" style="background:' + color.hex + '" aria-label="' + color.name + '"></span>' +
+        '<span class="legend-swatch" style="background:' + color.hex + '" aria-label="' + color.hex.toUpperCase() + '"></span>' +
         '<span class="legend-symbol">' + color.symbol + "</span>" +
-        '<span class="legend-code">DMC ' + color.code + "</span>" +
-        '<span class="legend-name">' + color.name + "</span>" +
+        '<span class="legend-code">' + color.code + "</span>" +
+        '<span class="legend-name">' + color.hex.toUpperCase() + " · ≈ DMC " + color.dmcCode + " " + color.dmcName + "</span>" +
         '<span class="legend-count">' + formatNumber(color.count) + "</span>" +
       "</div>"
     );
@@ -448,7 +544,7 @@ function csvCell(value) {
 function downloadCsv() {
   if (!state.pattern) return;
   const pattern = state.pattern;
-  const rows = ["row;column;DMC;color;symbol"];
+  const rows = ["row;column;palette;color_hex;nearest_dmc;symbol"];
   pattern.cells.forEach((paletteIndex, index) => {
     const color = pattern.palette[paletteIndex];
     const row = Math.floor(index / pattern.width) + 1;
@@ -456,8 +552,9 @@ function downloadCsv() {
     rows.push([
       row,
       column,
-      "DMC " + color.code,
-      color.name,
+      color.code,
+      color.hex.toUpperCase(),
+      "DMC " + color.dmcCode,
       color.symbol,
     ].map(csvCell).join(";"));
   });

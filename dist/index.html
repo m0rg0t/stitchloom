@@ -95,14 +95,14 @@
 
               <label class="field-label range-label" for="colorCount">
                 <span>Цветов в палитре</span>
-                <span class="field-value" id="colorCountValue">18</span>
+                <span class="field-value" id="colorCountValue">16</span>
               </label>
-              <input class="range-control" id="colorCount" type="range" min="6" max="24" value="18" />
-              <div class="range-scale"><span>6 · графично</span><span>24 · мягче</span></div>
+              <input class="range-control" id="colorCount" type="range" min="2" max="256" value="16" />
+              <div class="range-scale"><span>2 · графично</span><span>256 · ближе к фото</span></div>
 
               <div class="algorithm-note">
                 <span class="note-mark" aria-hidden="true">✳</span>
-                <span>Каждая клетка получает один ближайший цвет палитры DMC — соседние оттенки не смешиваются.</span>
+                <span>Сначала усредняем участок фото под клеткой, затем собираем выбранное число цветов — без смешивания соседних клеток.</span>
               </div>
 
               <button class="primary-button" id="rebuildButton" type="button" disabled>
@@ -149,7 +149,7 @@
               <div class="pattern-meta">
                 <span id="patternDimension">70 × 70 клеток</span>
                 <span class="meta-divider">/</span>
-                <span id="patternDetails">18 цветов · 4 900 стежков</span>
+                <span id="patternDetails">16 цветов · 4 900 стежков</span>
                 <span class="square-badge">КЛЕТКИ 1:1</span>
               </div>
               <div class="canvas-shell">

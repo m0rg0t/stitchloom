@@ -2,7 +2,7 @@
 
 **GitHub project ID:** stitchloom
 
-Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Each grid cell is assigned one nearest DMC-inspired color and one symbol, so color boundaries stay crisp instead of bleeding from cell to cell.
+Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Each grid cell is assigned one quantized color and one symbol, so color boundaries stay crisp instead of bleeding from cell to cell.
 
 ## What it does
 
@@ -11,9 +11,11 @@ Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Ea
 - offers five pattern widths from 36 to 110 cells;
 - derives the height from the original image proportions;
 - keeps every embroidery cell strictly square (1:1) in the preview and PNG export;
-- reduces the result to a selectable 6–24 color palette;
+- reduces the result to a selectable 2–256 color palette (16 by default);
 - shows a color-and-symbol key with stitch counts;
 - exports the current pattern as PNG or a cell-by-cell CSV.
+
+The color reduction uses the average color of the image area covered by each cell and a median-cut quantizer. Lower values make the pattern more graphic; higher values preserve more of the original image. The legend also shows the nearest DMC-inspired reference shade for orientation, not as a guarantee of a physical thread match.
 
 ## Run locally
 

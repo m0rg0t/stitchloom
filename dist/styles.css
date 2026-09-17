@@ -416,7 +416,7 @@ h1 em {
   justify-content: space-between;
   margin-top: -8px;
   color: #8f9793;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .algorithm-note {
@@ -756,6 +756,9 @@ h1 em {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px 12px;
+  max-height: 520px;
+  padding-right: 4px;
+  overflow-y: auto;
 }
 
 .legend-row {
