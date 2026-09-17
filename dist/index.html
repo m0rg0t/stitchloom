@@ -65,26 +65,39 @@
         const storageKey = "stitchloom:locale:v1";
         const supportedLocales = ["ru", "en"];
         const requestedLocale = new URLSearchParams(window.location.search).get("lang");
+        const detectBrowserLocale = () => {
+          const languages = [
+            ...(Array.isArray(window.navigator.languages) ? window.navigator.languages : []),
+            window.navigator.language || "",
+          ];
+
+          for (const language of languages) {
+            const baseLanguage = String(language).toLowerCase().split("-")[0];
+            if (supportedLocales.includes(baseLanguage)) return baseLanguage;
+          }
+
+          return "en";
+        };
         let locale = supportedLocales.includes(requestedLocale) ? requestedLocale : "";
+        let localeSource = locale ? "query" : "browser";
 
         if (!locale) {
           try {
             const storedLocale = window.localStorage.getItem(storageKey);
-            if (supportedLocales.includes(storedLocale)) locale = storedLocale;
+            if (supportedLocales.includes(storedLocale)) {
+              locale = storedLocale;
+              localeSource = "stored";
+            }
           } catch {
             // Browser-language detection remains available when storage is restricted.
           }
         }
 
-        if (!locale) {
-          locale = (window.navigator.languages || [window.navigator.language || ""])
-            .some((language) => String(language).toLowerCase().startsWith("ru"))
-            ? "ru"
-            : "en";
-        }
+        if (!locale) locale = detectBrowserLocale();
 
         document.documentElement.lang = locale;
         document.documentElement.dataset.locale = locale;
+        document.documentElement.dataset.localeSource = localeSource;
 
         const manifest = document.getElementById("appManifest");
         manifest.href = locale === "en" ? "./manifest.en.webmanifest" : "./manifest.webmanifest";

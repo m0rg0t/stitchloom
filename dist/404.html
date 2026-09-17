@@ -20,30 +20,45 @@
         window.__stitchloomBasePath = basePath;
 
         const storageKey = "stitchloom:locale:v1";
+        const supportedLocales = ["ru", "en"];
+        const detectBrowserLocale = () => {
+          const languages = [
+            ...(Array.isArray(window.navigator.languages) ? window.navigator.languages : []),
+            window.navigator.language || "",
+          ];
+
+          for (const language of languages) {
+            const baseLanguage = String(language).toLowerCase().split("-")[0];
+            if (supportedLocales.includes(baseLanguage)) return baseLanguage;
+          }
+
+          return "en";
+        };
         const requestedLocale = new URLSearchParams(window.location.search).get("lang");
         let locale = requestedLocale === "ru" || requestedLocale === "en"
           ? requestedLocale
           : "";
+        let localeSource = locale ? "query" : "browser";
 
         if (!locale) {
           try {
             const storedLocale = window.localStorage.getItem(storageKey);
-            if (storedLocale === "ru" || storedLocale === "en") locale = storedLocale;
+            if (storedLocale === "ru" || storedLocale === "en") {
+              locale = storedLocale;
+              localeSource = "stored";
+            }
           } catch {
             // Browser-language detection remains available when storage is restricted.
           }
         }
 
-        if (!locale) {
-          locale = (window.navigator.languages || [window.navigator.language || ""])
-            .some((language) => String(language).toLowerCase().startsWith("ru"))
-            ? "ru"
-            : "en";
-        }
+        if (!locale) locale = detectBrowserLocale();
 
         document.documentElement.lang = locale;
         document.documentElement.dataset.locale = locale;
+        document.documentElement.dataset.localeSource = localeSource;
         window.__stitchloomLocale = locale;
+        window.__stitchloomLocaleSource = localeSource;
 
         [
           { rel: "icon", href: "favicon.ico", sizes: "any" },
@@ -471,6 +486,20 @@
         const basePath = window.__stitchloomBasePath || "/";
         const storageKey = "stitchloom:locale:v1";
         let locale = window.__stitchloomLocale || "ru";
+        let localeSource = window.__stitchloomLocaleSource || "browser";
+        const detectBrowserLocale = () => {
+          const languages = [
+            ...(Array.isArray(window.navigator.languages) ? window.navigator.languages : []),
+            window.navigator.language || "",
+          ];
+
+          for (const language of languages) {
+            const baseLanguage = String(language).toLowerCase().split("-")[0];
+            if (baseLanguage === "ru" || baseLanguage === "en") return baseLanguage;
+          }
+
+          return "en";
+        };
         const translations = {
           ru: {
             pageTitle: "Страница не найдена — Stitchloom",
@@ -507,9 +536,11 @@
 
         function applyLocale(nextLocale, persist = false) {
           locale = nextLocale === "en" ? "en" : "ru";
+          if (persist) localeSource = "manual";
           const copy = translations[locale];
           document.documentElement.lang = locale;
           document.documentElement.dataset.locale = locale;
+          document.documentElement.dataset.localeSource = localeSource;
           document.title = copy.pageTitle;
           pageDescription.content = copy.description;
 
@@ -520,7 +551,9 @@
             element.setAttribute("aria-label", copy[element.dataset.i18nAria]);
           });
           document.querySelectorAll("[data-home]").forEach((link) => {
-            link.href = basePath + (locale === "en" ? "?lang=en" : "");
+            link.href = basePath + (
+              locale === "en" && localeSource !== "browser" ? "?lang=en" : ""
+            );
           });
 
           mascot.alt = copy.mascotAlt;
@@ -551,6 +584,10 @@
         mascot.src = basePath + "mascot-stezhok.png";
         localeToggle.addEventListener("click", () => {
           applyLocale(locale === "ru" ? "en" : "ru", true);
+        });
+        window.addEventListener("languagechange", () => {
+          if (localeSource !== "browser") return;
+          applyLocale(detectBrowserLocale());
         });
         applyLocale(locale);
       })();

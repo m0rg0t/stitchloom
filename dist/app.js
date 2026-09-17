@@ -103,6 +103,7 @@ const state = {
   pinch: null,
   resizeFrame: null,
   locale: "ru",
+  localeSource: "browser",
   themePreference: "auto",
   settings: {
     view: "pattern",
@@ -592,6 +593,20 @@ function isSupportedLocale(value) {
   return value === "ru" || value === "en";
 }
 
+function detectBrowserLocale() {
+  const languages = [
+    ...(Array.isArray(window.navigator.languages) ? window.navigator.languages : []),
+    window.navigator.language || "",
+  ];
+
+  for (const language of languages) {
+    const baseLanguage = String(language).toLowerCase().split("-")[0];
+    if (isSupportedLocale(baseLanguage)) return baseLanguage;
+  }
+
+  return "en";
+}
+
 function getInitialLocale() {
   const documentLocale = document.documentElement.dataset.locale;
   if (isSupportedLocale(documentLocale)) return documentLocale;
@@ -708,9 +723,11 @@ function persistLocale(locale) {
 
 function applyLocale(locale, persist = false, refresh = true) {
   const nextLocale = isSupportedLocale(locale) ? locale : "ru";
+  if (persist) state.localeSource = "manual";
   state.locale = nextLocale;
   document.documentElement.lang = nextLocale;
   document.documentElement.dataset.locale = nextLocale;
+  document.documentElement.dataset.localeSource = state.localeSource;
   applyStaticTranslations(nextLocale);
 
   const localizedUrl = getLocalizedCanonicalUrl(nextLocale);
@@ -727,7 +744,9 @@ function applyLocale(locale, persist = false, refresh = true) {
   elements.localeToggleLabel.lang = nextLocale === "en" ? "ru" : "en";
   elements.localeToggle.setAttribute("aria-label", t("locale.switch"));
   elements.localeToggle.title = t("locale.switch");
-  elements.brandHome.href = nextLocale === "en" ? "./?lang=en" : "./";
+  elements.brandHome.href = nextLocale === "en" && state.localeSource !== "browser"
+    ? "./?lang=en"
+    : "./";
 
   if (persist) persistLocale(nextLocale);
   if (refresh) refreshLocalizedUi();
@@ -735,6 +754,10 @@ function applyLocale(locale, persist = false, refresh = true) {
 
 function initLocale() {
   cacheStaticLocaleValues();
+  const documentSource = document.documentElement.dataset.localeSource;
+  state.localeSource = ["browser", "query", "stored"].includes(documentSource)
+    ? documentSource
+    : "browser";
   applyLocale(getInitialLocale(), false, false);
 }
 
@@ -2423,6 +2446,10 @@ elements.colorPresets.forEach((button) => {
 elements.copyAiPrompt.addEventListener("click", copySimplificationPrompt);
 elements.localeToggle.addEventListener("click", () => {
   applyLocale(state.locale === "ru" ? "en" : "ru", true);
+});
+window.addEventListener("languagechange", () => {
+  if (state.localeSource !== "browser") return;
+  applyLocale(detectBrowserLocale());
 });
 document.addEventListener("keydown", () => {
   document.documentElement.dataset.inputModality = "keyboard";
