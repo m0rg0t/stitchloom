@@ -9,7 +9,7 @@ Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Ea
 - accepts PNG, JPG, WEBP and GIF images up to 20 MB;
 - keeps the image in the browser and never uploads it to a server;
 - gives first-time visitors a four-step onboarding tour and lets them reopen it from the header;
-- provides complete Russian and English interfaces, localized AI prompts and PDF labels, automatically follows the browser's first supported language, and saves a manual override on the device;
+- provides complete Russian, English, and Spanish interfaces, localized AI prompts and PDF labels, automatically follows the browser's first supported language, and saves a manual override on the device;
 - supports automatic, light and dark interface themes; the automatic mode follows system changes without a reload;
 - offers five pattern widths from 36 to 110 cells;
 - derives the height from the original image proportions;
@@ -53,7 +53,7 @@ Image decoding, sampling and palette selection happen in the browser with Canvas
 
 The optional AI-preparation prompt is copied locally. Stitchloom does not send the image anywhere; if you attach it to an external AI service, that service's privacy terms apply.
 
-Without an explicit choice, Stitchloom follows the first supported language in the browser's preference order and reacts to the browser's `languagechange` event. A `?lang=ru` or `?lang=en` link overrides detection for that visit. A manual language choice and the theme choice are stored locally when `localStorage` is available; otherwise they remain active for the current page view. The onboarding dismissal is also device-local: Stitchloom prefers `localStorage`, then falls back to a first-party functional cookie, `sessionStorage`, and finally the current history entry when browser storage is restricted.
+Without an explicit choice, Stitchloom follows the first supported language in the browser's preference order and reacts to the browser's `languagechange` event. A `?lang=ru`, `?lang=en`, or `?lang=es` link overrides detection for that visit. A manual language choice and the theme choice are stored locally when `localStorage` is available; otherwise they remain active for the current page view. The onboarding dismissal is also device-local: Stitchloom prefers `localStorage`, then falls back to a first-party functional cookie, `sessionStorage`, and finally the current history entry when browser storage is restricted.
 
 ## License
 

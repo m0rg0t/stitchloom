@@ -20,7 +20,7 @@
         window.__stitchloomBasePath = basePath;
 
         const storageKey = "stitchloom:locale:v1";
-        const supportedLocales = ["ru", "en"];
+        const supportedLocales = ["ru", "en", "es"];
         const detectBrowserLocale = () => {
           const languages = [
             ...(Array.isArray(window.navigator.languages) ? window.navigator.languages : []),
@@ -35,15 +35,13 @@
           return "en";
         };
         const requestedLocale = new URLSearchParams(window.location.search).get("lang");
-        let locale = requestedLocale === "ru" || requestedLocale === "en"
-          ? requestedLocale
-          : "";
+        let locale = supportedLocales.includes(requestedLocale) ? requestedLocale : "";
         let localeSource = locale ? "query" : "browser";
 
         if (!locale) {
           try {
             const storedLocale = window.localStorage.getItem(storageKey);
-            if (storedLocale === "ru" || storedLocale === "en") {
+            if (supportedLocales.includes(storedLocale)) {
               locale = storedLocale;
               localeSource = "stored";
             }
@@ -68,7 +66,7 @@
           { rel: "apple-touch-icon", href: "apple-touch-icon.png", sizes: "180x180" },
           {
             rel: "manifest",
-            href: locale === "en" ? "manifest.en.webmanifest" : "manifest.webmanifest"
+            href: locale === "ru" ? "manifest.webmanifest" : `manifest.${locale}.webmanifest`
           }
         ].forEach((attributes) => {
           const link = document.createElement("link");
@@ -485,6 +483,7 @@
       (() => {
         const basePath = window.__stitchloomBasePath || "/";
         const storageKey = "stitchloom:locale:v1";
+        const localeSequence = ["ru", "en", "es"];
         let locale = window.__stitchloomLocale || "ru";
         let localeSource = window.__stitchloomLocaleSource || "browser";
         const detectBrowserLocale = () => {
@@ -495,7 +494,7 @@
 
           for (const language of languages) {
             const baseLanguage = String(language).toLowerCase().split("-")[0];
-            if (baseLanguage === "ru" || baseLanguage === "en") return baseLanguage;
+            if (localeSequence.includes(baseLanguage)) return baseLanguage;
           }
 
           return "en";
@@ -527,7 +526,21 @@
             homeButton: "Return to the studio",
             hint: "Your photo is still processed only on your device.",
             mascotAlt: "Stitch, the Stitchloom thread-spool mascot",
-            switchLanguage: "Switch to Russian"
+            switchLanguage: "Switch to Spanish"
+          },
+          es: {
+            pageTitle: "Página no encontrada — Stitchloom",
+            description: "No se encontró esta página de Stitchloom. Vuelve al estudio y crea un patrón de punto de cruz desde una foto.",
+            brandHome: "Stitchloom, volver al inicio",
+            errorCode: "ERROR / 404",
+            stageLabel: "CELDA NO ENCONTRADA",
+            eyebrow: "UNA PUNTADA SE SALIÓ DEL PATRÓN",
+            title: "Esta celda no está aquí.",
+            lead: "Parece que nuestra mascota Puntada tiró del hilo equivocado. Vuelve al estudio: allí te esperan tu foto, los ajustes y el patrón terminado.",
+            homeButton: "Volver al estudio",
+            hint: "Tu foto sigue procesándose únicamente en tu dispositivo.",
+            mascotAlt: "Puntada, la mascota de Stitchloom con forma de carrete de hilo",
+            switchLanguage: "Cambiar a ruso"
           }
         };
         const localeToggle = document.getElementById("localeToggle");
@@ -535,7 +548,7 @@
         const mascot = document.getElementById("mascot");
 
         function applyLocale(nextLocale, persist = false) {
-          locale = nextLocale === "en" ? "en" : "ru";
+          locale = localeSequence.includes(nextLocale) ? nextLocale : "ru";
           if (persist) localeSource = "manual";
           const copy = translations[locale];
           document.documentElement.lang = locale;
@@ -552,21 +565,23 @@
           });
           document.querySelectorAll("[data-home]").forEach((link) => {
             link.href = basePath + (
-              locale === "en" && localeSource !== "browser" ? "?lang=en" : ""
+              locale !== "ru" && localeSource !== "browser" ? `?lang=${locale}` : ""
             );
           });
 
           mascot.alt = copy.mascotAlt;
-          localeToggle.textContent = locale === "en" ? "RU" : "EN";
-          localeToggle.lang = locale === "en" ? "ru" : "en";
+          const nextLocaleIndex = (localeSequence.indexOf(locale) + 1) % localeSequence.length;
+          const switchToLocale = localeSequence[nextLocaleIndex];
+          localeToggle.textContent = switchToLocale.toUpperCase();
+          localeToggle.lang = switchToLocale;
           localeToggle.setAttribute("aria-label", copy.switchLanguage);
           localeToggle.title = copy.switchLanguage;
 
           const manifest = document.querySelector('link[rel="manifest"]');
           if (manifest) {
-            manifest.href = basePath + (locale === "en"
-              ? "manifest.en.webmanifest"
-              : "manifest.webmanifest");
+            manifest.href = basePath + (locale === "ru"
+              ? "manifest.webmanifest"
+              : `manifest.${locale}.webmanifest`);
           }
 
           if (!persist) return;
@@ -576,14 +591,15 @@
             // The query string keeps the choice when storage is restricted.
           }
           const url = new URL(window.location.href);
-          if (locale === "en") url.searchParams.set("lang", "en");
-          else url.searchParams.delete("lang");
+          if (locale === "ru") url.searchParams.delete("lang");
+          else url.searchParams.set("lang", locale);
           window.history.replaceState(window.history.state, document.title, url);
         }
 
         mascot.src = basePath + "mascot-stezhok.png";
         localeToggle.addEventListener("click", () => {
-          applyLocale(locale === "ru" ? "en" : "ru", true);
+          const currentIndex = localeSequence.indexOf(locale);
+          applyLocale(localeSequence[(currentIndex + 1) % localeSequence.length], true);
         });
         window.addEventListener("languagechange", () => {
           if (localeSource !== "browser") return;

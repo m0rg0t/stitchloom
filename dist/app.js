@@ -5,6 +5,15 @@ const MIN_ZOOM = 50;
 const MAX_ZOOM = 300;
 const ZOOM_STEP = 25;
 const LOCALE_STORAGE_KEY = "stitchloom:locale:v1";
+const SUPPORTED_LOCALES = ["ru", "en", "es"];
+const LOCALE_SEQUENCE = ["ru", "en", "es"];
+const LOCALE_NUMBER_FORMATS = { ru: "ru-RU", en: "en-US", es: "es-ES" };
+const LOCALE_MANIFESTS = {
+  ru: "./manifest.webmanifest",
+  en: "./manifest.en.webmanifest",
+  es: "./manifest.es.webmanifest",
+};
+const LOCALE_OG_CODES = { ru: "ru_RU", en: "en_US", es: "es_ES" };
 const THEME_STORAGE_KEY = "stitchloom:theme:v1";
 const ONBOARDING_STORAGE_KEY = "stitchloom:onboarding:v1";
 const ONBOARDING_COOKIE_KEY = "stitchloom_onboarding_v1";
@@ -37,6 +46,7 @@ const elements = {
   canonicalUrl: $("canonicalUrl"),
   ogLocale: $("ogLocale"),
   ogLocaleAlternate: $("ogLocaleAlternate"),
+  ogLocaleAlternateSecondary: $("ogLocaleAlternateSecondary"),
   ogUrl: $("ogUrl"),
   structuredData: $("structuredData"),
   localeToggle: $("localeToggle"),
@@ -256,6 +266,148 @@ const EN_TRANSLATIONS = {
   "onboarding.back": "Back",
 };
 
+const ES_TRANSLATIONS = {
+  "meta.title": "Stitchloom — patrón de punto de cruz desde una foto",
+  "meta.description": "Convierte una foto en un patrón de punto de cruz directamente en tu navegador: celdas cuadradas, de 2 a 256 colores y exportación a PDF, PNG o CSV.",
+  "meta.ogTitle": "Stitchloom — de foto a patrón de punto de cruz",
+  "meta.ogDescription": "Celdas cuadradas, una paleta de 2 a 256 colores y exportación a PDF, todo procesado en tu navegador.",
+  "meta.twitterDescription": "Crea un patrón de punto de cruz desde una foto directamente en tu navegador.",
+  "meta.imageAlt": "Stitchloom convierte una foto en un patrón de puntadas cuadradas",
+  "brand.home": "Stitchloom, inicio",
+  "privacy.full": "TU FOTO PERMANECE EN ESTE DISPOSITIVO",
+  "privacy.short": "LOCAL",
+  "theme.groupLabel": "Elegir el tema de la interfaz",
+  "theme.auto": "Automático",
+  "theme.autoHint": "Usar el tema del sistema",
+  "theme.light": "Claro",
+  "theme.lightHint": "Siempre claro",
+  "theme.dark": "Oscuro",
+  "theme.darkHint": "Siempre oscuro",
+  "tour.label": "Cómo funciona",
+  "hero.eyebrow": "ESTUDIO DE PATRONES",
+  "hero.title": "De foto a puntadas.<br /><em>Celda a celda.</em>",
+  "hero.copy": "Sube una imagen, elige la densidad y obtén un patrón plano con un color y un símbolo en cada celda.",
+  "controls.label": "Ajustes del patrón",
+  "source.eyebrow": "ORIGEN",
+  "source.title": "Sube una foto",
+  "source.choose": "Elegir una imagen",
+  "source.dropTitle": "Suelta aquí tu foto",
+  "source.dropHint": "o haz clic para elegir un archivo",
+  "source.formats": "PNG, JPG, WEBP · hasta 20 MB",
+  "source.previewAlt": "Foto subida",
+  "source.readyToProcess": "Lista para procesar",
+  "source.remove": "Quitar imagen",
+  "ai.badge": "OPCIONAL",
+  "ai.title": "Prepara la foto con IA",
+  "ai.copy": "Pide a ChatGPT, Gemini u otro editor de imágenes que convierta una foto compleja en pixel art limpio. Las formas grandes se conservan mejor en un patrón pequeño.",
+  "ai.step1": "Elige abajo el tamaño del patrón y el número de colores.",
+  "ai.step2": "Adjunta la foto original a un chat con IA y pega el prompt.",
+  "ai.step3": "Descarga el PNG resultante y súbelo a Stitchloom.",
+  "ai.copyButton": "Copiar prompt",
+  "ai.edit": "Ver y editar el texto",
+  "ai.promptLabel": "Prompt para simplificar artísticamente la foto",
+  "ai.privacy": "Stitchloom no envía nada por sí mismo. Si subes una foto a un servicio de IA externo, se aplicará la política de privacidad de ese servicio.",
+  "settings.eyebrow": "AJUSTES",
+  "settings.title": "Configura el patrón",
+  "settings.width": "Ancho en celdas",
+  "settings.size36": "36 celdas · boceto rápido",
+  "settings.size52": "52 celdas · equilibrado",
+  "settings.size70": "70 celdas · predeterminado",
+  "settings.size90": "90 celdas · detallado",
+  "settings.size110": "110 celdas · máximo detalle",
+  "settings.colors": "Colores de la paleta",
+  "settings.presetsLabel": "Ajustes rápidos del número de colores",
+  "settings.exact": "Exacto",
+  "settings.exactLabel": "Número exacto de colores",
+  "settings.rangeLow": "2 · gráfico",
+  "settings.rangeHigh": "256 · más fiel a la foto",
+  "settings.algorithm": "Primero promediamos el área de la foto bajo cada celda y después creamos la paleta elegida, sin mezclar colores entre celdas vecinas.",
+  "result.eyebrow": "RESULTADO",
+  "result.viewMode": "Modo de vista",
+  "result.pattern": "Patrón",
+  "result.photo": "Foto",
+  "result.symbols": "Símbolos",
+  "result.grid": "Cuadrícula",
+  "zoom.group": "Zoom del patrón",
+  "zoom.out": "Alejar",
+  "zoom.outShort": "Alejar",
+  "zoom.fit": "Ajustar",
+  "zoom.fitShort": "Ajustar patrón",
+  "zoom.in": "Acercar",
+  "zoom.inShort": "Acercar",
+  "result.emptyTitle": "Empieza con una foto",
+  "result.emptyCopy": "Cuando la subas, aquí aparecerán la cuadrícula, los símbolos y la clave de colores.",
+  "result.squareBadge": "CUADRADA 1:1",
+  "result.canvasRegion": "Área del patrón. Usa los botones de zoom, pellizca o pulsa Control y gira la rueda del ratón. Arrastra el patrón cuando esté ampliado.",
+  "result.canvasAlt": "Patrón de punto de cruz",
+  "result.zoomHint": "Pellizca o usa los botones para cambiar el zoom",
+  "result.panHint": "Arrastra el patrón cuando esté ampliado",
+  "result.downloadPdf": "Descargar PDF",
+  "result.downloadPng": "Descargar PNG",
+  "result.downloadCsv": "Descargar CSV",
+  "result.sampleDimension": "70 × 70 celdas",
+  "result.sampleDetails": "16 colores · 4.900 puntadas",
+  "legend.eyebrow": "CLAVE",
+  "legend.title": "Colores y símbolos",
+  "legend.region": "Clave desplazable de colores y símbolos",
+  "legend.zero": "0 colores",
+  "legend.note": "Los tonos en pantalla son aproximados. Compáralos con una carta física de hilos antes de comprar el hilo.",
+  "guide.eyebrow": "EL PROCESO DE UN VISTAZO",
+  "guide.title": "Cómo crear un patrón de punto de cruz desde una foto",
+  "guide.copy": "Stitchloom convierte una foto en un patrón cuadriculado listo para usar directamente en tu navegador, sin cuenta, calco manual ni subida a un servidor.",
+  "guide.step1Title": "Sube una foto",
+  "guide.step1Copy": "Elige una imagen con una silueta clara. Si el fondo es recargado, copia primero el prompt y simplifica la imagen con IA.",
+  "guide.step2Title": "Configura la cuadrícula y la paleta",
+  "guide.step2Copy": "Elige el ancho del patrón y entre 2 y 256 colores. La altura se adapta automáticamente y cada celda permanece perfectamente cuadrada.",
+  "guide.step3Title": "Guarda el resultado",
+  "guide.step3Copy": "Revisa los símbolos y la cuadrícula, amplía cualquier zona y descarga el patrón como PDF, PNG o CSV.",
+  "faq.title": "Preguntas frecuentes",
+  "faq.uploadQuestion": "¿Mi foto se sube a un servidor?",
+  "faq.uploadAnswer": "No. Stitchloom procesa la foto localmente en tu navegador y no la envía a ningún servidor.",
+  "faq.sizeQuestion": "¿Cómo elijo el tamaño del patrón?",
+  "faq.sizeAnswer": "Elige el ancho en celdas. La altura se calcula automáticamente según las proporciones de la foto y cada celda permanece cuadrada.",
+  "faq.colorsQuestion": "¿Cuántos colores debo elegir?",
+  "faq.colorsAnswer": "Empieza con 16 colores. Ocho suelen bastar para ilustraciones sencillas, mientras que las fotos complejas pueden necesitar 24 o más.",
+  "footer.privacy": "Sin cuenta · sin subida al servidor",
+  "mobile.goToResult": "Ir al patrón terminado",
+  "mobile.ready": "PATRÓN LISTO",
+  "mobile.openResult": "Abrir resultado",
+  "mobile.open": "Abrir",
+  "onboarding.eyebrow": "INICIO RÁPIDO",
+  "onboarding.title": "Cómo funciona Stitchloom",
+  "onboarding.close": "Cerrar consejos",
+  "onboarding.region": "Paso de introducción",
+  "onboarding.step1Code": "01 / ORIGEN",
+  "onboarding.step1Visual": "LOCAL EN TU NAVEGADOR",
+  "onboarding.step1Kicker": "Paso 1 · Subir",
+  "onboarding.step1Title": "Empieza con una foto",
+  "onboarding.step1Copy": "Añade un PNG, JPG o WEBP. Stitchloom lo lee directamente en tu navegador: el archivo no se sube a un servidor para crear el patrón.",
+  "onboarding.step1Callout": "Las imágenes con una silueta clara y un fondo tranquilo funcionan mejor.",
+  "onboarding.step2Code": "02 / AJUSTES",
+  "onboarding.step2Visual": "CADA CELDA ES 1:1",
+  "onboarding.step2Kicker": "Paso 2 · Base",
+  "onboarding.step2Title": "Las celdas siempre son cuadradas",
+  "onboarding.step2Copy": "Elige el ancho del patrón y la altura seguirá las proporciones de la foto. Usa un ajuste de paleta o introduce un número exacto. El patrón se actualiza automáticamente y 16 colores suele ser un buen punto de partida.",
+  "onboarding.ranges": "Rangos de ajuste",
+  "onboarding.cellsRange": "36–110 celdas",
+  "onboarding.colorsRange": "2–256 colores",
+  "onboarding.squareCell": "Celda cuadrada 1:1",
+  "onboarding.step3Code": "03 / OPCIONAL",
+  "onboarding.step3Visual": "FOTO → PIXEL ART LIMPIO",
+  "onboarding.step3Kicker": "Paso 3 · Preparación",
+  "onboarding.step3Title": "Simplifica una foto compleja",
+  "onboarding.step3Copy": "La sección de origen incluye un prompt listo para ChatGPT, Gemini u otra herramienta de IA. Usa automáticamente el ancho y el número de colores que hayas elegido.",
+  "onboarding.step3Callout": "Es opcional. Si subes una foto a un servicio de IA externo, se aplicará la política de privacidad de ese servicio.",
+  "onboarding.step4Code": "04 / RESULTADO",
+  "onboarding.step4Visual": "ZOOM · PDF · PNG · CSV",
+  "onboarding.step4Kicker": "Paso 4 · Revisión",
+  "onboarding.step4Title": "Revisa y guarda el patrón",
+  "onboarding.step4Copy": "Activa o desactiva la cuadrícula y los símbolos, usa los controles o pellizca para ampliar, arrastra el patrón ampliado y después descarga el PDF, PNG o CSV.",
+  "onboarding.step4Callout": "Puedes volver a abrir esta guía en cualquier momento con el botón “?” de la cabecera.",
+  "onboarding.skip": "Saltar",
+  "onboarding.back": "Atrás",
+};
+
 const UI_MESSAGES = {
   ru: {
     "theme.auto": "Авто",
@@ -327,7 +479,7 @@ const UI_MESSAGES = {
     "theme.light": "Light",
     "theme.dark": "Dark",
     "theme.current": "Theme: {value}",
-    "locale.switch": "Switch to Russian",
+    "locale.switch": "Switch to Spanish",
     "onboarding.progress": "Step {current} of {total}",
     "onboarding.start": "Start creating",
     "onboarding.next": "Next",
@@ -387,6 +539,71 @@ const UI_MESSAGES = {
     "pdf.legendTitle": "Colors and symbols",
     "pdf.legendNote": "On-screen shades are approximate — check them against a physical thread chart.",
   },
+  es: {
+    "theme.auto": "Automático",
+    "theme.light": "Claro",
+    "theme.dark": "Oscuro",
+    "theme.current": "Tema: {value}",
+    "locale.switch": "Cambiar a ruso",
+    "onboarding.progress": "Paso {current} de {total}",
+    "onboarding.start": "Empezar a crear",
+    "onboarding.next": "Siguiente",
+    "ai.target": "{width} celdas · hasta {colors} colores",
+    "ai.copy": "Copiar prompt",
+    "ai.copied": "Prompt copiado",
+    "ai.copiedStatus": "Ahora adjunta la foto y pega el prompt en el servicio de IA que prefieras.",
+    "ai.select": "Seleccionar prompt",
+    "ai.manualStatus": "La copia automática no está disponible: el texto está abierto y seleccionado para copiarlo manualmente.",
+    "guidance.low": "Un resultado gráfico con una clave breve y sencilla.",
+    "guidance.balanced": "{colors} ofrece un buen equilibrio entre detalle y una clave manejable.",
+    "guidance.detailed": "Más matices, aunque la clave impresa será más larga.",
+    "guidance.high": "Para bordar a mano suele ser más práctico usar hasta 64 colores. Los símbolos están ocultos de forma predeterminada, pero puedes activarlos.",
+    "auto.noPhoto": "Sube una foto: el patrón se creará automáticamente.",
+    "auto.updating": "Los ajustes han cambiado: recalculando el patrón…",
+    "auto.ready": "Listo: {width} × {height} celdas, {palette}. Los cambios se aplican automáticamente.",
+    "pattern.updatingStatus": "Actualizando…",
+    "pattern.updatingHeading": "Actualizando el patrón",
+    "pattern.buildingHeading": "Calculando celdas y eligiendo colores",
+    "pattern.buildingStatus": "Creando el patrón…",
+    "pattern.readyStatus": "Patrón listo",
+    "pattern.readyHeading": "Patrón listo para bordar",
+    "pattern.emptyHeading": "Tu patrón aparecerá aquí",
+    "pattern.waiting": "Esperando una foto",
+    "zoom.current": "Zoom actual: {zoom} por ciento. Ajustar el patrón al área visible",
+    "file.local": "Todo se procesa localmente: el archivo no se sube a ningún servidor.",
+    "file.ready": "Imagen lista. El patrón se está creando localmente en esta ventana.",
+    "file.patternReady": "Listo. Cambia los ajustes: la foto permanece local y el patrón se actualiza automáticamente.",
+    "file.invalid": "Elige un archivo de imagen PNG, JPG, WEBP o GIF.",
+    "file.tooLarge": "El archivo es demasiado grande. El tamaño máximo es de 20 MB.",
+    "file.openFailed": "No se pudo abrir la imagen. Prueba con otro archivo.",
+    "legend.stitches": "Puntadas",
+    "pdf.ready": "PDF listo. ",
+    "pdf.retry": "Descargar de nuevo",
+    "pdf.readFailed": "No se pudo leer la página del PDF",
+    "pdf.pageFailed": "No se pudo preparar la página del PDF",
+    "pdf.preparing": "Preparando PDF…",
+    "pdf.pages": "Creando páginas: {current} / {total}",
+    "pdf.packing": "Empaquetando PDF…",
+    "pdf.failed": "No se pudo crear el PDF. Prueba con un patrón más pequeño.",
+    "pdf.download": "Descargar PDF",
+    "pdf.footerLocal": "Patrón creado localmente — stitchloom",
+    "pdf.page": "Página {page} / {total}",
+    "pdf.overviewSection": "RESUMEN DEL PATRÓN",
+    "pdf.coverTitle": "Patrón de punto de cruz",
+    "pdf.coverSubtitle": "celda a celda",
+    "pdf.imageDefault": "Imagen",
+    "pdf.size": "TAMAÑO",
+    "pdf.colors": "COLORES",
+    "pdf.stitches": "PUNTADAS",
+    "pdf.nextPages": "CUADRÍCULA DETALLADA Y CLAVE DE COLORES EN LAS PÁGINAS SIGUIENTES",
+    "pdf.gridSection": "CUADRÍCULA {current} / {total}",
+    "pdf.gridTitle": "Patrón cuadrado 1:1",
+    "pdf.gridRange": "Columnas {columnStart}–{columnEnd} · filas {rowStart}–{rowEnd}",
+    "pdf.thickLine": "Línea gruesa cada 10 celdas",
+    "pdf.keySection": "CLAVE {current} / {total}",
+    "pdf.legendTitle": "Colores y símbolos",
+    "pdf.legendNote": "Los tonos en pantalla son aproximados: compáralos con una carta física de hilos.",
+  },
 };
 
 const UNIT_FORMS = {
@@ -399,6 +616,11 @@ const UNIT_FORMS = {
     cell: ["cell", "cells"],
     color: ["color", "colors"],
     stitch: ["stitch", "stitches"],
+  },
+  es: {
+    cell: ["celda", "celdas"],
+    color: ["color", "colores"],
+    stitch: ["puntada", "puntadas"],
   },
 };
 
@@ -413,36 +635,36 @@ const SYMBOLS = [
 const SYMBOL_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 const DMC_PALETTE = [
-  { code: "B5200", name: { ru: "Белый", en: "Snow White" }, hex: "#ffffff", r: 255, g: 255, b: 255 },
-  { code: "3865", name: { ru: "Зимний белый", en: "Winter White" }, hex: "#f4f0e6", r: 244, g: 240, b: 230 },
-  { code: "762", name: { ru: "Жемчужно-серый, светлый", en: "Pearl Gray, very light" }, hex: "#d7d0c4", r: 215, g: 208, b: 196 },
-  { code: "318", name: { ru: "Стальной серый, светлый", en: "Steel Gray, light" }, hex: "#a7abb0", r: 167, g: 171, b: 176 },
-  { code: "414", name: { ru: "Стальной серый, тёмный", en: "Steel Gray, dark" }, hex: "#73777a", r: 115, g: 119, b: 122 },
-  { code: "535", name: { ru: "Графитовый серый", en: "Graphite Gray" }, hex: "#55585a", r: 85, g: 88, b: 90 },
-  { code: "413", name: { ru: "Серый, тёмный", en: "Gray, dark" }, hex: "#44484a", r: 68, g: 72, b: 74 },
-  { code: "3799", name: { ru: "Серый, очень тёмный", en: "Gray, very dark" }, hex: "#25292b", r: 37, g: 41, b: 43 },
-  { code: "310", name: { ru: "Чёрный", en: "Black" }, hex: "#171719", r: 23, g: 23, b: 25 },
-  { code: "3371", name: { ru: "Коричневый, почти чёрный", en: "Brown, very dark" }, hex: "#30201d", r: 48, g: 32, b: 29 },
-  { code: "754", name: { ru: "Персиковый, светлый", en: "Peach, light" }, hex: "#f1c7ae", r: 241, g: 199, b: 174 },
-  { code: "210", name: { ru: "Розовый, тёмный", en: "Pink, dark" }, hex: "#c87878", r: 200, g: 120, b: 120 },
-  { code: "3712", name: { ru: "Лососевый, тёмный", en: "Salmon, dark" }, hex: "#ad5b5e", r: 173, g: 91, b: 94 },
-  { code: "962", name: { ru: "Пыльная роза, средний", en: "Dusty Rose, medium" }, hex: "#d18d94", r: 209, g: 141, b: 148 },
-  { code: "3803", name: { ru: "Розово-лиловый, светлый", en: "Mauve, light" }, hex: "#ad6b7b", r: 173, g: 107, b: 123 },
-  { code: "321", name: { ru: "Красный", en: "Red" }, hex: "#bd2435", r: 189, g: 36, b: 53 },
-  { code: "606", name: { ru: "Красно-оранжевый", en: "Bright Orange-Red" }, hex: "#ef4c3c", r: 239, g: 76, b: 60 },
-  { code: "782", name: { ru: "Топаз, тёмный", en: "Topaz, dark" }, hex: "#ad7b3d", r: 173, g: 123, b: 61 },
-  { code: "783", name: { ru: "Топаз, средний", en: "Topaz, medium" }, hex: "#c39a59", r: 195, g: 154, b: 89 },
-  { code: "3047", name: { ru: "Жёлтый, очень светлый", en: "Yellow, very light" }, hex: "#e9dca4", r: 233, g: 220, b: 164 },
-  { code: "3346", name: { ru: "Охотничий зелёный", en: "Hunter Green" }, hex: "#64814b", r: 100, g: 129, b: 75 },
-  { code: "702", name: { ru: "Келли-зелёный", en: "Kelly Green" }, hex: "#5a9a5a", r: 90, g: 154, b: 90 },
-  { code: "890", name: { ru: "Фисташковый, тёмный", en: "Pistachio Green, dark" }, hex: "#417342", r: 65, g: 115, b: 66 },
-  { code: "799", name: { ru: "Синий Delft, средний", en: "Delft Blue, medium" }, hex: "#3c6290", r: 60, g: 98, b: 144 },
-  { code: "820", name: { ru: "Королевский синий, тёмный", en: "Royal Blue, dark" }, hex: "#263f72", r: 38, g: 63, b: 114 },
-  { code: "3325", name: { ru: "Синий, светлый", en: "Blue, light" }, hex: "#8ca4c2", r: 140, g: 164, b: 194 },
-  { code: "550", name: { ru: "Фиолетовый, тёмный", en: "Violet, dark" }, hex: "#684c79", r: 104, g: 76, b: 121 },
-  { code: "718", name: { ru: "Сливовый", en: "Plum" }, hex: "#a44770", r: 164, g: 71, b: 112 },
-  { code: "3862", name: { ru: "Мокко, средний", en: "Mocha Brown, medium" }, hex: "#a47756", r: 164, g: 119, b: 86 },
-  { code: "3866", name: { ru: "Мокко, очень светлый", en: "Mocha Brown, very light" }, hex: "#f0ddc1", r: 240, g: 221, b: 193 },
+  { code: "B5200", name: { ru: "Белый", en: "Snow White", es: "Blanco nieve" }, hex: "#ffffff", r: 255, g: 255, b: 255 },
+  { code: "3865", name: { ru: "Зимний белый", en: "Winter White", es: "Blanco invierno" }, hex: "#f4f0e6", r: 244, g: 240, b: 230 },
+  { code: "762", name: { ru: "Жемчужно-серый, светлый", en: "Pearl Gray, very light", es: "Gris perla, muy claro" }, hex: "#d7d0c4", r: 215, g: 208, b: 196 },
+  { code: "318", name: { ru: "Стальной серый, светлый", en: "Steel Gray, light", es: "Gris acero, claro" }, hex: "#a7abb0", r: 167, g: 171, b: 176 },
+  { code: "414", name: { ru: "Стальной серый, тёмный", en: "Steel Gray, dark", es: "Gris acero, oscuro" }, hex: "#73777a", r: 115, g: 119, b: 122 },
+  { code: "535", name: { ru: "Графитовый серый", en: "Graphite Gray", es: "Gris grafito" }, hex: "#55585a", r: 85, g: 88, b: 90 },
+  { code: "413", name: { ru: "Серый, тёмный", en: "Gray, dark", es: "Gris, oscuro" }, hex: "#44484a", r: 68, g: 72, b: 74 },
+  { code: "3799", name: { ru: "Серый, очень тёмный", en: "Gray, very dark", es: "Gris, muy oscuro" }, hex: "#25292b", r: 37, g: 41, b: 43 },
+  { code: "310", name: { ru: "Чёрный", en: "Black", es: "Negro" }, hex: "#171719", r: 23, g: 23, b: 25 },
+  { code: "3371", name: { ru: "Коричневый, почти чёрный", en: "Brown, very dark", es: "Marrón, muy oscuro" }, hex: "#30201d", r: 48, g: 32, b: 29 },
+  { code: "754", name: { ru: "Персиковый, светлый", en: "Peach, light", es: "Melocotón, claro" }, hex: "#f1c7ae", r: 241, g: 199, b: 174 },
+  { code: "210", name: { ru: "Розовый, тёмный", en: "Pink, dark", es: "Rosa, oscuro" }, hex: "#c87878", r: 200, g: 120, b: 120 },
+  { code: "3712", name: { ru: "Лососевый, тёмный", en: "Salmon, dark", es: "Salmón, oscuro" }, hex: "#ad5b5e", r: 173, g: 91, b: 94 },
+  { code: "962", name: { ru: "Пыльная роза, средний", en: "Dusty Rose, medium", es: "Rosa empolvado, medio" }, hex: "#d18d94", r: 209, g: 141, b: 148 },
+  { code: "3803", name: { ru: "Розово-лиловый, светлый", en: "Mauve, light", es: "Malva, claro" }, hex: "#ad6b7b", r: 173, g: 107, b: 123 },
+  { code: "321", name: { ru: "Красный", en: "Red", es: "Rojo" }, hex: "#bd2435", r: 189, g: 36, b: 53 },
+  { code: "606", name: { ru: "Красно-оранжевый", en: "Bright Orange-Red", es: "Rojo anaranjado intenso" }, hex: "#ef4c3c", r: 239, g: 76, b: 60 },
+  { code: "782", name: { ru: "Топаз, тёмный", en: "Topaz, dark", es: "Topacio, oscuro" }, hex: "#ad7b3d", r: 173, g: 123, b: 61 },
+  { code: "783", name: { ru: "Топаз, средний", en: "Topaz, medium", es: "Topacio, medio" }, hex: "#c39a59", r: 195, g: 154, b: 89 },
+  { code: "3047", name: { ru: "Жёлтый, очень светлый", en: "Yellow, very light", es: "Amarillo, muy claro" }, hex: "#e9dca4", r: 233, g: 220, b: 164 },
+  { code: "3346", name: { ru: "Охотничий зелёный", en: "Hunter Green", es: "Verde cazador" }, hex: "#64814b", r: 100, g: 129, b: 75 },
+  { code: "702", name: { ru: "Келли-зелёный", en: "Kelly Green", es: "Verde Kelly" }, hex: "#5a9a5a", r: 90, g: 154, b: 90 },
+  { code: "890", name: { ru: "Фисташковый, тёмный", en: "Pistachio Green, dark", es: "Verde pistacho, oscuro" }, hex: "#417342", r: 65, g: 115, b: 66 },
+  { code: "799", name: { ru: "Синий Delft, средний", en: "Delft Blue, medium", es: "Azul Delft, medio" }, hex: "#3c6290", r: 60, g: 98, b: 144 },
+  { code: "820", name: { ru: "Королевский синий, тёмный", en: "Royal Blue, dark", es: "Azul real, oscuro" }, hex: "#263f72", r: 38, g: 63, b: 114 },
+  { code: "3325", name: { ru: "Синий, светлый", en: "Blue, light", es: "Azul, claro" }, hex: "#8ca4c2", r: 140, g: 164, b: 194 },
+  { code: "550", name: { ru: "Фиолетовый, тёмный", en: "Violet, dark", es: "Violeta, oscuro" }, hex: "#684c79", r: 104, g: 76, b: 121 },
+  { code: "718", name: { ru: "Сливовый", en: "Plum", es: "Ciruela" }, hex: "#a44770", r: 164, g: 71, b: 112 },
+  { code: "3862", name: { ru: "Мокко, средний", en: "Mocha Brown, medium", es: "Marrón moca, medio" }, hex: "#a47756", r: 164, g: 119, b: 86 },
+  { code: "3866", name: { ru: "Мокко, очень светлый", en: "Mocha Brown, very light", es: "Marrón moca, muy claro" }, hex: "#f0ddc1", r: 240, g: 221, b: 193 },
 ];
 
 function clamp(value, min, max) {
@@ -458,7 +680,7 @@ function t(key, variables = {}) {
 }
 
 function formatNumber(value) {
-  return new Intl.NumberFormat(state.locale === "en" ? "en-US" : "ru-RU").format(value);
+  return new Intl.NumberFormat(LOCALE_NUMBER_FORMATS[state.locale] || "ru-RU").format(value);
 }
 
 function plural(value, one, few, many) {
@@ -471,19 +693,19 @@ function plural(value, one, few, many) {
 
 function formatUnit(value, unit) {
   const forms = UNIT_FORMS[state.locale]?.[unit] || UNIT_FORMS.ru[unit];
-  if (state.locale === "en") return value === 1 ? forms[0] : forms[1];
+  if (state.locale !== "ru") return value === 1 ? forms[0] : forms[1];
   return plural(value, forms[0], forms[1], forms[2]);
 }
 
 function formatBytes(bytes) {
   if (bytes < 1024 * 1024) {
-    return Math.max(1, Math.round(bytes / 1024)) + (state.locale === "en" ? " KB" : " КБ");
+    return Math.max(1, Math.round(bytes / 1024)) + (state.locale === "ru" ? " КБ" : " KB");
   }
-  const value = new Intl.NumberFormat(state.locale === "en" ? "en-US" : "ru-RU", {
+  const value = new Intl.NumberFormat(LOCALE_NUMBER_FORMATS[state.locale] || "ru-RU", {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   }).format(bytes / (1024 * 1024));
-  return value + (state.locale === "en" ? " MB" : " МБ");
+  return value + (state.locale === "ru" ? " МБ" : " MB");
 }
 
 function cacheStaticLocaleValues() {
@@ -524,7 +746,12 @@ function applyStaticTranslations(locale) {
     document.querySelectorAll(binding.selector).forEach((element) => {
       const key = element.dataset[binding.datasetKey];
       const fallback = staticLocaleCache.get(`${key}:${binding.suffix}`);
-      const value = locale === "en" ? EN_TRANSLATIONS[key] : fallback;
+      const translations = locale === "en"
+        ? EN_TRANSLATIONS
+        : locale === "es"
+          ? ES_TRANSLATIONS
+          : null;
+      const value = translations ? translations[key] : fallback;
       if (typeof value !== "string") return;
       if (binding.attribute) element.setAttribute(binding.attribute, value);
       else element[binding.property] = value;
@@ -534,6 +761,7 @@ function applyStaticTranslations(locale) {
 
 function getStaticTranslation(key, locale = state.locale) {
   if (locale === "en") return EN_TRANSLATIONS[key] || key;
+  if (locale === "es") return ES_TRANSLATIONS[key] || key;
   return staticLocaleCache.get(`${key}:text`)
     || staticLocaleCache.get(`${key}:content`)
     || key;
@@ -590,7 +818,7 @@ const safeSessionStorage = getSafeStorage("sessionStorage");
 const systemThemeMedia = window.matchMedia("(prefers-color-scheme: dark)");
 
 function isSupportedLocale(value) {
-  return value === "ru" || value === "en";
+  return SUPPORTED_LOCALES.includes(value);
 }
 
 function detectBrowserLocale() {
@@ -615,29 +843,45 @@ function getInitialLocale() {
 
 function getLocalizedCanonicalUrl(locale) {
   const url = new URL("https://stitchloom.antonlenev.chatgpt.site/");
-  if (locale === "en") url.searchParams.set("lang", "en");
+  if (locale !== "ru") url.searchParams.set("lang", locale);
   return url.href;
 }
 
 function buildStructuredData(locale) {
   const url = getLocalizedCanonicalUrl(locale);
-  const english = locale === "en";
-  const appDescription = english
-    ? "A browser-based generator that turns photos into cross-stitch patterns."
-    : "Браузерный генератор схем вышивки крестиком из фотографий.";
-  const featureList = english
-    ? [
-      "Square pattern cells",
-      "Palette from 2 to 256 colors",
-      "PDF, PNG, and CSV export",
-      "Local image processing",
-    ]
-    : [
-      "Квадратные клетки схемы",
-      "Палитра от 2 до 256 цветов",
-      "Экспорт в PDF, PNG и CSV",
-      "Локальная обработка изображения",
-    ];
+  const localizedStructuredCopy = {
+    ru: {
+      description: "Браузерный генератор схем вышивки крестиком из фотографий.",
+      features: [
+        "Квадратные клетки схемы",
+        "Палитра от 2 до 256 цветов",
+        "Экспорт в PDF, PNG и CSV",
+        "Локальная обработка изображения",
+      ],
+      currency: "RUB",
+    },
+    en: {
+      description: "A browser-based generator that turns photos into cross-stitch patterns.",
+      features: [
+        "Square pattern cells",
+        "Palette from 2 to 256 colors",
+        "PDF, PNG, and CSV export",
+        "Local image processing",
+      ],
+      currency: "USD",
+    },
+    es: {
+      description: "Generador en el navegador que convierte fotos en patrones de punto de cruz.",
+      features: [
+        "Celdas cuadradas",
+        "Paleta de 2 a 256 colores",
+        "Exportación a PDF, PNG y CSV",
+        "Procesamiento local de imágenes",
+      ],
+      currency: "EUR",
+    },
+  };
+  const structuredCopy = localizedStructuredCopy[locale] || localizedStructuredCopy.ru;
 
   return {
     "@context": "https://schema.org",
@@ -648,7 +892,7 @@ function buildStructuredData(locale) {
         url,
         name: "Stitchloom",
         alternateName: getStaticTranslation("meta.title", locale),
-        description: appDescription,
+        description: structuredCopy.description,
         inLanguage: locale,
       },
       {
@@ -656,17 +900,17 @@ function buildStructuredData(locale) {
         "@id": "https://stitchloom.antonlenev.chatgpt.site/#app",
         name: "Stitchloom",
         url,
-        description: appDescription,
+        description: structuredCopy.description,
         applicationCategory: "DesignApplication",
         operatingSystem: "Any",
         inLanguage: locale,
         image: "https://stitchloom.antonlenev.chatgpt.site/og.png",
         isPartOf: { "@id": "https://stitchloom.antonlenev.chatgpt.site/#website" },
-        featureList,
+        featureList: structuredCopy.features,
         offers: {
           "@type": "Offer",
           price: "0",
-          priceCurrency: english ? "USD" : "RUB",
+          priceCurrency: structuredCopy.currency,
         },
       },
       {
@@ -713,8 +957,8 @@ function persistLocale(locale) {
 
   try {
     const url = new URL(window.location.href);
-    if (locale === "en") url.searchParams.set("lang", "en");
-    else url.searchParams.delete("lang");
+    if (locale === "ru") url.searchParams.delete("lang");
+    else url.searchParams.set("lang", locale);
     history.replaceState(history.state, document.title, url);
   } catch {
     // The selected language still applies for the current page view.
@@ -733,19 +977,21 @@ function applyLocale(locale, persist = false, refresh = true) {
   const localizedUrl = getLocalizedCanonicalUrl(nextLocale);
   elements.canonicalUrl.href = localizedUrl;
   elements.ogUrl.content = localizedUrl;
-  elements.ogLocale.content = nextLocale === "en" ? "en_US" : "ru_RU";
-  elements.ogLocaleAlternate.content = nextLocale === "en" ? "ru_RU" : "en_US";
+  const alternateLocales = SUPPORTED_LOCALES.filter((localeCode) => localeCode !== nextLocale);
+  elements.ogLocale.content = LOCALE_OG_CODES[nextLocale];
+  elements.ogLocaleAlternate.content = LOCALE_OG_CODES[alternateLocales[0]];
+  elements.ogLocaleAlternateSecondary.content = LOCALE_OG_CODES[alternateLocales[1]];
   elements.structuredData.textContent = JSON.stringify(buildStructuredData(nextLocale));
-  elements.appManifest.href = nextLocale === "en"
-    ? new URL("./manifest.en.webmanifest", window.location.href).href
-    : new URL("./manifest.webmanifest", window.location.href).href;
+  elements.appManifest.href = new URL(LOCALE_MANIFESTS[nextLocale], window.location.href).href;
 
-  elements.localeToggleLabel.textContent = nextLocale === "en" ? "RU" : "EN";
-  elements.localeToggleLabel.lang = nextLocale === "en" ? "ru" : "en";
+  const nextLocaleIndex = (LOCALE_SEQUENCE.indexOf(nextLocale) + 1) % LOCALE_SEQUENCE.length;
+  const switchToLocale = LOCALE_SEQUENCE[nextLocaleIndex];
+  elements.localeToggleLabel.textContent = switchToLocale.toUpperCase();
+  elements.localeToggleLabel.lang = switchToLocale;
   elements.localeToggle.setAttribute("aria-label", t("locale.switch"));
   elements.localeToggle.title = t("locale.switch");
-  elements.brandHome.href = nextLocale === "en" && state.localeSource !== "browser"
-    ? "./?lang=en"
+  elements.brandHome.href = nextLocale !== "ru" && state.localeSource !== "browser"
+    ? `./?lang=${nextLocale}`
     : "./";
 
   if (persist) persistLocale(nextLocale);
@@ -981,6 +1227,28 @@ function buildSimplificationPrompt() {
   const width = Number(elements.sizeSelect.value || DEFAULT_GRID_WIDTH);
   const colorCount = Number(elements.colorCount.value || DEFAULT_COLOR_COUNT);
 
+  if (state.locale === "es") {
+    return [
+      "Usa la fotografía adjunta como única referencia visual.",
+      "",
+      "Transfórmala en una ilustración de pixel art limpia y simplificada, preparada para convertirla después en un patrón de punto de cruz.",
+      "",
+      "Requisitos:",
+      `- usa una resolución de trabajo de exactamente ${width} píxeles cuadrados (celdas) de ancho; calcula la altura proporcionalmente a partir de la foto original;`,
+      `- usa como máximo ${colorCount} colores sólidos claramente distinguibles;`,
+      "- conserva la silueta, la pose, la composición y los rasgos distintivos; no recortes el sujeto principal;",
+      "- combina los detalles finos, el ruido y las texturas en áreas de color grandes y legibles;",
+      "- cada píxel debe ser perfectamente cuadrado, del mismo tamaño y contener un solo color;",
+      "- usa bordes duros, sin desenfoque, transparencia, degradados, antialiasing ni tramado;",
+      "- no añadas cuadrícula, símbolos, etiquetas, texto, marco, textura de tela, cruces ni hilo bordado;",
+      "- no cambies el sujeto ni inventes detalles que no estén presentes en la foto;",
+      "- simplifica el fondo en unas pocas áreas grandes de color o en un solo color plano si no es importante;",
+      "- entrega únicamente la imagen PNG terminada. Para mostrarla, amplíala solo por un factor entero con escalado de vecino más cercano, de modo que los bordes de los píxeles permanezcan nítidos.",
+      "",
+      "El resultado debe parecer pixel art / bloques de color limpios y ser adecuado para subirlo al generador de patrones Stitchloom.",
+    ].join("\n");
+  }
+
   if (state.locale === "en") {
     return [
       "Use the attached photograph as the only visual reference.",
@@ -1125,9 +1393,9 @@ function formatPaletteSummary(paletteLength, requestedColors) {
     return `${paletteLength} ${formatUnit(paletteLength, "color")}`;
   }
 
-  return state.locale === "en"
-    ? `${paletteLength} of ${requestedColors} colors`
-    : `${paletteLength} из ${requestedColors} цветов`;
+  if (state.locale === "en") return `${paletteLength} of ${requestedColors} colors`;
+  if (state.locale === "es") return `${paletteLength} de ${requestedColors} colores`;
+  return `${paletteLength} из ${requestedColors} цветов`;
 }
 
 function schedulePatternBuild(delay = 220) {
@@ -2445,7 +2713,8 @@ elements.colorPresets.forEach((button) => {
 });
 elements.copyAiPrompt.addEventListener("click", copySimplificationPrompt);
 elements.localeToggle.addEventListener("click", () => {
-  applyLocale(state.locale === "ru" ? "en" : "ru", true);
+  const currentIndex = LOCALE_SEQUENCE.indexOf(state.locale);
+  applyLocale(LOCALE_SEQUENCE[(currentIndex + 1) % LOCALE_SEQUENCE.length], true);
 });
 window.addEventListener("languagechange", () => {
   if (state.localeSource !== "browser") return;

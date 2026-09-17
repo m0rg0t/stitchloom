@@ -18,6 +18,7 @@
     <link id="canonicalUrl" rel="canonical" href="https://stitchloom.antonlenev.chatgpt.site/" />
     <link rel="alternate" hreflang="ru" href="https://stitchloom.antonlenev.chatgpt.site/" />
     <link rel="alternate" hreflang="en" href="https://stitchloom.antonlenev.chatgpt.site/?lang=en" />
+    <link rel="alternate" hreflang="es" href="https://stitchloom.antonlenev.chatgpt.site/?lang=es" />
     <link rel="alternate" hreflang="x-default" href="https://stitchloom.antonlenev.chatgpt.site/" />
     <link
       rel="alternate"
@@ -29,6 +30,7 @@
     <meta property="og:type" content="website" />
     <meta id="ogLocale" property="og:locale" content="ru_RU" />
     <meta id="ogLocaleAlternate" property="og:locale:alternate" content="en_US" />
+    <meta id="ogLocaleAlternateSecondary" property="og:locale:alternate" content="es_ES" />
     <meta property="og:site_name" content="Stitchloom" />
     <meta data-i18n-content="meta.ogTitle" property="og:title" content="Stitchloom — фото в схему вышивки" />
     <meta
@@ -63,7 +65,7 @@
     <script>
       (() => {
         const storageKey = "stitchloom:locale:v1";
-        const supportedLocales = ["ru", "en"];
+        const supportedLocales = ["ru", "en", "es"];
         const requestedLocale = new URLSearchParams(window.location.search).get("lang");
         const detectBrowserLocale = () => {
           const languages = [
@@ -100,7 +102,9 @@
         document.documentElement.dataset.localeSource = localeSource;
 
         const manifest = document.getElementById("appManifest");
-        manifest.href = locale === "en" ? "./manifest.en.webmanifest" : "./manifest.webmanifest";
+        manifest.href = locale === "ru"
+          ? "./manifest.webmanifest"
+          : `./manifest.${locale}.webmanifest`;
       })();
     </script>
     <script>
