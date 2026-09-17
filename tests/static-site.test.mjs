@@ -27,6 +27,10 @@ for (const locale of locales) {
 const notFound = await readFile(resolve(dist, "404.html"), "utf8");
 assert.match(notFound, /id="localePicker"/);
 
+const privacy = await readFile(resolve(dist, "privacy.html"), "utf8");
+assert.match(privacy, /Политика конфиденциальности/);
+assert.match(privacy, /github\.com\/m0rg0t\/stitchloom\/issues/);
+
 for (const filename of [
   "styles.css",
   "app.js",
@@ -53,5 +57,6 @@ for (const filename of [
 
 const sitemap = await readFile(resolve(dist, "sitemap.xml"), "utf8");
 for (const locale of locales) assert.match(sitemap, new RegExp(`/${locale}/`));
+assert.match(sitemap, /\/privacy\.html/);
 
 console.log("static-site: ok");

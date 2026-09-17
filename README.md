@@ -56,6 +56,10 @@ The main branch is configured to deploy dist/ to GitHub Pages through .github/wo
 
 Both documents are also published alongside the application as `llms.txt` and `SKILL.md`.
 
+## VK catalog release pack
+
+Editable catalog artwork, exact-size screenshots, validated Russian listing copy, moderation notes, splash screens, and the catalog manifest live in `release/catalog/`. The source preflight is expected to remain blocked until the real VK App ID and a screenshot of the current app-specific catalog form are added; do not substitute a placeholder ID.
+
 ## Privacy
 
 Image decoding, sampling and palette selection happen in the browser with Canvas APIs. No application backend is required for the core flow.

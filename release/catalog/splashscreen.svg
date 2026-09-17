@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="bg" x1="90" y1="60" x2="980" y2="1860" gradientUnits="userSpaceOnUse"><stop stop-color="#222C2E"/><stop offset="1" stop-color="#101517"/></linearGradient>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#bg)"/>
+  <circle cx="960" cy="210" r="330" fill="#6671FF" opacity=".18"/>
+  <circle cx="80" cy="1740" r="410" fill="#FF6B4A" opacity=".13"/>
+  <g transform="translate(220 540) scale(.625)">
+    <rect width="1024" height="1024" fill="none"/>
+    <path d="M303 273h418l-39 481H342z" fill="#FF6B4A"/>
+    <ellipse cx="512" cy="275" rx="250" ry="91" fill="#EBC18B"/><ellipse cx="512" cy="272" rx="106" ry="37" fill="#6E4B31"/>
+    <ellipse cx="512" cy="752" rx="250" ry="91" fill="#D39C5D"/>
+    <g fill="none" stroke-linecap="round" stroke-width="34"><path d="M394 408l76 76M470 408l-76 76" stroke="#B9E8BE"/><path d="M548 565l76 76M624 565l-76 76" stroke="#6671FF"/></g>
+    <path d="M708 218L822 720" stroke="#F4EEE4" stroke-width="20" stroke-linecap="round"/>
+  </g>
+  <text x="540" y="1320" text-anchor="middle" fill="#F4EEE4" font-family="Arial, sans-serif" font-size="78" font-weight="800" letter-spacing="8">STITCHLOOM</text>
+  <text x="540" y="1404" text-anchor="middle" fill="#B9E8BE" font-family="Arial, sans-serif" font-size="34" font-weight="700">Фото в схему вышивки</text>
+</svg>

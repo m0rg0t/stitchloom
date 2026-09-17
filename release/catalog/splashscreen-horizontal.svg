@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs><linearGradient id="bg" x1="80" y1="80" x2="1840" y2="1000" gradientUnits="userSpaceOnUse"><stop stop-color="#222C2E"/><stop offset="1" stop-color="#101517"/></linearGradient></defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <circle cx="1690" cy="90" r="390" fill="#6671FF" opacity=".18"/><circle cx="70" cy="1020" r="410" fill="#FF6B4A" opacity=".13"/>
+  <g transform="translate(255 205) scale(.65)"><path d="M303 273h418l-39 481H342z" fill="#FF6B4A"/><ellipse cx="512" cy="275" rx="250" ry="91" fill="#EBC18B"/><ellipse cx="512" cy="272" rx="106" ry="37" fill="#6E4B31"/><ellipse cx="512" cy="752" rx="250" ry="91" fill="#D39C5D"/><g fill="none" stroke-linecap="round" stroke-width="34"><path d="M394 408l76 76M470 408l-76 76" stroke="#B9E8BE"/><path d="M548 565l76 76M624 565l-76 76" stroke="#6671FF"/></g><path d="M708 218L822 720" stroke="#F4EEE4" stroke-width="20" stroke-linecap="round"/></g>
+  <text x="1080" y="470" fill="#F4EEE4" font-family="Arial, sans-serif" font-size="112" font-weight="800" letter-spacing="10">STITCHLOOM</text>
+  <text x="1080" y="565" fill="#B9E8BE" font-family="Arial, sans-serif" font-size="42" font-weight="700">Фото в схему вышивки</text>
+  <text x="1080" y="640" fill="#F4EEE4" opacity=".7" font-family="Arial, sans-serif" font-size="30">Клетка за клеткой</text>
+</svg>

@@ -1,10 +1,11 @@
-const CACHE_NAME = "stitchloom-v24";
+const CACHE_NAME = "stitchloom-v25";
 const APP_SHELL = [
   "./",
   "./ru/",
   "./en/",
   "./es/",
   "./de/",
+  "./privacy.html",
   "./styles.css",
   "./app.js",
   "./vk-bridge-service.js",

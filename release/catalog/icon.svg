@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="96" y1="72" x2="930" y2="944" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#222C2E"/>
+      <stop offset="1" stop-color="#111719"/>
+    </linearGradient>
+    <linearGradient id="thread" x1="334" y1="272" x2="710" y2="777" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF8066"/>
+      <stop offset="1" stop-color="#F04D36"/>
+    </linearGradient>
+    <linearGradient id="wood" x1="280" y1="193" x2="746" y2="842" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8D8AA"/>
+      <stop offset="1" stop-color="#C99356"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="30" stdDeviation="28" flood-color="#000" flood-opacity=".34"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <circle cx="868" cy="146" r="190" fill="#6671FF" opacity=".19"/>
+  <circle cx="86" cy="920" r="240" fill="#FF6B4A" opacity=".12"/>
+  <g filter="url(#shadow)">
+    <path d="M303 273h418l-39 481H342z" fill="url(#thread)"/>
+    <path d="M318 319h390M313 372h391M309 425h392M305 478h391M301 531h390M297 584h390M293 637h389M289 690h389" fill="none" stroke="#C93E30" stroke-opacity=".34" stroke-width="14" stroke-linecap="round"/>
+    <ellipse cx="512" cy="275" rx="250" ry="91" fill="url(#wood)"/>
+    <ellipse cx="512" cy="272" rx="106" ry="37" fill="#6E4B31"/>
+    <ellipse cx="512" cy="752" rx="250" ry="91" fill="url(#wood)"/>
+    <ellipse cx="512" cy="745" rx="106" ry="37" fill="#765035" opacity=".7"/>
+  </g>
+  <g fill="none" stroke-linecap="round" stroke-width="34">
+    <path d="M394 408l76 76M470 408l-76 76" stroke="#B9E8BE"/>
+    <path d="M548 565l76 76M624 565l-76 76" stroke="#6671FF"/>
+    <path d="M418 593l55 55M473 593l-55 55" stroke="#FFF7EC"/>
+  </g>
+  <path d="M708 218L822 720" stroke="#F4EEE4" stroke-width="20" stroke-linecap="round"/>
+  <path d="M708 218l-15 60 42-10z" fill="#F4EEE4"/>
+  <path d="M822 720c53 22 76 71 55 116-21 44-83 50-120 18" fill="none" stroke="#FF6B4A" stroke-width="25" stroke-linecap="round"/>
+</svg>
