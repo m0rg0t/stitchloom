@@ -1657,6 +1657,27 @@ h1 em {
   cursor: wait;
 }
 
+.secondary-button--vk-story {
+  display: none;
+  border-color: #005bd1;
+  color: #ffffff;
+  background: #005bd1;
+}
+
+html[data-vk-mode="true"] .secondary-button--vk-story {
+  display: inline-flex;
+}
+
+.secondary-button--vk-story:hover:not(:disabled) {
+  border-color: #004cad;
+  color: #ffffff;
+  background: #004cad;
+}
+
+.secondary-button--vk-story.is-busy {
+  cursor: wait;
+}
+
 .export-status {
   min-height: 20px;
   margin: -16px 0 24px;

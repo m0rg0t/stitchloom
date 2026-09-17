@@ -1,4 +1,4 @@
-const CACHE_NAME = "stitchloom-v23";
+const CACHE_NAME = "stitchloom-v24";
 const APP_SHELL = [
   "./",
   "./ru/",

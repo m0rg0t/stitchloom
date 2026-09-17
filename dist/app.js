@@ -10,6 +10,7 @@ import {
 import {
   initVkMode,
   showVkInterstitialAfterExport,
+  showVkStory,
   vkBridgeService,
   vkLaunchContext,
 } from "./vk-bridge-service.js";
@@ -151,6 +152,8 @@ const elements = {
   downloadPng: $("downloadPng"),
   downloadCsv: $("downloadCsv"),
   downloadProject: $("downloadProject"),
+  shareStory: $("shareStory"),
+  shareStoryLabel: $("shareStoryLabel"),
   exportStatus: $("exportStatus"),
   mobileResultBar: $("mobileResultBar"),
   mobileResultSummary: $("mobileResultSummary"),
@@ -384,6 +387,7 @@ const EN_TRANSLATIONS = {
   "insights.finishedSize": "Finished size",
   "insights.materials": "Materials and time",
   "result.downloadProject": "Download .stitchloom",
+  "result.shareStory": "Share to VK Story",
 };
 
 const ES_TRANSLATIONS = {
@@ -564,6 +568,7 @@ const ES_TRANSLATIONS = {
   "insights.finishedSize": "Tamaño final",
   "insights.materials": "Materiales y tiempo",
   "result.downloadProject": "Descargar .stitchloom",
+  "result.shareStory": "Compartir en una historia de VK",
 };
 
 const DE_TRANSLATIONS = {
@@ -744,6 +749,7 @@ const DE_TRANSLATIONS = {
   "insights.finishedSize": "Fertige Größe",
   "insights.materials": "Material und Zeit",
   "result.downloadProject": ".stitchloom herunterladen",
+  "result.shareStory": "In einer VK-Story teilen",
 };
 
 const UI_MESSAGES = {
@@ -831,6 +837,12 @@ const UI_MESSAGES = {
     "pdf.keySection": "КЛЮЧ {current} / {total}",
     "pdf.legendTitle": "Цвета и символы",
     "pdf.legendNote": "Оттенки на экране приблизительные — сверяйтесь с физическим каталогом мулине.",
+    "story.button": "В историю VK",
+    "story.preparingButton": "Готовлю…",
+    "story.preparing": "Готовлю вертикальную карточку для истории…",
+    "story.opened": "Редактор истории открыт — добавьте текст или стикеры и опубликуйте.",
+    "story.cancelled": "Редактор истории не открылся или публикация была отменена.",
+    "story.failed": "Не удалось подготовить историю. Попробуйте ещё раз.",
   },
   en: {
     "theme.auto": "Auto",
@@ -916,6 +928,12 @@ const UI_MESSAGES = {
     "pdf.keySection": "KEY {current} / {total}",
     "pdf.legendTitle": "Colors and symbols",
     "pdf.legendNote": "On-screen shades are approximate — check them against a physical thread chart.",
+    "story.button": "Share to VK Story",
+    "story.preparingButton": "Preparing…",
+    "story.preparing": "Preparing a vertical story card…",
+    "story.opened": "The story editor is open — add text or stickers and publish when ready.",
+    "story.cancelled": "The story editor did not open or sharing was cancelled.",
+    "story.failed": "The story could not be prepared. Try again.",
   },
   es: {
     "theme.auto": "Automático",
@@ -1001,6 +1019,12 @@ const UI_MESSAGES = {
     "pdf.keySection": "CLAVE {current} / {total}",
     "pdf.legendTitle": "Colores y símbolos",
     "pdf.legendNote": "Los tonos en pantalla son aproximados: compáralos con una carta física de hilos.",
+    "story.button": "Compartir en una historia de VK",
+    "story.preparingButton": "Preparando…",
+    "story.preparing": "Preparando una tarjeta vertical para la historia…",
+    "story.opened": "El editor de historias está abierto; añade texto o stickers y publica cuando quieras.",
+    "story.cancelled": "El editor de historias no se abrió o se canceló el uso compartido.",
+    "story.failed": "No se pudo preparar la historia. Inténtalo de nuevo.",
   },
   de: {
     "theme.auto": "Automatisch",
@@ -1086,6 +1110,12 @@ const UI_MESSAGES = {
     "pdf.keySection": "LEGENDE {current} / {total}",
     "pdf.legendTitle": "Farben und Symbole",
     "pdf.legendNote": "Farbtöne auf dem Bildschirm sind Näherungswerte — vergleiche sie mit einer physischen Garnfarbkarte.",
+    "story.button": "In einer VK-Story teilen",
+    "story.preparingButton": "Wird vorbereitet…",
+    "story.preparing": "Vertikale Story-Karte wird vorbereitet…",
+    "story.opened": "Der Story-Editor ist geöffnet — Text oder Sticker ergänzen und veröffentlichen.",
+    "story.cancelled": "Der Story-Editor wurde nicht geöffnet oder das Teilen wurde abgebrochen.",
+    "story.failed": "Die Story konnte nicht vorbereitet werden. Bitte erneut versuchen.",
   },
 };
 
@@ -2518,6 +2548,7 @@ function renderPattern() {
   elements.downloadPng.disabled = !hasPattern;
   elements.downloadCsv.disabled = !hasPattern;
   elements.downloadProject.disabled = !hasPattern;
+  elements.shareStory.disabled = !hasPattern || elements.shareStory.classList.contains("is-busy");
   elements.saveProject.disabled = !hasPattern;
   updateZoomControls();
 
@@ -3523,6 +3554,96 @@ async function downloadPdf() {
   }
 }
 
+function createStoryImage() {
+  const storyCanvas = document.createElement("canvas");
+  storyCanvas.width = 1080;
+  storyCanvas.height = 1920;
+  const context = storyCanvas.getContext("2d");
+  const pattern = state.pattern;
+
+  const background = context.createLinearGradient(0, 0, storyCanvas.width, storyCanvas.height);
+  background.addColorStop(0, "#111719");
+  background.addColorStop(0.58, "#1f292a");
+  background.addColorStop(1, "#101415");
+  context.fillStyle = background;
+  context.fillRect(0, 0, storyCanvas.width, storyCanvas.height);
+
+  context.fillStyle = "rgba(102, 113, 255, 0.22)";
+  context.beginPath();
+  context.arc(930, 160, 310, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = "rgba(255, 107, 74, 0.15)";
+  context.beginPath();
+  context.arc(90, 1760, 360, 0, Math.PI * 2);
+  context.fill();
+
+  context.fillStyle = "#f4eee4";
+  context.font = "800 44px Inter, system-ui, sans-serif";
+  context.letterSpacing = "7px";
+  context.fillText("STITCHLOOM", 86, 132);
+  context.letterSpacing = "0px";
+  context.fillStyle = "#ff6b4a";
+  context.font = "800 26px Inter, system-ui, sans-serif";
+  context.fillText("МОЯ СХЕМА ВЫШИВКИ", 86, 230);
+  context.fillStyle = "#f4eee4";
+  context.font = "800 74px Inter, system-ui, sans-serif";
+  context.fillText("Клетка за клеткой.", 86, 330);
+
+  const patternCanvas = document.createElement("canvas");
+  const cellSize = Math.max(2, Math.floor(Math.min(850 / pattern.width, 1050 / pattern.height)));
+  drawPatternToCanvas(patternCanvas, cellSize, "pattern", 1);
+  const scale = Math.min(850 / patternCanvas.width, 1050 / patternCanvas.height);
+  const drawWidth = Math.round(patternCanvas.width * scale);
+  const drawHeight = Math.round(patternCanvas.height * scale);
+  const drawX = Math.round((storyCanvas.width - drawWidth) / 2);
+  const drawY = 430 + Math.round((1050 - drawHeight) / 2);
+
+  context.save();
+  context.shadowColor = "rgba(0, 0, 0, 0.38)";
+  context.shadowBlur = 38;
+  context.shadowOffsetY = 18;
+  context.fillStyle = "#fffaf1";
+  context.fillRect(drawX - 24, drawY - 24, drawWidth + 48, drawHeight + 48);
+  context.restore();
+  context.imageSmoothingEnabled = false;
+  context.drawImage(patternCanvas, drawX, drawY, drawWidth, drawHeight);
+
+  context.fillStyle = "#f4eee4";
+  context.font = "800 42px Inter, system-ui, sans-serif";
+  context.fillText(`${pattern.width} × ${pattern.height} клеток`, 86, 1635);
+  context.fillStyle = "#b9e8be";
+  context.font = "700 30px Inter, system-ui, sans-serif";
+  context.fillText(`${pattern.palette.length} цветов · ${formatNumber(pattern.totalStitches)} крестиков`, 86, 1695);
+  context.fillStyle = "rgba(244, 238, 228, 0.72)";
+  context.font = "650 25px Inter, system-ui, sans-serif";
+  context.fillText("СОЗДАНО ЛОКАЛЬНО В STITCHLOOM", 86, 1810);
+
+  return storyCanvas.toDataURL("image/jpeg", 0.9);
+}
+
+async function sharePatternToStory() {
+  if (!state.pattern || elements.shareStory.classList.contains("is-busy")) return;
+  elements.shareStory.disabled = true;
+  elements.shareStory.classList.add("is-busy");
+  elements.shareStory.setAttribute("aria-busy", "true");
+  elements.shareStoryLabel.textContent = t("story.preparingButton");
+  setExportStatus(t("story.preparing"));
+  await nextPaint();
+
+  try {
+    const opened = await showVkStory(createStoryImage());
+    setExportStatus(t(opened ? "story.opened" : "story.cancelled"));
+  } catch (error) {
+    console.error(error);
+    setExportStatus(t("story.failed"), true);
+  } finally {
+    elements.shareStory.classList.remove("is-busy");
+    elements.shareStory.removeAttribute("aria-busy");
+    elements.shareStoryLabel.textContent = t("story.button");
+    elements.shareStory.disabled = !state.pattern;
+  }
+}
+
 function downloadPng() {
   if (!state.pattern) return;
   const pattern = state.pattern;
@@ -3941,6 +4062,7 @@ elements.viewButtons.forEach((button) => {
 elements.downloadPng.addEventListener("click", downloadPng);
 elements.downloadCsv.addEventListener("click", downloadCsv);
 elements.downloadPdf.addEventListener("click", downloadPdf);
+elements.shareStory.addEventListener("click", sharePatternToStory);
 elements.mobileResultBar.addEventListener("click", () => {
   elements.patternPanel.scrollIntoView({
     behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",

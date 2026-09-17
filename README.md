@@ -11,6 +11,7 @@ Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Ea
 - gives first-time visitors a four-step onboarding tour and lets them reopen it from the header;
 - provides complete Russian, English, Spanish, and German interfaces, localized AI prompts and PDF labels, automatically follows the browser's first supported language, and saves a manual override on the device;
 - switches to a VK Mini Apps mode when complete VK launch parameters are present: the interface is fixed to Russian, the language picker is hidden, VK Bridge is initialized, a bottom banner uses resize layout, and the first export in a session may show an interstitial ad when inventory is available;
+- lets VK Mini Apps users turn the current pattern into a branded 1080 × 1920 card generated locally and open it in the native VK Story editor;
 - supports automatic, light and dark interface themes; the automatic mode follows system changes without a reload;
 - offers five pattern widths from 36 to 110 cells;
 - derives the height from the original image proportions;
@@ -39,7 +40,7 @@ The project is intentionally dependency-free. Serve the folder with any static f
 
 Then open http://localhost:4173.
 
-To preview the VK-specific interface and deterministic Bridge mock locally, open `http://localhost:4173/?vk_test=1`. Add `&vk_mock=ads-unavailable` to verify that unavailable advertising fails open without blocking the editor or exports. The test switch is ignored on non-local hosts.
+To preview the VK-specific interface and deterministic Bridge mock locally, open `http://localhost:4173/?vk_test=1`. Add `&vk_mock=ads-unavailable` to verify that unavailable advertising fails open without blocking the editor or exports, or `&vk_mock=story-denied` to exercise a cancelled Story share. The test switch is ignored on non-local hosts.
 
 ## Publishing
 

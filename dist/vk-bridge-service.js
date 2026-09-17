@@ -13,6 +13,7 @@ export function getVkLaunchContext(locationLike = {}) {
   return {
     enabled: isTestMode || hasLaunchParams,
     isTestMode,
+    appId: params.get("vk_app_id") || "",
     platform: params.get("vk_platform") || (isTestMode ? "mobile_web" : ""),
   };
 }
@@ -109,7 +110,28 @@ export function createVkBridgeService({
     return Boolean(result?.result);
   }
 
-  return { init, showBannerAd, showInterstitialAfterExport, hideBannerAd };
+  async function showStory({ blob, attachmentUrl } = {}) {
+    if (!context?.enabled || typeof blob !== "string" || !blob.startsWith("data:image/")) {
+      return false;
+    }
+    if (!await init()) return false;
+    const params = {
+      background_type: "image",
+      blob,
+      locked: true,
+    };
+    if (attachmentUrl) {
+      params.attachment = {
+        text: "open",
+        type: "url",
+        url: attachmentUrl,
+      };
+    }
+    const result = await send("VKWebAppShowStoryBox", params, 30000);
+    return Boolean(result?.result);
+  }
+
+  return { init, showBannerAd, showInterstitialAfterExport, hideBannerAd, showStory };
 }
 
 function createLocalMockBridge(windowRef) {
@@ -123,9 +145,13 @@ function createLocalMockBridge(windowRef) {
       if (scenario === "ads-unavailable" && (method.includes("Ads") || method.includes("BannerAd"))) {
         throw new Error("Ads are unavailable in this mock scenario");
       }
+      if (scenario === "story-denied" && method === "VKWebAppShowStoryBox") {
+        throw new Error("User denied story sharing");
+      }
       if (method === "VKWebAppShowBannerAd" || method === "VKWebAppCheckNativeAds") {
         return { result: true };
       }
+      if (method === "VKWebAppShowStoryBox") return { result: true };
       if (method === "VKWebAppHideBannerAd") return { result: true };
       return {};
     },
@@ -163,7 +189,7 @@ const browserDocument = typeof document === "undefined" ? null : document;
 
 export const vkLaunchContext = browserWindow
   ? getVkLaunchContext(browserWindow.location)
-  : { enabled: false, isTestMode: false, platform: "" };
+  : { enabled: false, isTestMode: false, appId: "", platform: "" };
 
 export const vkBridgeService = createVkBridgeService({
   context: vkLaunchContext,
@@ -187,4 +213,11 @@ export async function initVkMode() {
 
 export function showVkInterstitialAfterExport() {
   return vkBridgeService.showInterstitialAfterExport();
+}
+
+export function showVkStory(blob) {
+  const attachmentUrl = vkLaunchContext.appId
+    ? `https://vk.com/app${encodeURIComponent(vkLaunchContext.appId)}`
+    : "";
+  return vkBridgeService.showStory({ blob, attachmentUrl });
 }
