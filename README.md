@@ -10,6 +10,7 @@ Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Ea
 - keeps the image in the browser and never uploads it to a server;
 - offers five pattern widths from 36 to 110 cells;
 - derives the height from the original image proportions;
+- keeps every embroidery cell strictly square (1:1) in the preview and PNG export;
 - reduces the result to a selectable 6–24 color palette;
 - shows a color-and-symbol key with stitch counts;
 - exports the current pattern as PNG or a cell-by-cell CSV.

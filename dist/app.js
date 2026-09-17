@@ -243,6 +243,7 @@ function prepareCanvas(canvas, width, height, pixelRatio) {
   canvas.height = Math.max(1, Math.floor(height * ratio));
   canvas.style.aspectRatio = width + " / " + height;
   canvas.style.width = "100%";
+  canvas.style.height = "auto";
   canvas.style.maxWidth = "100%";
   const context = canvas.getContext("2d");
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
