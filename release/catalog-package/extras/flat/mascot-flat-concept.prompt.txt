@@ -1,0 +1,11 @@
+Use case: logo-brand
+Asset type: alternate VK Mini App icon master, intended for easy manual conversion to clean SVG
+Primary request: Redesign the referenced Stitchloom thread-spool mascot as a radically simplified flat vector-style character while preserving its identity: coral thread spool body, beige wooden rims, big friendly eyes, small smiling mouth, dark arms and legs, one hand holding a needle, one simple looping coral thread, and a few cross-stitch X marks.
+Composition/framing: centered single mascot, bold readable silhouette filling about 72% of a full square canvas, generous safe margin, front three-quarter view, no cropping.
+Scene/backdrop: full opaque square background in deep navy/teal; do not round or mask the outer canvas.
+Style/medium: crisp geometric vector illustration, broad shapes, clean smooth edges, icon-ready. No realistic rendering.
+Color palette: strictly limited to 6–8 flat colors: deep navy, teal, coral red-orange, sand beige, cream white, dark charcoal, mint, periwinkle.
+Shading constraints: no texture, no material grain, no glow, no blur, no soft shadows, no continuous gradients. For each object use one base color and at most one or two additional shadow/highlight color regions, separated by hard clean edges. Maximum two color transitions per object.
+Detail constraints: minimize tiny detail and linework; cross-stitches must remain readable at 64 px; needle must be thick enough to remain visible; keep the thread loop simple.
+Text: none.
+Avoid: photorealism, 3D, yarn texture, wood grain, fuzzy surfaces, soft lighting, gradients, complex highlights, background vignette, watermark, lettering, transparent or rounded outer corners.

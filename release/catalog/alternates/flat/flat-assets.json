@@ -1,0 +1,35 @@
+{
+  "name": "Stitchloom flat mascot alternative",
+  "status": "alternative-not-active",
+  "vectorMaster": "mascot-flat.svg",
+  "iconMaster": "icon-flat-master.svg",
+  "iconSizes": [1024, 576, 512, 256, 192, 96, 64],
+  "catalogSnippet": {
+    "width": 1120,
+    "height": 630,
+    "source": "catalog-snippet-flat-1120x630.source.svg",
+    "output": "catalog-snippet-flat-1120x630.png",
+    "usesRealUi": true
+  },
+  "splashscreens": [
+    {
+      "width": 1080,
+      "height": 1920,
+      "source": "splashscreen-flat-portrait.svg",
+      "output": "splashscreen-flat-1080x1920.png"
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "source": "splashscreen-flat-landscape.svg",
+      "output": "splashscreen-flat-1920x1080.png"
+    }
+  ],
+  "constraints": {
+    "gradients": 0,
+    "softShadows": false,
+    "textures": false,
+    "maximumHardColorTransitionsPerObject": 2,
+    "outerIconCornersPreRounded": false
+  }
+}

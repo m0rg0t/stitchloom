@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <rect width="1080" height="1920" fill="#0E2B3B"/>
+  <circle cx="1008" cy="270" r="260" fill="#182E60"/>
+  <path d="M0 1450L470 1920H0Z" fill="#173E4B"/>
+  <image x="125" y="400" width="830" height="830" href="mascot-flat.svg" xlink:href="mascot-flat.svg"/>
+  <text x="540" y="1370" text-anchor="middle" fill="#FFF8EB" font-family="Arial, sans-serif" font-size="106" font-weight="800" letter-spacing="8">STITCHLOOM</text>
+  <text x="540" y="1458" text-anchor="middle" fill="#FF8069" font-family="Arial, sans-serif" font-size="42" font-weight="700">Фото в схему вышивки</text>
+</svg>

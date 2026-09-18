@@ -7,6 +7,7 @@ Target application: [VK App 54777468](https://vk.com/app54777468).
 - `stitchloom-vk-build.zip` — current static hosting package. `index.html` is at the archive root; size is about 2.3 MB; no audio or video files are included.
 - `stitchloom-vk-catalog-54777468.zip` — portable catalog package with icon, snippet, four screenshots, copy, evidence, editable sources, 1024 px icon, and portrait/landscape splash screens.
 - `catalog-package/` — unpacked catalog upload source. Its deterministic catalog preflight passes for app `54777468`.
+- `catalog/alternates/flat/` — optional vector-native mascot set with flat icons at 64–1024 px, a 1120×630 catalog snippet, and portrait/landscape splashscreens. It is included as an alternative and does not replace the active 3D identity.
 
 ## Deploy tool
 

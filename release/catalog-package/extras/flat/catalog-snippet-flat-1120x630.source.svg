@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1120" height="630" viewBox="0 0 1120 630">
+  <defs><clipPath id="screen"><rect x="744" y="18" width="350" height="594" rx="30"/></clipPath></defs>
+  <rect width="1120" height="630" fill="#0E2B3B"/>
+  <path d="M0 402L228 630H0Z" fill="#173E4B"/>
+  <circle cx="1090" cy="18" r="226" fill="#182E60"/>
+  <image x="62" y="58" width="104" height="104" href="icon-flat-576.png" xlink:href="icon-flat-576.png"/>
+  <text x="190" y="105" fill="#FFF8EB" font-family="Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="4">STITCHLOOM</text>
+  <text x="62" y="254" fill="#FFF8EB" font-family="Arial, sans-serif" font-size="64" font-weight="800">Фото в схему</text>
+  <text x="62" y="325" fill="#FFF8EB" font-family="Arial, sans-serif" font-size="64" font-weight="800">вышивки</text>
+  <text x="62" y="395" fill="#FF8069" font-family="Arial, sans-serif" font-size="64" font-weight="800">клетка за клеткой</text>
+  <text x="62" y="479" fill="#C8D5D4" font-family="Arial, sans-serif" font-size="27">Квадратная сетка, символы, цветовой ключ</text>
+  <text x="62" y="519" fill="#C8D5D4" font-family="Arial, sans-serif" font-size="27">и готовый PDF — прямо на вашем устройстве</text>
+  <rect x="732" y="6" width="374" height="618" rx="42" fill="#FFF8EB"/>
+  <rect x="738" y="12" width="362" height="606" rx="36" fill="#E8AF6A"/>
+  <image x="744" y="18" width="350" height="700" preserveAspectRatio="xMidYMin meet" clip-path="url(#screen)" href="content/snippet-result-crop.png" xlink:href="content/snippet-result-crop.png"/>
+</svg>
