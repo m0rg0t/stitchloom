@@ -42,7 +42,10 @@
       "realUiReviewed": true,
       "privacyReviewed": true
     },
-    "lottie": { "required": false }
+    "lottie": {
+      "required": true,
+      "path": "alternates/flat/icon-animation-flat.json"
+    }
   },
   "copy": { "path": "catalog-copy.json" },
   "links": { "privacyPolicy": "https://stitchloom.antonlenev.chatgpt.site/privacy.html" },

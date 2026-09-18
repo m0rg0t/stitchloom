@@ -68,7 +68,8 @@
       "privacyReviewed": true
     },
     "lottie": {
-      "required": false
+      "required": true,
+      "path": "icon-animation.json"
     }
   },
   "copy": {

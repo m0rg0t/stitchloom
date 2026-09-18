@@ -17,6 +17,11 @@ from it rather than redrawn. The snippet uses the included real current
 application capture at `content/snippet-result-crop.png`, copied from
 `release/catalog/sources/snippet-result-crop.png`.
 
+`icon-animation-flat.json` is the 96×96, three-second Lottie launch animation.
+The needle swings, the character blinks, and the cross-stitches pulse; every
+animated property returns to its frame-zero value for a seamless loop.
+Regenerate it with `node build-lottie.mjs`.
+
 The image-generation concept and exact prompt are retained as design evidence,
 but the shipping alternative is the deterministic SVG, not the generated
 raster.

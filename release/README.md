@@ -8,6 +8,7 @@ Target application: [VK App 54777468](https://vk.com/app54777468).
 - `stitchloom-vk-catalog-54777468.zip` — portable catalog package with icon, snippet, four screenshots, copy, evidence, editable sources, 1024 px icon, and portrait/landscape splash screens.
 - `catalog-package/` — unpacked catalog upload source. Its deterministic catalog preflight passes for app `54777468`.
 - `catalog/alternates/flat/` — optional vector-native mascot set with flat icons at 64–1024 px, a 1120×630 catalog snippet, and portrait/landscape splashscreens. It is included as an alternative and does not replace the active 3D identity.
+- `catalog/alternates/flat/icon-animation-flat.json` — validated 96×96 Lottie launch icon derived from the flat SVG mascot; 3 seconds at 30 fps and under the 24 KB VK limit.
 
 ## Deploy tool
 

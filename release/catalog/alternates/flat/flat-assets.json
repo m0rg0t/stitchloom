@@ -4,6 +4,14 @@
   "vectorMaster": "mascot-flat.svg",
   "iconMaster": "icon-flat-master.svg",
   "iconSizes": [1024, 576, 512, 256, 192, 96, 64],
+  "lottie": {
+    "width": 96,
+    "height": 96,
+    "fps": 30,
+    "durationSeconds": 3,
+    "file": "icon-animation-flat.json",
+    "loop": true
+  },
   "catalogSnippet": {
     "width": 1120,
     "height": 630,
