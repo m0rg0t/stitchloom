@@ -1,0 +1,10 @@
+.git
+.github
+node_modules
+release
+build.zip
+npm-debug.log*
+*.md
+!SKILL.md
+!llms.txt
+

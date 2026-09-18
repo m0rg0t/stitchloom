@@ -49,6 +49,13 @@ The main branch is configured to deploy dist/ to GitHub Pages through .github/wo
 - Live demo on GitHub Pages: https://m0rg0t.github.io/stitchloom/
 - Public ChatGPT Site: https://stitchloom.antonlenev.chatgpt.site
 
+## Coolify / FirstVDS deployment
+
+The production container is static: Node.js is used only in the Docker build
+stage, while Nginx serves the generated `dist/` directory at runtime. Coolify
+deploys the public `main` branch with the repository `Dockerfile`, exposes port
+`80`, and checks `/healthz`. Auto-deploy remains enabled for future pushes.
+
 ## AI-readable documentation
 
 - `llms.txt` gives language models a compact map of the product, source files, algorithms, privacy boundary and non-negotiable constraints.
