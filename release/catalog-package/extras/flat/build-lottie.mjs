@@ -11,7 +11,7 @@ const point = (x, y) => [round(x * UNIT - 3.5), round(y * UNIT - 2)];
 const size = (x, y) => [round(x * UNIT), round(y * UNIT)];
 const rgb = (hex) => [...hex.match(/\w\w/g).map((v) => round(parseInt(v, 16) / 255)), 1];
 const C = Object.fromEntries(Object.entries({
-  background: '6FB8B0', backgroundAccent: '4A5FA7',
+  background: '6FB8B0',
   dark: '202A47', highlight: '313B5E', pupil: '18233E',
   coral: 'FF614F', coralShadow: 'DE3E3A', band: 'E84940', tongue: 'FF8069',
   sand: 'FFD797', sandShadow: 'E8AF6A', woodEdge: 'DDA35F',
@@ -147,6 +147,11 @@ const layers = [
   ]),
 
   shapeLayer(5, 'Coral spool and wooden rims — SVG proportions', [
+    // The lower rim sits behind the wound thread: the spool body hides its
+    // upper half and leaves only the front/lower wooden lip visible.
+    paintedPath('Bottom rim edge', 'M275 752C314 712 391 696 511 696C631 696 708 712 747 752V804C715 861 627 885 511 885C395 885 307 861 275 804Z', C.woodEdge),
+    paintedEllipse('Bottom wooden surface', 511, 758, 236, 76, C.sand),
+    paintedPath('Bottom rim hard shadow', 'M276 758C309 798 396 815 511 815C626 815 713 798 746 758V802C714 850 627 870 511 870C395 870 308 850 276 802Z', C.sandShadow),
     paintedPath('Rounded tapered spool', 'M289 248C282 368 291 633 315 773C377 820 645 820 707 773C731 633 740 368 733 248Z', C.coral),
     paintedPath('Hard side shadow', 'M650 259C687 380 681 650 646 786C680 781 700 772 707 763C731 625 740 371 733 248Z', C.coralShadow),
     paintedPath('Upper curved thread band', 'M297 356C403 393 583 385 724 333L722 383C573 430 410 434 299 401Z', C.band),
@@ -157,9 +162,6 @@ const layers = [
     paintedPath('Top rim hard shadow', 'M241 224C260 267 367 296 511 296C655 296 762 267 781 224V274C748 327 654 346 511 346C368 346 274 327 241 274Z', C.sandShadow),
     paintedEllipse('Spool hole bevel', 511, 215, 104, 38, C.brown),
     paintedEllipse('Spool hole interior', 511, 205, 83, 23, C.brownShadow),
-    paintedPath('Bottom rim edge', 'M275 752C314 712 391 696 511 696C631 696 708 712 747 752V804C715 861 627 885 511 885C395 885 307 861 275 804Z', C.woodEdge),
-    paintedEllipse('Bottom wooden surface', 511, 758, 236, 76, C.sand),
-    paintedPath('Bottom rim hard shadow', 'M276 758C309 798 396 815 511 815C626 815 713 798 746 758V802C714 850 627 870 511 870C395 870 308 850 276 802Z', C.sandShadow),
   ]),
 
   shapeLayer(6, 'Flowing thread and grounded shoes', [
@@ -176,9 +178,6 @@ const layers = [
   shapeLayer(7, 'Opaque brand background', [
     group('Full canvas', [
       { ty: 'rc', d: 1, p: fixed([48, 48]), s: fixed([96, 96]), r: fixed(0) }, fill(C.background),
-    ]),
-    group('Quiet brand accent', [
-      { ty: 'el', d: 1, p: fixed([87, 11]), s: fixed([34, 34]) }, fill(C.backgroundAccent),
     ]),
   ]),
 ];
