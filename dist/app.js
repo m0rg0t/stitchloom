@@ -1365,7 +1365,7 @@ function getInitialLocale() {
 }
 
 function getLocalizedCanonicalUrl(locale) {
-  return `https://stitchloom.antonlenev.chatgpt.site/${locale}/`;
+  return `https://stitchloom.ru/${locale}/`;
 }
 
 function getLocalizedAppPath(locale) {
@@ -1426,7 +1426,7 @@ function buildStructuredData(locale) {
     "@graph": [
       {
         "@type": "WebSite",
-        "@id": "https://stitchloom.antonlenev.chatgpt.site/#website",
+        "@id": "https://stitchloom.ru/#website",
         url,
         name: "Stitchloom",
         alternateName: getStaticTranslation("meta.title", locale),
@@ -1435,15 +1435,15 @@ function buildStructuredData(locale) {
       },
       {
         "@type": "WebApplication",
-        "@id": "https://stitchloom.antonlenev.chatgpt.site/#app",
+        "@id": "https://stitchloom.ru/#app",
         name: "Stitchloom",
         url,
         description: structuredCopy.description,
         applicationCategory: "DesignApplication",
         operatingSystem: "Any",
         inLanguage: locale,
-        image: "https://stitchloom.antonlenev.chatgpt.site/og.png",
-        isPartOf: { "@id": "https://stitchloom.antonlenev.chatgpt.site/#website" },
+        image: "https://stitchloom.ru/og.png",
+        isPartOf: { "@id": "https://stitchloom.ru/#website" },
         featureList: structuredCopy.features,
         offers: {
           "@type": "Offer",
@@ -1453,7 +1453,7 @@ function buildStructuredData(locale) {
       },
       {
         "@type": "FAQPage",
-        "@id": "https://stitchloom.antonlenev.chatgpt.site/#faq",
+        "@id": "https://stitchloom.ru/#faq",
         inLanguage: locale,
         mainEntity: [
           {

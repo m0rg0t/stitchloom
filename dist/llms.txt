@@ -4,10 +4,10 @@
 
 ## Canonical links
 
-- [Application](https://stitchloom.antonlenev.chatgpt.site/)
+- [Application](https://stitchloom.ru/)
 - [GitHub Pages mirror](https://m0rg0t.github.io/stitchloom/)
 - [Source repository](https://github.com/m0rg0t/stitchloom)
-- [Implementation skill](https://stitchloom.antonlenev.chatgpt.site/SKILL.md)
+- [Implementation skill](https://stitchloom.ru/SKILL.md)
 
 ## Product behavior
 

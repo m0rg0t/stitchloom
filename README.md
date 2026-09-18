@@ -44,10 +44,14 @@ To preview the VK-specific interface and deterministic Bridge mock locally, open
 
 ## Publishing
 
-The main branch is configured to deploy dist/ to GitHub Pages through .github/workflows/deploy-pages.yml. The same static output can be deployed to ChatGPT Sites.
+The primary production site is deployed to FirstVDS through Coolify. The main
+branch also deploys `dist/` to GitHub Pages through
+`.github/workflows/deploy-pages.yml`, and the same static output can be
+published to ChatGPT Sites as a mirror.
 
-- Live demo on GitHub Pages: https://m0rg0t.github.io/stitchloom/
-- Public ChatGPT Site: https://stitchloom.antonlenev.chatgpt.site
+- Primary site: https://stitchloom.ru/
+- GitHub Pages mirror: https://m0rg0t.github.io/stitchloom/
+- ChatGPT Sites mirror: https://stitchloom.antonlenev.chatgpt.site/
 
 ## Coolify / FirstVDS deployment
 

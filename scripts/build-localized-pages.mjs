@@ -27,7 +27,7 @@ const pages = {
 };
 
 for (const [locale, copy] of Object.entries(pages)) {
-  const canonical = `https://stitchloom.antonlenev.chatgpt.site/${locale}/`;
+  const canonical = `https://stitchloom.ru/${locale}/`;
   let html = source
     .replace(
       /<html lang="ru" data-locale="ru"/,
