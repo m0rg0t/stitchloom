@@ -11,7 +11,7 @@ const point = (x, y) => [round(x * UNIT - 3.5), round(y * UNIT - 2)];
 const size = (x, y) => [round(x * UNIT), round(y * UNIT)];
 const rgb = (hex) => [...hex.match(/\w\w/g).map((v) => round(parseInt(v, 16) / 255)), 1];
 const C = Object.fromEntries(Object.entries({
-  background: '0E2B3B', backgroundAccent: '182E60',
+  background: '6FB8B0', backgroundAccent: '4A5FA7',
   dark: '202A47', highlight: '313B5E', pupil: '18233E',
   coral: 'FF614F', coralShadow: 'DE3E3A', band: 'E84940', tongue: 'FF8069',
   sand: 'FFD797', sandShadow: 'E8AF6A', woodEdge: 'DDA35F',
