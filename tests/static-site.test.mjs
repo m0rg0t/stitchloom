@@ -7,6 +7,8 @@ const dist = resolve(root, "dist");
 const locales = ["ru", "en", "es", "de"];
 const publicOrigin = "https://stitchloom.ru";
 const index = await readFile(resolve(dist, "index.html"), "utf8");
+const app = await readFile(resolve(dist, "app.js"), "utf8");
+const styles = await readFile(resolve(dist, "styles.css"), "utf8");
 assert.match(index, new RegExp(`rel="canonical" href="${publicOrigin}/"`));
 assert.match(index, new RegExp(`property="og:url" content="${publicOrigin}/"`));
 assert.doesNotMatch(index, /stitchloom\.antonlenev\.chatgpt\.site/);
@@ -14,6 +16,12 @@ assert.match(index, /id="localePicker"/);
 assert.match(index, /class="vk-mode-pill"/);
 assert.match(index, /id="shareStory"/);
 assert.match(index, /dataset\.vkMode/);
+assert.match(index, /id="onboardingStage"/);
+assert.match(styles, /html\[data-theme="dark"\] \.onboarding-dialog\s*\{/);
+assert.match(styles, /--onboarding-surface:/);
+assert.match(styles, /html\[data-vk-mode="true"\] \.footer\s*\{[^}]*display:\s*none;/);
+assert.match(app, /onboardingStage\.scrollTop = 0/);
+assert.match(app, /temporaryFilesService\.initialize\(\)/);
 for (const locale of locales) {
   assert.match(index, new RegExp(`data-locale-choice="${locale}"`));
 }
@@ -42,6 +50,7 @@ for (const filename of [
   "app.js",
   "pattern-tools.js",
   "vk-bridge-service.js",
+  "temporary-files-service.js",
   "vendor/vk-bridge.min.js",
   "sw.js",
   "icon-192.png",

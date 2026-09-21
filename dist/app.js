@@ -9,11 +9,13 @@ import {
 } from "./pattern-tools.js";
 import {
   initVkMode,
+  isAppleNativeVkPlatform,
   showVkInterstitialAfterExport,
   showVkStory,
   vkBridgeService,
   vkLaunchContext,
 } from "./vk-bridge-service.js";
+import { temporaryFilesService } from "./temporary-files-service.js";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const MAX_PROJECT_SIZE = 40 * 1024 * 1024;
@@ -40,6 +42,12 @@ const PROJECT_DB_NAME = "stitchloom-projects";
 const PROJECT_STORE_NAME = "autosave";
 const PROJECT_AUTOSAVE_KEY = "latest";
 const PROJECT_FORMAT_VERSION = 1;
+const EXPORT_MIME_TYPES = Object.freeze({
+  ".pdf": "application/pdf",
+  ".png": "image/png",
+  ".csv": "text/csv",
+  ".stitchloom": "application/x-stitchloom+json",
+});
 
 const $ = (id) => document.getElementById(id);
 
@@ -110,6 +118,7 @@ const elements = {
   themeChoices: Array.from(document.querySelectorAll("[data-theme-choice]")),
   openOnboarding: $("openOnboarding"),
   onboardingDialog: $("onboardingDialog"),
+  onboardingStage: $("onboardingStage"),
   closeOnboarding: $("closeOnboarding"),
   skipOnboarding: $("skipOnboarding"),
   onboardingBack: $("onboardingBack"),
@@ -167,7 +176,8 @@ const state = {
   fileSize: 0,
   sourceDataUrl: "",
   pattern: null,
-  lastDownloadUrl: null,
+  lastDownload: null,
+  downloadExpiryTimer: null,
   copyResetTimer: null,
   onboardingStep: 0,
   onboardingSeenThisPage: false,
@@ -217,7 +227,7 @@ const EN_TRANSLATIONS = {
   "meta.twitterDescription": "Create a cross-stitch pattern from a photo directly in your browser.",
   "meta.imageAlt": "Stitchloom turns a photo into a pattern of square stitches",
   "brand.home": "Stitchloom, home",
-  "privacy.full": "YOUR PHOTO STAYS ON THIS DEVICE",
+  "privacy.full": "ON-DEVICE PROCESSING",
   "privacy.short": "LOCAL",
   "locale.groupLabel": "Choose a language",
   "theme.groupLabel": "Choose an interface theme",
@@ -250,7 +260,7 @@ const EN_TRANSLATIONS = {
   "ai.copyButton": "Copy prompt",
   "ai.edit": "View and edit the text",
   "ai.promptLabel": "Prompt for artistically simplifying the photo",
-  "ai.privacy": "Stitchloom does not send anything itself. When you upload a photo to an external AI service, that service’s privacy policy applies.",
+  "ai.privacy": "Stitchloom does not send the photo to an AI service itself. If you upload it to an external AI service, that service’s privacy policy applies.",
   "settings.eyebrow": "SETTINGS",
   "settings.title": "Set up the pattern",
   "settings.width": "Width in cells",
@@ -298,7 +308,7 @@ const EN_TRANSLATIONS = {
   "legend.note": "On-screen shades are approximate. Check them against a physical thread chart before buying floss.",
   "guide.eyebrow": "THE PROCESS AT A GLANCE",
   "guide.title": "How to make a cross-stitch pattern from a photo",
-  "guide.copy": "Stitchloom turns a photo into a ready-to-use gridded pattern directly in your browser — with no account, manual tracing, or server upload.",
+  "guide.copy": "Stitchloom turns a photo into a ready-to-use gridded pattern directly in your browser — with no account or manual tracing, and with image processing on your device.",
   "guide.step1Title": "Upload a photo",
   "guide.step1Copy": "Choose an image with a clear silhouette. For a busy background, copy the prompt first and simplify the image with AI.",
   "guide.step2Title": "Set the grid and palette",
@@ -307,12 +317,12 @@ const EN_TRANSLATIONS = {
   "guide.step3Copy": "Check the symbols and grid, zoom into any area, and download the pattern as PDF, PNG, or CSV.",
   "faq.title": "Frequently asked questions",
   "faq.uploadQuestion": "Is my photo uploaded to a server?",
-  "faq.uploadAnswer": "No. Stitchloom processes the photo locally in your browser and does not send it to a server.",
+  "faq.uploadAnswer": "Not while creating the pattern: the photo is processed locally. Only a requested export is sent temporarily to secure storage for downloads in the native VK mobile app.",
   "faq.sizeQuestion": "How do I choose the pattern size?",
   "faq.sizeAnswer": "Choose the width in cells. The height is calculated automatically from the photo’s proportions, and every cell remains square.",
   "faq.colorsQuestion": "How many colors should I choose?",
   "faq.colorsAnswer": "Start with 16 colors. Eight is often enough for simple artwork, while complex photos may need 24 or more.",
-  "footer.privacy": "No account · no server upload",
+  "footer.privacy": "No account · on-device processing",
   "footer.policy": "PRIVACY",
   "mobile.goToResult": "Go to the finished pattern",
   "mobile.ready": "PATTERN READY",
@@ -399,7 +409,7 @@ const ES_TRANSLATIONS = {
   "meta.twitterDescription": "Crea un patrón de punto de cruz desde una foto directamente en tu navegador.",
   "meta.imageAlt": "Stitchloom convierte una foto en un patrón de puntadas cuadradas",
   "brand.home": "Stitchloom, inicio",
-  "privacy.full": "TU FOTO PERMANECE EN ESTE DISPOSITIVO",
+  "privacy.full": "PROCESAMIENTO EN EL DISPOSITIVO",
   "privacy.short": "LOCAL",
   "locale.groupLabel": "Elegir idioma",
   "theme.groupLabel": "Elegir el tema de la interfaz",
@@ -432,7 +442,7 @@ const ES_TRANSLATIONS = {
   "ai.copyButton": "Copiar prompt",
   "ai.edit": "Ver y editar el texto",
   "ai.promptLabel": "Prompt para simplificar artísticamente la foto",
-  "ai.privacy": "Stitchloom no envía nada por sí mismo. Si subes una foto a un servicio de IA externo, se aplicará la política de privacidad de ese servicio.",
+  "ai.privacy": "Stitchloom no envía la foto a ningún servicio de IA por sí mismo. Si la subes a un servicio externo, se aplicará la política de privacidad de ese servicio.",
   "settings.eyebrow": "AJUSTES",
   "settings.title": "Configura el patrón",
   "settings.width": "Ancho en celdas",
@@ -480,7 +490,7 @@ const ES_TRANSLATIONS = {
   "legend.note": "Los tonos en pantalla son aproximados. Compáralos con una carta física de hilos antes de comprar el hilo.",
   "guide.eyebrow": "EL PROCESO DE UN VISTAZO",
   "guide.title": "Cómo crear un patrón de punto de cruz desde una foto",
-  "guide.copy": "Stitchloom convierte una foto en un patrón cuadriculado listo para usar directamente en tu navegador, sin cuenta, calco manual ni subida a un servidor.",
+  "guide.copy": "Stitchloom convierte una foto en un patrón cuadriculado listo para usar directamente en tu navegador, sin cuenta ni calco manual y procesando la imagen en tu dispositivo.",
   "guide.step1Title": "Sube una foto",
   "guide.step1Copy": "Elige una imagen con una silueta clara. Si el fondo es recargado, copia primero el prompt y simplifica la imagen con IA.",
   "guide.step2Title": "Configura la cuadrícula y la paleta",
@@ -489,12 +499,12 @@ const ES_TRANSLATIONS = {
   "guide.step3Copy": "Revisa los símbolos y la cuadrícula, amplía cualquier zona y descarga el patrón como PDF, PNG o CSV.",
   "faq.title": "Preguntas frecuentes",
   "faq.uploadQuestion": "¿Mi foto se sube a un servidor?",
-  "faq.uploadAnswer": "No. Stitchloom procesa la foto localmente en tu navegador y no la envía a ningún servidor.",
+  "faq.uploadAnswer": "No mientras se crea el patrón: la foto se procesa localmente. Solo el archivo exportado solicitado se envía temporalmente a un almacenamiento seguro para descargarlo en la app móvil nativa de VK.",
   "faq.sizeQuestion": "¿Cómo elijo el tamaño del patrón?",
   "faq.sizeAnswer": "Elige el ancho en celdas. La altura se calcula automáticamente según las proporciones de la foto y cada celda permanece cuadrada.",
   "faq.colorsQuestion": "¿Cuántos colores debo elegir?",
   "faq.colorsAnswer": "Empieza con 16 colores. Ocho suelen bastar para ilustraciones sencillas, mientras que las fotos complejas pueden necesitar 24 o más.",
-  "footer.privacy": "Sin cuenta · sin subida al servidor",
+  "footer.privacy": "Sin cuenta · procesamiento local",
   "footer.policy": "PRIVACIDAD",
   "mobile.goToResult": "Ir al patrón terminado",
   "mobile.ready": "PATRÓN LISTO",
@@ -581,7 +591,7 @@ const DE_TRANSLATIONS = {
   "meta.twitterDescription": "Erstelle direkt im Browser eine Kreuzstichvorlage aus einem Foto.",
   "meta.imageAlt": "Stitchloom verwandelt ein Foto in eine Vorlage aus quadratischen Stichen",
   "brand.home": "Stitchloom, Startseite",
-  "privacy.full": "DEIN FOTO BLEIBT AUF DIESEM GERÄT",
+  "privacy.full": "VERARBEITUNG AUF DEM GERÄT",
   "privacy.short": "LOKAL",
   "locale.groupLabel": "Sprache auswählen",
   "theme.groupLabel": "Oberflächendesign auswählen",
@@ -614,7 +624,7 @@ const DE_TRANSLATIONS = {
   "ai.copyButton": "Prompt kopieren",
   "ai.edit": "Text anzeigen und bearbeiten",
   "ai.promptLabel": "Prompt zur künstlerischen Vereinfachung des Fotos",
-  "ai.privacy": "Stitchloom sendet selbst keine Daten. Wenn du ein Foto bei einem externen KI-Dienst hochlädst, gilt dessen Datenschutzrichtlinie.",
+  "ai.privacy": "Stitchloom sendet das Foto nicht selbst an einen KI-Dienst. Wenn du es bei einem externen Dienst hochlädst, gilt dessen Datenschutzrichtlinie.",
   "settings.eyebrow": "EINSTELLUNGEN",
   "settings.title": "Vorlage einrichten",
   "settings.width": "Breite in Zellen",
@@ -662,7 +672,7 @@ const DE_TRANSLATIONS = {
   "legend.note": "Farbtöne auf dem Bildschirm sind Näherungswerte. Vergleiche sie vor dem Kauf des Garns mit einer physischen Farbkarte.",
   "guide.eyebrow": "DER ABLAUF AUF EINEN BLICK",
   "guide.title": "So entsteht eine Kreuzstichvorlage aus einem Foto",
-  "guide.copy": "Stitchloom verwandelt ein Foto direkt im Browser in eine gebrauchsfertige Rastervorlage — ohne Konto, manuelles Nachzeichnen oder Server-Upload.",
+  "guide.copy": "Stitchloom verwandelt ein Foto direkt im Browser in eine gebrauchsfertige Rastervorlage — ohne Konto oder manuelles Nachzeichnen und mit Bildverarbeitung auf deinem Gerät.",
   "guide.step1Title": "Foto hochladen",
   "guide.step1Copy": "Wähle ein Bild mit klarer Silhouette. Bei einem unruhigen Hintergrund kannst du zuerst den Prompt kopieren und das Bild mit KI vereinfachen.",
   "guide.step2Title": "Raster und Palette festlegen",
@@ -671,12 +681,12 @@ const DE_TRANSLATIONS = {
   "guide.step3Copy": "Prüfe Symbole und Raster, vergrößere jeden gewünschten Bereich und lade die Vorlage als PDF, PNG oder CSV herunter.",
   "faq.title": "Häufig gestellte Fragen",
   "faq.uploadQuestion": "Wird mein Foto auf einen Server hochgeladen?",
-  "faq.uploadAnswer": "Nein. Stitchloom verarbeitet das Foto lokal in deinem Browser und sendet es nicht an einen Server.",
+  "faq.uploadAnswer": "Nicht beim Erstellen der Vorlage: Das Foto wird lokal verarbeitet. Nur ein angeforderter Export wird für den Download in der nativen mobilen VK-App vorübergehend in einen geschützten Speicher übertragen.",
   "faq.sizeQuestion": "Wie wähle ich die Vorlagengröße?",
   "faq.sizeAnswer": "Wähle die Breite in Zellen. Die Höhe wird automatisch aus den Proportionen des Fotos berechnet, und jede Zelle bleibt quadratisch.",
   "faq.colorsQuestion": "Wie viele Farben sollte ich wählen?",
   "faq.colorsAnswer": "Beginne mit 16 Farben. Für einfache Illustrationen reichen oft acht, komplexe Fotos benötigen eventuell 24 oder mehr.",
-  "footer.privacy": "Kein Konto · kein Server-Upload",
+  "footer.privacy": "Kein Konto · Verarbeitung auf dem Gerät",
   "footer.policy": "DATENSCHUTZ",
   "mobile.goToResult": "Zur fertigen Vorlage",
   "mobile.ready": "VORLAGE BEREIT",
@@ -788,7 +798,7 @@ const UI_MESSAGES = {
     "pattern.emptyHeading": "Ваша схема появится здесь",
     "pattern.waiting": "Ждёт фото",
     "zoom.current": "Текущий масштаб {zoom} процентов. Вписать схему в область просмотра",
-    "file.local": "Всё считается локально: файл не загружается на сервер.",
+    "file.local": "Схема строится локально на этом устройстве.",
     "file.ready": "Изображение готово. Схема строится локально в этом окне.",
     "file.patternReady": "Готово. Меняйте настройки — фото останется локальным, а схема обновится сама.",
     "file.invalid": "Нужен файл изображения: PNG, JPG, WEBP или GIF.",
@@ -803,6 +813,19 @@ const UI_MESSAGES = {
     "project.restored": "Последний проект восстановлен с этого устройства.",
     "project.saveFailed": "Не удалось сохранить проект.",
     "project.openFailed": "Не удалось открыть проект.",
+    "download.preparing": "Готовлю файл…",
+    "download.uploading": "Файл готов. Подготавливаю безопасную ссылку для VK…",
+    "download.readyLocal": "Файл готов.",
+    "download.readyNative": "Файл готов. Нажмите, чтобы сохранить его через VK.",
+    "download.started": "VK открыл сохранение файла.",
+    "download.cancelled": "Сохранение отменено или недоступно.",
+    "download.uploadFailed": "Не удалось подготовить ссылку VK.",
+    "download.expired": "Временная ссылка истекла. Создайте файл ещё раз.",
+    "download.save": "Сохранить файл",
+    "download.again": "Сохранить ещё раз",
+    "download.openLink": "Открыть временную ссылку",
+    "download.localFallback": "Попробовать локальное скачивание",
+    "download.failed": "Не удалось подготовить файл. Попробуйте ещё раз.",
     "prep.updated": "Подготовка фото применена — схема обновляется.",
     "prep.resetDone": "Подготовка фото сброшена.",
     "editor.selected": "Выбран цвет {color}.",
@@ -879,7 +902,7 @@ const UI_MESSAGES = {
     "pattern.emptyHeading": "Your pattern will appear here",
     "pattern.waiting": "Waiting for photo",
     "zoom.current": "Current zoom {zoom} percent. Fit the pattern to the viewport",
-    "file.local": "Everything is processed locally: the file is not uploaded to a server.",
+    "file.local": "The pattern is created locally on this device.",
     "file.ready": "Image ready. The pattern is being built locally in this window.",
     "file.patternReady": "Ready. Change the settings — the photo stays local and the pattern updates automatically.",
     "file.invalid": "Choose an image file: PNG, JPG, WEBP, or GIF.",
@@ -894,6 +917,19 @@ const UI_MESSAGES = {
     "project.restored": "The latest project was restored from this device.",
     "project.saveFailed": "The project could not be saved.",
     "project.openFailed": "The project could not be opened.",
+    "download.preparing": "Preparing the file…",
+    "download.uploading": "The file is ready. Creating a secure VK link…",
+    "download.readyLocal": "The file is ready.",
+    "download.readyNative": "The file is ready. Tap to save it through VK.",
+    "download.started": "VK opened the file save dialog.",
+    "download.cancelled": "Saving was cancelled or is unavailable.",
+    "download.uploadFailed": "The VK download link could not be prepared.",
+    "download.expired": "The temporary link expired. Create the file again.",
+    "download.save": "Save file",
+    "download.again": "Save again",
+    "download.openLink": "Open temporary link",
+    "download.localFallback": "Try local download",
+    "download.failed": "The file could not be prepared. Try again.",
     "prep.updated": "Photo preparation applied — rebuilding the pattern.",
     "prep.resetDone": "Photo preparation reset.",
     "editor.selected": "Selected color {color}.",
@@ -970,7 +1006,7 @@ const UI_MESSAGES = {
     "pattern.emptyHeading": "Tu patrón aparecerá aquí",
     "pattern.waiting": "Esperando una foto",
     "zoom.current": "Zoom actual: {zoom} por ciento. Ajustar el patrón al área visible",
-    "file.local": "Todo se procesa localmente: el archivo no se sube a ningún servidor.",
+    "file.local": "El patrón se crea localmente en este dispositivo.",
     "file.ready": "Imagen lista. El patrón se está creando localmente en esta ventana.",
     "file.patternReady": "Listo. Cambia los ajustes: la foto permanece local y el patrón se actualiza automáticamente.",
     "file.invalid": "Elige un archivo de imagen PNG, JPG, WEBP o GIF.",
@@ -985,6 +1021,19 @@ const UI_MESSAGES = {
     "project.restored": "Se restauró el último proyecto de este dispositivo.",
     "project.saveFailed": "No se pudo guardar el proyecto.",
     "project.openFailed": "No se pudo abrir el proyecto.",
+    "download.preparing": "Preparando el archivo…",
+    "download.uploading": "El archivo está listo. Creando un enlace seguro para VK…",
+    "download.readyLocal": "El archivo está listo.",
+    "download.readyNative": "El archivo está listo. Pulsa para guardarlo mediante VK.",
+    "download.started": "VK abrió el guardado del archivo.",
+    "download.cancelled": "El guardado se canceló o no está disponible.",
+    "download.uploadFailed": "No se pudo preparar el enlace de descarga de VK.",
+    "download.expired": "El enlace temporal caducó. Crea el archivo de nuevo.",
+    "download.save": "Guardar archivo",
+    "download.again": "Guardar de nuevo",
+    "download.openLink": "Abrir enlace temporal",
+    "download.localFallback": "Probar la descarga local",
+    "download.failed": "No se pudo preparar el archivo. Inténtalo de nuevo.",
     "prep.updated": "Preparación aplicada: actualizando el patrón.",
     "prep.resetDone": "Preparación de la foto restablecida.",
     "editor.selected": "Color {color} seleccionado.",
@@ -1061,7 +1110,7 @@ const UI_MESSAGES = {
     "pattern.emptyHeading": "Deine Vorlage erscheint hier",
     "pattern.waiting": "Wartet auf ein Foto",
     "zoom.current": "Aktueller Zoom: {zoom} Prozent. Vorlage in den sichtbaren Bereich einpassen",
-    "file.local": "Alles wird lokal verarbeitet: Die Datei wird nicht auf einen Server hochgeladen.",
+    "file.local": "Die Vorlage wird lokal auf diesem Gerät erstellt.",
     "file.ready": "Bild bereit. Die Vorlage wird lokal in diesem Fenster erstellt.",
     "file.patternReady": "Bereit. Ändere die Einstellungen — das Foto bleibt lokal und die Vorlage aktualisiert sich automatisch.",
     "file.invalid": "Wähle eine Bilddatei im Format PNG, JPG, WEBP oder GIF.",
@@ -1076,6 +1125,19 @@ const UI_MESSAGES = {
     "project.restored": "Das letzte Projekt wurde von diesem Gerät wiederhergestellt.",
     "project.saveFailed": "Das Projekt konnte nicht gespeichert werden.",
     "project.openFailed": "Das Projekt konnte nicht geöffnet werden.",
+    "download.preparing": "Datei wird vorbereitet…",
+    "download.uploading": "Die Datei ist bereit. Ein sicherer VK-Link wird erstellt…",
+    "download.readyLocal": "Die Datei ist bereit.",
+    "download.readyNative": "Die Datei ist bereit. Tippe, um sie über VK zu speichern.",
+    "download.started": "VK hat den Dialog zum Speichern geöffnet.",
+    "download.cancelled": "Das Speichern wurde abgebrochen oder ist nicht verfügbar.",
+    "download.uploadFailed": "Der VK-Download-Link konnte nicht erstellt werden.",
+    "download.expired": "Der temporäre Link ist abgelaufen. Erstelle die Datei erneut.",
+    "download.save": "Datei speichern",
+    "download.again": "Erneut speichern",
+    "download.openLink": "Temporären Link öffnen",
+    "download.localFallback": "Lokalen Download versuchen",
+    "download.failed": "Die Datei konnte nicht vorbereitet werden. Bitte erneut versuchen.",
     "prep.updated": "Fotovorbereitung angewendet — Vorlage wird aktualisiert.",
     "prep.resetDone": "Fotovorbereitung zurückgesetzt.",
     "editor.selected": "Farbe {color} ausgewählt.",
@@ -1709,6 +1771,7 @@ function rememberOnboarding() {
 function updateOnboardingStep(nextStep) {
   const lastStep = elements.onboardingSteps.length - 1;
   state.onboardingStep = clamp(nextStep, 0, lastStep);
+  elements.onboardingStage.scrollTop = 0;
 
   elements.onboardingSteps.forEach((step, index) => {
     const isActive = index === state.onboardingStep;
@@ -1748,7 +1811,7 @@ function openOnboarding() {
   }
 
   document.body.classList.add("onboarding-open");
-  window.setTimeout(() => elements.onboardingNext.focus(), 0);
+  window.setTimeout(() => elements.onboardingDialog.focus({ preventScroll: true }), 0);
 }
 
 function closeOnboarding() {
@@ -2639,18 +2702,7 @@ function refreshLocalizedUi() {
     ? t("pdf.preparing")
     : t("pdf.download");
 
-  const retryLink = elements.exportStatus.querySelector("a");
-  if (retryLink && state.lastDownloadUrl) {
-    const filename = retryLink.download;
-    elements.exportStatus.textContent = t("pdf.ready");
-    const localizedRetryLink = document.createElement("a");
-    localizedRetryLink.href = state.lastDownloadUrl;
-    localizedRetryLink.download = filename;
-    localizedRetryLink.target = "_blank";
-    localizedRetryLink.rel = "noopener";
-    localizedRetryLink.textContent = t("pdf.retry");
-    elements.exportStatus.appendChild(localizedRetryLink);
-  }
+  renderLastDownload();
 
   if (state.copyResetTimer) window.clearTimeout(state.copyResetTimer);
   resetPromptCopyState();
@@ -2830,21 +2882,37 @@ function scheduleAutosave() {
   }, 700);
 }
 
-function downloadProjectFile() {
-  if (!state.pattern) return;
+async function withExportButton(button, operation) {
+  if (button.classList.contains("is-busy")) return;
+  button.disabled = true;
+  button.classList.add("is-busy");
+  button.setAttribute("aria-busy", "true");
   try {
-    const payload = JSON.stringify(getProjectPayload());
-    triggerDownload(
-      new Blob([payload], { type: "application/x-stitchloom+json" }),
-      `stitchloom-${state.pattern.width}x${state.pattern.height}.stitchloom`,
-    );
-    elements.projectStatus.textContent = t("project.saved");
-    elements.projectStatus.classList.remove("is-error");
-    void showVkInterstitialAfterExport();
-  } catch {
-    elements.projectStatus.textContent = t("project.saveFailed");
-    elements.projectStatus.classList.add("is-error");
+    return await operation();
+  } finally {
+    button.classList.remove("is-busy");
+    button.removeAttribute("aria-busy");
+    button.disabled = !state.pattern;
   }
+}
+
+async function downloadProjectFile(event) {
+  if (!state.pattern) return;
+  const button = event?.currentTarget || elements.downloadProject;
+  const targets = button === elements.saveProject ? ["project"] : ["export"];
+  await withExportButton(button, async () => {
+    try {
+      const payload = JSON.stringify(getProjectPayload());
+      await deliverExportFile(
+        new Blob([payload], { type: "application/x-stitchloom+json" }),
+        `stitchloom-${state.pattern.width}x${state.pattern.height}.stitchloom`,
+        targets,
+      );
+      void showVkInterstitialAfterExport();
+    } catch {
+      setDownloadProgress(t("project.saveFailed"), targets, true);
+    }
+  });
 }
 
 async function openProjectFile(file) {
@@ -2878,7 +2946,7 @@ function clearImage() {
   state.sourceDataUrl = "";
   state.pattern = null;
   state.settings.zoom = 100;
-  clearLastDownloadUrl();
+  clearLastDownload();
   elements.fileInput.value = "";
   elements.sourcePreview.removeAttribute("src");
   elements.sourceCard.classList.add("is-hidden");
@@ -2914,48 +2982,188 @@ async function loadImageFile(file) {
   }
 }
 
-function triggerDownload(blob, filename) {
-  const url = URL.createObjectURL(blob);
+function triggerUrlDownload(url, filename) {
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   link.target = "_blank";
-  link.rel = "noopener";
+  link.rel = "noopener noreferrer";
+  link.referrerPolicy = "no-referrer";
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
-function clearLastDownloadUrl() {
-  if (!state.lastDownloadUrl) return;
-  URL.revokeObjectURL(state.lastDownloadUrl);
-  state.lastDownloadUrl = null;
+function getDownloadStatusTargets(targetNames = ["export"]) {
+  return targetNames.map((name) => name === "project" ? elements.projectStatus : elements.exportStatus);
 }
 
-function offerPdfDownload(blob, filename) {
-  clearLastDownloadUrl();
-  const url = URL.createObjectURL(blob);
-  state.lastDownloadUrl = url;
+function clearLastDownload({ clearStatus = true } = {}) {
+  const previous = state.lastDownload;
+  if (state.downloadExpiryTimer) window.clearTimeout(state.downloadExpiryTimer);
+  state.downloadExpiryTimer = null;
+  if (previous?.isBlob) URL.revokeObjectURL(previous.url);
+  state.lastDownload = null;
+  if (clearStatus && previous?.targets) {
+    getDownloadStatusTargets(previous.targets).forEach((target) => {
+      target.textContent = "";
+      target.classList.remove("is-error");
+    });
+  }
+}
 
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.target = "_blank";
-  link.rel = "noopener";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+function setDownloadProgress(message, targets = ["export"], isError = false) {
+  getDownloadStatusTargets(targets).forEach((target) => {
+    target.textContent = message;
+    target.classList.toggle("is-error", isError);
+  });
+}
 
-  elements.exportStatus.classList.remove("is-error");
-  elements.exportStatus.textContent = t("pdf.ready");
-  const retryLink = document.createElement("a");
-  retryLink.href = url;
-  retryLink.download = filename;
-  retryLink.target = "_blank";
-  retryLink.rel = "noopener";
-  retryLink.textContent = t("pdf.retry");
-  elements.exportStatus.appendChild(retryLink);
+function expireLastDownload() {
+  const previous = state.lastDownload;
+  if (!previous) return;
+  const targets = previous.targets;
+  clearLastDownload({ clearStatus: false });
+  setDownloadProgress(t("download.expired"), targets, true);
+}
+
+async function retryLastDownload() {
+  const offer = state.lastDownload;
+  if (!offer || !offer.showNativeButton) return;
+  if (offer.expiresAt && offer.expiresAt * 1000 <= Date.now()) {
+    expireLastDownload();
+    return;
+  }
+  getDownloadStatusTargets(offer.targets).forEach((target) => {
+    target.querySelectorAll("button").forEach((button) => {
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+    });
+  });
+  const downloaded = await vkBridgeService.downloadFile(offer.url, offer.filename, {
+    userInitiated: true,
+  });
+  if (state.lastDownload !== offer) return;
+  offer.messageKey = downloaded ? "download.started" : "download.cancelled";
+  offer.isError = false;
+  offer.showLink = !downloaded;
+  renderLastDownload();
+}
+
+function renderLastDownload() {
+  const offer = state.lastDownload;
+  if (!offer) return;
+  if (offer.expiresAt && offer.expiresAt * 1000 <= Date.now()) {
+    expireLastDownload();
+    return;
+  }
+
+  getDownloadStatusTargets(offer.targets).forEach((target) => {
+    target.textContent = t(offer.messageKey);
+    target.classList.toggle("is-error", Boolean(offer.isError));
+
+    if (offer.showNativeButton) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "download-status-action";
+      button.textContent = t(offer.messageKey === "download.started" ? "download.again" : "download.save");
+      button.addEventListener("click", () => void retryLastDownload());
+      target.append(" ", button);
+    }
+
+    if (offer.showLink) {
+      const link = document.createElement("a");
+      link.href = offer.url;
+      link.download = offer.filename;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.referrerPolicy = "no-referrer";
+      link.textContent = t(offer.linkKey);
+      target.append(" ", link);
+    }
+  });
+}
+
+function storeLastDownload(offer) {
+  clearLastDownload();
+  state.lastDownload = offer;
+  if (offer.expiresAt) {
+    const delay = Math.max(0, offer.expiresAt * 1000 - Date.now());
+    state.downloadExpiryTimer = window.setTimeout(expireLastDownload, delay);
+  }
+  renderLastDownload();
+}
+
+function getExportMimeType(filename) {
+  const normalized = filename.toLowerCase();
+  const extension = Object.keys(EXPORT_MIME_TYPES).find((candidate) => normalized.endsWith(candidate));
+  return extension ? EXPORT_MIME_TYPES[extension] : "";
+}
+
+async function deliverExportFile(blob, filename, targets = ["export"]) {
+  const contentType = getExportMimeType(filename);
+  if (!contentType) throw new Error("Unsupported export type");
+  clearLastDownload();
+
+  if (!vkBridgeService.supportsFileDownload()) {
+    const url = URL.createObjectURL(blob);
+    triggerUrlDownload(url, filename);
+    storeLastDownload({
+      url,
+      filename,
+      isBlob: true,
+      targets,
+      messageKey: "download.readyLocal",
+      linkKey: "download.again",
+      showNativeButton: false,
+      showLink: true,
+      isError: false,
+    });
+    return "started";
+  }
+
+  setDownloadProgress(t("download.uploading"), targets);
+  try {
+    const file = new File([blob], filename, { type: contentType, lastModified: Date.now() });
+    const uploaded = await temporaryFilesService.upload(file);
+    const offer = {
+      url: uploaded.downloadUrl,
+      filename: uploaded.fileName,
+      expiresAt: uploaded.expiresAt,
+      isBlob: false,
+      targets,
+      messageKey: "download.readyNative",
+      linkKey: "download.openLink",
+      showNativeButton: true,
+      showLink: true,
+      isError: false,
+    };
+
+    if (isAppleNativeVkPlatform(vkLaunchContext.platform)) {
+      storeLastDownload(offer);
+      return "ready";
+    }
+
+    const downloaded = await vkBridgeService.downloadFile(uploaded.downloadUrl, uploaded.fileName);
+    offer.messageKey = downloaded ? "download.started" : "download.cancelled";
+    offer.showLink = !downloaded;
+    storeLastDownload(offer);
+    return downloaded ? "downloaded" : "ready";
+  } catch {
+    const url = URL.createObjectURL(blob);
+    storeLastDownload({
+      url,
+      filename,
+      isBlob: true,
+      targets,
+      messageKey: "download.uploadFailed",
+      linkKey: "download.localFallback",
+      showNativeButton: false,
+      showLink: true,
+      isError: true,
+    });
+    return "fallback";
+  }
 }
 
 function nextPaint() {
@@ -3494,6 +3702,7 @@ async function appendPdfCanvasPage(pages, canvas, layout) {
 
 async function downloadPdf() {
   if (!state.pattern || elements.downloadPdf.classList.contains("is-busy")) return;
+  clearLastDownload();
   const pattern = {
     ...state.pattern,
     cells: state.pattern.cells.slice(),
@@ -3544,7 +3753,7 @@ async function downloadPdf() {
     const pdfBytes = buildImagePdf(pages);
     const blob = new Blob([pdfBytes], { type: "application/pdf" });
     const filename = "stitchloom-" + pattern.width + "x" + pattern.height + ".pdf";
-    offerPdfDownload(blob, filename);
+    await deliverExportFile(blob, filename);
     void showVkInterstitialAfterExport();
   } catch (error) {
     console.error(error);
@@ -3647,44 +3856,60 @@ async function sharePatternToStory() {
   }
 }
 
-function downloadPng() {
+async function downloadPng() {
   if (!state.pattern) return;
-  const pattern = state.pattern;
-  const exportCellSize = clamp(Math.floor(1800 / Math.max(pattern.width, pattern.height)), 8, 20);
-  const exportCanvas = document.createElement("canvas");
-  drawPatternToCanvas(exportCanvas, exportCellSize, "pattern", 1);
-  exportCanvas.toBlob((blob) => {
-    if (blob) {
-      triggerDownload(blob, "stitchloom-" + pattern.width + "x" + pattern.height + ".png");
+  await withExportButton(elements.downloadPng, async () => {
+    clearLastDownload();
+    try {
+      const pattern = state.pattern;
+      setDownloadProgress(t("download.preparing"));
+      await nextPaint();
+      const exportCellSize = clamp(Math.floor(1800 / Math.max(pattern.width, pattern.height)), 8, 20);
+      const exportCanvas = document.createElement("canvas");
+      drawPatternToCanvas(exportCanvas, exportCellSize, "pattern", 1);
+      const blob = await new Promise((resolve, reject) => {
+        exportCanvas.toBlob((value) => value ? resolve(value) : reject(new Error("PNG export failed")), "image/png");
+      });
+      await deliverExportFile(blob, "stitchloom-" + pattern.width + "x" + pattern.height + ".png");
       void showVkInterstitialAfterExport();
+    } catch {
+      setExportStatus(t("download.failed"), true);
     }
-  }, "image/png");
+  });
 }
 
 function csvCell(value) {
   return '"' + String(value).replace(/"/g, '""') + '"';
 }
 
-function downloadCsv() {
+async function downloadCsv() {
   if (!state.pattern) return;
-  const pattern = state.pattern;
-  const rows = ["row;column;palette;color_hex;nearest_dmc;symbol"];
-  pattern.cells.forEach((paletteIndex, index) => {
-    const color = pattern.palette[paletteIndex];
-    const row = Math.floor(index / pattern.width) + 1;
-    const column = (index % pattern.width) + 1;
-    rows.push([
-      row,
-      column,
-      color.code,
-      color.hex.toUpperCase(),
-      "DMC " + color.dmcCode,
-      color.symbol,
-    ].map(csvCell).join(";"));
+  await withExportButton(elements.downloadCsv, async () => {
+    clearLastDownload();
+    const pattern = state.pattern;
+    setDownloadProgress(t("download.preparing"));
+    const rows = ["row;column;palette;color_hex;nearest_dmc;symbol"];
+    pattern.cells.forEach((paletteIndex, index) => {
+      const color = pattern.palette[paletteIndex];
+      const row = Math.floor(index / pattern.width) + 1;
+      const column = (index % pattern.width) + 1;
+      rows.push([
+        row,
+        column,
+        color.code,
+        color.hex.toUpperCase(),
+        "DMC " + color.dmcCode,
+        color.symbol,
+      ].map(csvCell).join(";"));
+    });
+    try {
+      const blob = new Blob(["\ufeff" + rows.join("\n")], { type: "text/csv" });
+      await deliverExportFile(blob, "stitchloom-" + pattern.width + "x" + pattern.height + ".csv");
+      void showVkInterstitialAfterExport();
+    } catch {
+      setExportStatus(t("download.failed"), true);
+    }
   });
-  const blob = new Blob(["\ufeff" + rows.join("\n")], { type: "text/csv;charset=utf-8" });
-  triggerDownload(blob, "stitchloom-" + pattern.width + "x" + pattern.height + ".csv");
-  void showVkInterstitialAfterExport();
 }
 
 function setEditorTool(tool) {
@@ -4079,7 +4304,7 @@ window.addEventListener("resize", () => {
     renderPattern();
   });
 });
-window.addEventListener("beforeunload", clearLastDownloadUrl);
+window.addEventListener("beforeunload", clearLastDownload);
 window.addEventListener("pagehide", () => {
   if (vkLaunchContext.enabled) void vkBridgeService.hideBannerAd();
 });
@@ -4118,6 +4343,10 @@ if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
 initLocale();
 initTheme();
 void initVkMode();
+if (vkBridgeService.supportsFileDownload()) {
+  // Authenticate while the signed VK launch parameters are still fresh.
+  void temporaryFilesService.initialize().catch(() => {});
+}
 updateControls();
 updateViewButtons();
 renderPattern();

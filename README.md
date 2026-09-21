@@ -7,7 +7,7 @@ Stitchloom turns a photo into a cross-stitch pattern directly in the browser. Ea
 ## What it does
 
 - accepts PNG, JPG, WEBP and GIF images up to 20 MB;
-- keeps the image in the browser and never uploads it to a server;
+- processes the source image locally; native VK mobile downloads use a short-lived private copy of the requested export;
 - gives first-time visitors a four-step onboarding tour and lets them reopen it from the header;
 - provides complete Russian, English, Spanish, and German interfaces, localized AI prompts and PDF labels, automatically follows the browser's first supported language, and saves a manual override on the device;
 - switches to a VK Mini Apps mode when complete VK launch parameters are present: the interface is fixed to Russian, the language picker is hidden, VK Bridge is initialized, a bottom banner uses resize layout, and the first export in a session may show an interstitial ad when inventory is available;
@@ -75,11 +75,11 @@ The official `@vkontakte/vk-miniapps-deploy` package is pinned to version 1.0.2.
 
 ## Privacy
 
-Image decoding, sampling and palette selection happen in the browser with Canvas APIs. No application backend is required for the core flow.
+Image decoding, sampling and palette selection happen in the browser with Canvas APIs. No application backend is required for the core flow. Android and iOS VK clients use the shared temporary-file service only after an explicit export request so VK Bridge can download the generated file from HTTPS; ordinary browser downloads remain local Blob URLs.
 
-VK launch parameters are used only to select the client-side presentation mode; they are not treated as proof of identity or authorization. Production access decisions would require server-side signature verification.
+VK launch parameters select the client-side presentation mode. For native mobile downloads they are also sent to the temporary-file backend, where the signature, app ID, origin, timestamp, MIME type, filename and generated file structure are verified server-side before a short-lived download URL is issued. Tokens remain in page memory.
 
-The optional AI-preparation prompt is copied locally. Stitchloom does not send the image anywhere; if you attach it to an external AI service, that service's privacy terms apply.
+The optional AI-preparation prompt is copied locally. Stitchloom does not send the image to an AI service; if you attach it to one yourself, that service's privacy terms apply.
 
 Without an explicit choice, Stitchloom follows the first supported language in the browser's preference order and reacts to the browser's `languagechange` event. Search-friendly language pages live at `/ru/`, `/en/`, `/es/`, and `/de/`; the root remains the automatic-language entry point. A manual language choice and the theme choice are stored locally when `localStorage` is available; otherwise they remain active for the current page view. The onboarding dismissal is also device-local: Stitchloom prefers `localStorage`, then falls back to a first-party functional cookie, `sessionStorage`, and finally the current history entry when browser storage is restricted. Project autosaves use IndexedDB and stay on the device.
 

@@ -1,5 +1,17 @@
 const VK_REQUIRED_LAUNCH_PARAMS = ["vk_app_id", "vk_user_id", "vk_platform", "sign"];
 const VK_INTERSTITIAL_SESSION_KEY = "stitchloom:vk-interstitial-shown:v1";
+const VK_NATIVE_PLATFORMS = new Set([
+  "mobile_android",
+  "mobile_android_messenger",
+  "mobile_ipad",
+  "mobile_iphone",
+  "mobile_iphone_messenger",
+]);
+const VK_APPLE_NATIVE_PLATFORMS = new Set([
+  "mobile_ipad",
+  "mobile_iphone",
+  "mobile_iphone_messenger",
+]);
 
 function isLocalHostname(hostname) {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
@@ -20,6 +32,14 @@ export function getVkLaunchContext(locationLike = {}) {
 
 export function shouldShowInterstitial({ alreadyShown = false } = {}) {
   return !alreadyShown;
+}
+
+export function isNativeVkPlatform(platform) {
+  return VK_NATIVE_PLATFORMS.has(platform);
+}
+
+export function isAppleNativeVkPlatform(platform) {
+  return VK_APPLE_NATIVE_PLATFORMS.has(platform);
 }
 
 function withTimeout(promise, timeoutMs, method) {
@@ -131,7 +151,33 @@ export function createVkBridgeService({
     return Boolean(result?.result);
   }
 
-  return { init, showBannerAd, showInterstitialAfterExport, hideBannerAd, showStory };
+  function supportsFileDownload() {
+    return Boolean(context?.enabled && isNativeVkPlatform(context.platform));
+  }
+
+  async function downloadFile(url, filename, { userInitiated = false } = {}) {
+    if (!supportsFileDownload()) return false;
+    if (isAppleNativeVkPlatform(context.platform) && !userInitiated) return false;
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== "https:" || !filename) return false;
+    } catch {
+      return false;
+    }
+    if (!await init()) return false;
+    const result = await send("VKWebAppDownloadFile", { url, filename }, 60000);
+    return Boolean(result?.result);
+  }
+
+  return {
+    init,
+    showBannerAd,
+    showInterstitialAfterExport,
+    hideBannerAd,
+    showStory,
+    supportsFileDownload,
+    downloadFile,
+  };
 }
 
 function createLocalMockBridge(windowRef) {
@@ -148,10 +194,14 @@ function createLocalMockBridge(windowRef) {
       if (scenario === "story-denied" && method === "VKWebAppShowStoryBox") {
         throw new Error("User denied story sharing");
       }
+      if (scenario === "download-denied" && method === "VKWebAppDownloadFile") {
+        throw new Error("User cancelled file download");
+      }
       if (method === "VKWebAppShowBannerAd" || method === "VKWebAppCheckNativeAds") {
         return { result: true };
       }
       if (method === "VKWebAppShowStoryBox") return { result: true };
+      if (method === "VKWebAppDownloadFile") return { result: true };
       if (method === "VKWebAppHideBannerAd") return { result: true };
       return {};
     },
