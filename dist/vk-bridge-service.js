@@ -60,27 +60,30 @@ export function createVkBridgeService({
   context,
   loadBridge,
   sessionStorage,
+  commandTimeoutMs = 8000,
 } = {}) {
   let initPromise = null;
   let shownInMemory = false;
+  let interstitialPromise = null;
 
-  async function send(method, params, timeoutMs = 8000) {
+  async function send(method, params, timeoutMs = commandTimeoutMs) {
     if (!context?.enabled) return null;
     try {
-      const bridge = await loadBridge();
-      if (!bridge?.send) throw new Error("VK Bridge is unavailable");
-      const result = await withTimeout(Promise.resolve(bridge.send(method, params)), timeoutMs, method);
-      diagnostic(method, "success", result || {});
+      const result = await withTimeout(Promise.resolve().then(loadBridge).then(bridge => {
+        if (!bridge?.send) throw new Error("VK Bridge is unavailable");
+        return bridge.send(method, params);
+      }), timeoutMs, method);
+      diagnostic(method, "success");
       return result || {};
     } catch (error) {
-      diagnostic(method, "failed", error instanceof Error ? error.message : error);
+      diagnostic(method, "failed", error instanceof Error && error.message.endsWith("timed out") ? "timeout" : "unavailable-or-declined");
       return null;
     }
   }
 
   function init() {
     if (!context?.enabled) return Promise.resolve(false);
-    initPromise ??= send("VKWebAppInit").then(Boolean);
+    initPromise ??= send("VKWebAppInit").then(result => Boolean(result) && result.result !== false);
     return initPromise;
   }
 
@@ -111,17 +114,19 @@ export function createVkBridgeService({
     }
   }
 
-  async function showInterstitialAfterExport() {
-    if (!context?.enabled || !shouldShowInterstitial({ alreadyShown: wasInterstitialShown() })) {
-      return false;
-    }
-    if (!await init()) return false;
-    const availability = await send("VKWebAppCheckNativeAds", { ad_format: "interstitial" });
-    if (!availability?.result) return false;
-    const result = await send("VKWebAppShowNativeAds", { ad_format: "interstitial" }, 120000);
-    if (!result) return false;
-    rememberInterstitial();
-    return true;
+  function showInterstitialAfterExport() {
+    if (!context?.enabled || !shouldShowInterstitial({ alreadyShown: wasInterstitialShown() })) return Promise.resolve(false);
+    if (interstitialPromise) return interstitialPromise;
+    interstitialPromise = (async () => {
+      if (!await init()) return false;
+      const availability = await send("VKWebAppCheckNativeAds", { ad_format: "interstitial" });
+      if (!availability?.result) return false;
+      const result = await send("VKWebAppShowNativeAds", { ad_format: "interstitial" }, 120000);
+      if (!result || result.result === false) return false;
+      rememberInterstitial();
+      return true;
+    })().finally(() => { interstitialPromise = null; });
+    return interstitialPromise;
   }
 
   async function hideBannerAd() {

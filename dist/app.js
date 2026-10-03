@@ -16,9 +16,11 @@ import {
   vkLaunchContext,
 } from "./vk-bridge-service.js";
 import { temporaryFilesService } from "./temporary-files-service.js";
+import { isValidProject, PROJECT_FORMAT_VERSION } from "./project-format.js";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const MAX_PROJECT_SIZE = 40 * 1024 * 1024;
+let sourceLoadRevision = 0;
 const DEFAULT_GRID_WIDTH = 70;
 const DEFAULT_COLOR_COUNT = 16;
 const MIN_ZOOM = 50;
@@ -41,7 +43,6 @@ const ONBOARDING_COOKIE_KEY = "stitchloom_onboarding_v1";
 const PROJECT_DB_NAME = "stitchloom-projects";
 const PROJECT_STORE_NAME = "autosave";
 const PROJECT_AUTOSAVE_KEY = "latest";
-const PROJECT_FORMAT_VERSION = 1;
 const EXPORT_MIME_TYPES = Object.freeze({
   ".pdf": "application/pdf",
   ".png": "image/png",
@@ -2584,7 +2585,7 @@ function renderLegend() {
     const colorDescription = `${color.hex.toUpperCase()} · ${dmcPrefix} ${color.dmcCode} ${getLocalizedDmcName(color)}`;
     return (
       '<button type="button" class="legend-row" data-palette-index="' + index + '" title="' + escapeHtml(colorDescription) + '">' +
-        '<span class="legend-swatch" style="background:' + color.hex + '" aria-hidden="true"></span>' +
+        '<span class="legend-swatch" style="background:' + escapeHtml(color.hex) + '" aria-hidden="true"></span>' +
         '<span class="legend-symbol">' + escapeHtml(color.symbol) + "</span>" +
         '<span class="legend-code">' + escapeHtml(color.code) + "</span>" +
         '<span class="legend-name">' + escapeHtml(colorDescription) + "</span>" +
@@ -2717,32 +2718,39 @@ function readFileAsDataUrl(file) {
   });
 }
 
-function loadImageData(dataUrl, metadata = {}, shouldBuild = true) {
+function decodeProjectImage(dataUrl) {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.decoding = "async";
-    image.onload = () => {
-      if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
-      state.image = image;
-      state.objectUrl = null;
-      state.sourceDataUrl = dataUrl;
-      state.fileName = metadata.name || "image";
-      state.fileSize = Number(metadata.size) || 0;
-      elements.sourcePreview.src = dataUrl;
-      elements.fileName.textContent = state.fileName;
-      elements.fileMeta.textContent =
-        image.naturalWidth + " × " + image.naturalHeight + " px · " + formatBytes(state.fileSize);
-      elements.sourceCard.classList.remove("is-hidden");
-      elements.dropzone.classList.add("is-hidden");
-      elements.photoPrep.classList.remove("is-hidden");
-      updatePhotoPrepControls();
-      setFileStatus(t("file.ready"));
-      if (shouldBuild) schedulePatternBuild(60);
-      resolve(image);
-    };
+    image.onload = () => resolve(image);
     image.onerror = () => reject(new Error("image decode failed"));
     image.src = dataUrl;
   });
+}
+
+function applyDecodedImage(image, dataUrl, metadata = {}, shouldBuild = true) {
+  if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
+  state.image = image;
+  state.objectUrl = null;
+  state.sourceDataUrl = dataUrl;
+  state.fileName = metadata.name || "image";
+  state.fileSize = Number(metadata.size) || 0;
+  elements.sourcePreview.src = dataUrl;
+  elements.fileName.textContent = state.fileName;
+  elements.fileMeta.textContent = image.naturalWidth + " × " + image.naturalHeight + " px · " + formatBytes(state.fileSize);
+  elements.sourceCard.classList.remove("is-hidden");
+  elements.dropzone.classList.add("is-hidden");
+  elements.photoPrep.classList.remove("is-hidden");
+  updatePhotoPrepControls();
+  setFileStatus(t("file.ready"));
+  if (shouldBuild) schedulePatternBuild(60);
+  return image;
+}
+
+async function loadImageData(dataUrl, metadata = {}, shouldBuild = true, revision = sourceLoadRevision) {
+  const image = await decodeProjectImage(dataUrl);
+  if (revision !== sourceLoadRevision) return null;
+  return applyDecodedImage(image, dataUrl, metadata, shouldBuild);
 }
 
 function getProjectPayload() {
@@ -2774,15 +2782,6 @@ function getProjectPayload() {
   };
 }
 
-function isValidProject(project) {
-  if (!project || project.format !== "stitchloom" || project.version !== PROJECT_FORMAT_VERSION) return false;
-  if (!project.pattern) return Boolean(project.source?.dataUrl);
-  const { width, height, cells, palette } = project.pattern;
-  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) return false;
-  if (width * height > 50000 || !Array.isArray(cells) || cells.length !== width * height) return false;
-  if (!Array.isArray(palette) || !palette.length || palette.length > 256) return false;
-  return cells.every((index) => Number.isInteger(index) && index >= 0 && index < palette.length);
-}
 
 function applyProjectSettings(settings = {}) {
   if (settings.width) elements.sizeSelect.value = String(settings.width);
@@ -2804,13 +2803,13 @@ function applyProjectSettings(settings = {}) {
 
 async function restoreProject(project, fromAutosave = false) {
   if (!isValidProject(project)) throw new Error("invalid project");
-  if (state.rebuildTimer) window.clearTimeout(state.rebuildTimer);
-  state.rebuildTimer = null;
-  state.buildRevision += 1;
-  applyProjectSettings(project.settings);
-  if (project.source?.dataUrl) {
-    await loadImageData(project.source.dataUrl, project.source, false);
-  }
+  const revision = ++sourceLoadRevision;
+  // Decode first. A damaged local raster must leave the current project intact.
+  const image = project.source ? await decodeProjectImage(project.source.dataUrl) : null;
+  if (revision !== sourceLoadRevision) return;
+  clearImage();
+  applyProjectSettings(project.settings ?? {});
+  if (image) applyDecodedImage(image, project.source.dataUrl, project.source, false);
   state.pattern = project.pattern ? {
     ...project.pattern,
     cells: Array.from(project.pattern.cells),
@@ -2935,6 +2934,7 @@ async function openProjectFile(file) {
 }
 
 function clearImage() {
+  sourceLoadRevision += 1;
   if (state.rebuildTimer) window.clearTimeout(state.rebuildTimer);
   state.rebuildTimer = null;
   state.buildRevision += 1;
@@ -2961,7 +2961,7 @@ function clearImage() {
 
 async function loadImageFile(file) {
   if (!file) return;
-  if (!file.type || !file.type.startsWith("image/")) {
+  if (!/^image\/(?:png|jpeg|jpg|webp|gif)$/i.test(file.type)) {
     setFileStatus(t("file.invalid"), true);
     return;
   }
@@ -2974,9 +2974,11 @@ async function loadImageFile(file) {
   state.rebuildTimer = null;
   state.buildRevision += 1;
 
+  const revision = ++sourceLoadRevision;
   try {
     const dataUrl = await readFileAsDataUrl(file);
-    await loadImageData(dataUrl, { name: file.name, size: file.size }, true);
+    if (revision !== sourceLoadRevision) return;
+    await loadImageData(dataUrl, { name: file.name, size: file.size }, true, revision);
   } catch {
     setFileStatus(t("file.openFailed"), true);
   }

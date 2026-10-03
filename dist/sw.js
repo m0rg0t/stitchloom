@@ -1,4 +1,4 @@
-const CACHE_NAME = "stitchloom-v28";
+const CACHE_NAME = "stitchloom-v29";
 const APP_SHELL = [
   "./",
   "./ru/",
@@ -12,6 +12,7 @@ const APP_SHELL = [
   "./temporary-files-service.js",
   "./vendor/vk-bridge.min.js",
   "./pattern-tools.js",
+  "./project-format.js",
   "./manifest.webmanifest",
   "./manifest.en.webmanifest",
   "./manifest.es.webmanifest",
@@ -29,7 +30,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith("stitchloom-") && key !== CACHE_NAME).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
 });
