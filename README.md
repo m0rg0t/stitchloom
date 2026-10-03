@@ -71,7 +71,7 @@ Both documents are also published alongside the application as `llms.txt` and `S
 
 Editable catalog artwork, exact-size screenshots, validated Russian listing copy, moderation notes, splash screens, and the catalog manifest live in `release/catalog/`. The package targets [VK App 54777468](https://vk.com/app54777468). `release/catalog-package/` and `release/stitchloom-vk-catalog-54777468.zip` are preflighted portable catalog packages; the current app-specific catalog form still needs to be captured and compared before submission.
 
-The official `@vkontakte/vk-miniapps-deploy` package is pinned to version 1.0.2. `vk-hosting-config.json` targets app `54777468` and the static `dist/` output. `release/stitchloom-vk-build.zip` is the current manual hosting artifact with `index.html` at its root. Tokens and production confirmation codes must never be committed.
+The official `@vkontakte/vk-miniapps-deploy` package is pinned to version 1.0.3. `vk-hosting-config.json` targets app `54777468` and the static `dist/` output. `release/stitchloom-vk-build.zip` is the current manual hosting artifact with `index.html` at its root. Tokens and production confirmation codes must never be committed.
 
 ## Privacy
 
@@ -86,3 +86,11 @@ Without an explicit choice, Stitchloom follows the first supported language in t
 ## License
 
 MIT
+
+## Maintenance verification
+
+Use Node 22.13+ or Node 24 LTS: `npm ci && npm run check`. The static browser app keeps its local, dependency-free image/pattern pipeline. Build-only packages lock the existing VK Bridge browser SDK to 3.0.2 and the deployment CLI to 1.0.3; the SDK is vendored reproducibly without a runtime CDN.
+
+`npx playwright install chromium && npm run test:browser` covers synthetic photo conversion, square PNG output, CSV/PDF exports, project round-trip, all four language pages, manual language/theme persistence, an isolated real-SDK host fixture, and rejection of unsafe project sources/palette values without network requests or changes to the current project. Imported version-1 projects accept only self-contained PNG/JPEG/WEBP/GIF image data; raster decoding completes before state is committed. SVG and remote-source projects are rejected.
+
+CI runs the checks on Node 22/24, confirms generated-output reproducibility and tests the production container with pinned Node 24.21.0 and stable Nginx 1.30.5. The Pages action dependencies are updated and pinned; its existing main/manual triggers and permissions stay the same. No deployment is performed by PR CI. Native VK downloads, temporary-file service behavior and real ads/Story dialogs require separate release smoke checks; local mocks do not establish those outcomes.

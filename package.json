@@ -6,13 +6,21 @@
   "description": "Client-side photo-to-cross-stitch pattern maker and VK Mini App.",
   "scripts": {
     "dev": "python3 -m http.server 4173 -d dist",
-    "build": "node scripts/build-localized-pages.mjs",
+    "build": "node scripts/vendor-bridge.mjs && node scripts/build-localized-pages.mjs",
     "test": "node --test tests/*.test.mjs",
     "predeploy": "npm run build",
-    "deploy": "vk-miniapps-deploy"
+    "deploy": "vk-miniapps-deploy",
+    "check:syntax": "node --check dist/app.js && node --check dist/project-format.js && node --check dist/vk-bridge-service.js && node --check dist/temporary-files-service.js && node --check dist/sw.js",
+    "test:browser": "playwright test",
+    "check": "npm run check:syntax && npm test && npm run build"
   },
   "devDependencies": {
-    "@vkontakte/vk-miniapps-deploy": "1.0.2",
+    "@playwright/test": "1.63.0",
+    "@vkontakte/vk-bridge": "3.0.2",
+    "@vkontakte/vk-miniapps-deploy": "1.0.3",
     "lottie-web": "5.13.0"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   }
 }
